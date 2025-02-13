@@ -40,6 +40,27 @@ return [
             'driver' => 'session',
             'provider' => 'users',
         ],
+        'user' => [
+            'driver' => 'jwt',
+            'provider' => 'users',
+        ],
+        'admin' => [
+            'driver' => 'jwt',
+            'provider' => 'users',
+        ],
+        'master' => [
+            'driver' => 'jwt',
+            'provider' => 'users',
+        ],
+        'pdv' => [
+            'driver' => 'jwt',
+            'provider' => 'users',
+        ],
+        'multimarca' => [
+            'driver' => 'jwt',
+            'provider' => 'users',
+        ],
+
     ],
 
     /*

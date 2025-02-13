@@ -11,7 +11,13 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware) {
-        //
+          $middleware->alias([
+            'jwt.apiRest.jsMarket'=> \App\Http\Middleware\JwtJsMarket::class,
+            'jwt.user.admin'=>\App\Http\Middleware\AdminMiddleware::class,
+            'jwt.user.pdv'=>\App\Http\Middleware\PdvMiddleware::class,
+            'jwt.user.multimarca'=>\App\Http\Middleware\MultimarcaMiddleware::class,
+        ]);
+        $middleware->validateCsrfTokens(except: ['api/*','/sendExamen','/postulante', 'login']);
     })
     ->withExceptions(function (Exceptions $exceptions) {
         //
