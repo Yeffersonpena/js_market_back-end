@@ -17,7 +17,7 @@ class UserSeeder extends Seeder
         $user=new User();
         $user->user='admin';
         $user->password=bcrypt('07640716');
-        $user->perfil=-1;
+        $user->perfil=1;
         $user->zonal='PERU';
         $user->memo=null;
         $user->save();
@@ -25,7 +25,7 @@ class UserSeeder extends Seeder
         $user=new User();
         $user->user='10236231';
         $user->password=bcrypt('10236231');
-        $user->perfil=1;
+        $user->perfil=2;
         $user->zonal='PERU';
         $user->memo=null;
         $user->save();
@@ -33,7 +33,7 @@ class UserSeeder extends Seeder
         $user=new User();
         $user->user='10300144';
         $user->password=bcrypt('10300144');
-        $user->perfil=2;
+        $user->perfil=3;
         $user->zonal='PERU';
         $user->memo=null;
         $user->save();

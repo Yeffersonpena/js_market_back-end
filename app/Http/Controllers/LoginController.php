@@ -33,15 +33,15 @@ class LoginController extends Controller
                 'password' => $request->password
             ];
             if ($token = JWTAuth::attempt($credencials)) {
-                $user = User::where('user', $request->user)->get();
-                foreach ($user as $item) {
-                    $data = [
-                        'id' => $item->id,
-                        'name' => $item->user,
-                        'perfil' => $item->perfil,
-                    ];
-                }
-                return response()->json(["status" => Response::HTTP_OK, "message" => "Usuario valido", "token" => $token, "user" => $data], Response::HTTP_OK);
+                // $user = User::where('user', $request->user)->get();
+                // foreach ($user as $item) {
+                //     $data = [
+                //         'id' => $item->id,
+                //         'name' => $item->user,
+                //         'perfil' => $item->perfil,
+                //     ];
+                // }
+                return response()->json(["status" => Response::HTTP_OK, "message" => "Usuario valido", "token" => $token], Response::HTTP_OK);
             } else {
                 return response()->json(["status" => Response::HTTP_UNAUTHORIZED, "message" => "Usuario invalido o contraseña no valida"], Response::HTTP_UNAUTHORIZED);
             }
@@ -59,6 +59,23 @@ class LoginController extends Controller
             } else {
                 return response()->json(["status" => Response::HTTP_UNAUTHORIZED, "message" => "Usuario ".$userExists." no existe"], Response::HTTP_UNAUTHORIZED);
             }
+        } catch (\Throwable $th) {
+            return response()->json(["status" => Response::HTTP_BAD_REQUEST, "message" => $th], Response::HTTP_BAD_REQUEST);
+        }
+    }
+
+    function viewToken(Request $request)
+    {
+        try{
+            $tokenData = $request->bearerToken();
+            $token = JWTAuth::parseToken()->authenticate();
+            $user=[
+                // "id"=>$token->id,
+                "user"=>$token->user,
+                "perfil"=>$token->perfil,
+                "zonal"=>$token->zonal,
+            ];
+            return response()->json(["status" => Response::HTTP_OK, "message" => "token valido", "user" => $user], Response::HTTP_OK);
         } catch (\Throwable $th) {
             return response()->json(["status" => Response::HTTP_BAD_REQUEST, "message" => $th], Response::HTTP_BAD_REQUEST);
         }

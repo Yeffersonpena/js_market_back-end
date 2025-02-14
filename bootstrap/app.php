@@ -17,7 +17,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'jwt.user.pdv'=>\App\Http\Middleware\PdvMiddleware::class,
             'jwt.user.multimarca'=>\App\Http\Middleware\MultimarcaMiddleware::class,
         ]);
-        $middleware->validateCsrfTokens(except: ['api/*','/sendExamen','/postulante', 'login']);
+        $middleware->validateCsrfTokens(except: ['*']);
     })
     ->withExceptions(function (Exceptions $exceptions) {
         //

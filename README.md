@@ -21,6 +21,11 @@
 -  0 => `Default`
 -  1 => `Pdv`
 -  2 => `Multimarca`    
+### Nuevo id para Perfiles
+- 1 => `admin`
+- 2 => `pdv`
+- 3 => `multimarca`
+- 4 => `default`
 
 ## Documentación del ApiRest
 - Postman (link)[]
