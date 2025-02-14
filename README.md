@@ -21,6 +21,6 @@
 - Postman (link)[]
 
 #### user
-admin = user=admin , pass=07640716
-(pdv) = user=10236231
-(multimarca)= user=10300144
+- admin = user=admin , pass=07640716
+- (pdv) = user=10236231
+- (multimarca)= user=10300144
