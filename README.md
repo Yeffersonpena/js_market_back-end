@@ -9,18 +9,23 @@
 - ejecutar la migración con `php artisan migrate:fresh --seed`
 - Para iniciar el servidor de laravel `php artisan serve` te mostrara la url del proyecto local en la terminal
 
+## Actualizar el proyecto en local 
+- Ejecutar el comando `composer update`
+
+##### Habilitar el key para el jwt [optional, si no lo tines agregado en el .env]
+- Generar el key con `php artisan jwt:secret` te generara un key y el mismo lo agregas en el .env `JWT_SECRET=your_generated_secret_key`
 
 ## Gerarquida de perfiles
 - -2 => `Anonymous`
 - -1 => `Admin`
 -  0 => `Default`
 -  1 => `Pdv`
--  2 => `Multimarca`
+-  2 => `Multimarca`    
 
 ## Documentación del ApiRest
 - Postman (link)[]
 
-#### user
+#### user de Pruebas
 - admin = user=admin , pass=07640716
 - (pdv) = user=10236231
 - (multimarca)= user=10300144
