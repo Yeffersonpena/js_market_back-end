@@ -72,7 +72,7 @@ class LoginController extends Controller
             $user=[
                 // "id"=>$token->id,
                 "user"=>$token->user,
-                "perfil"=>$token->perfil,
+                "perfil"=>$token->idPerfil,
                 "zonal"=>$token->zonal,
             ];
             return response()->json(["status" => Response::HTTP_OK, "message" => "token valido", "user" => $user], Response::HTTP_OK);
