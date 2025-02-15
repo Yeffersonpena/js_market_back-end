@@ -16,7 +16,7 @@ class LoginController extends Controller
         try {
             try {
                 $request->validate([
-                    'user' => 'required|max:10|min:8',
+                    'user' => 'required|max:10|min:3',
                     'password' => 'required|max:10|min:8',
                 ],
                 [
