@@ -31,6 +31,9 @@
 - Postman (link)[]
 
 #### user de Pruebas
+#### Complemento del sql
+> Para la creación de los perfiles y los usuarios ejecutar el script.sql que se encuentra en la misma ruta del readme.
 - admin = user=admin , pass=07640716
 - (pdv) = user=10236231
 - (multimarca)= user=10300144
+
