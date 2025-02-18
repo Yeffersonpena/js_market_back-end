@@ -14,7 +14,7 @@ use Illuminate\Support\Facades\Route;
 // Route::post('/users/create-user', [LoginController::class, 'createUser_new'])->name('create.user.api');
 
 
-Route::get('/api/v1/multimarca/getAvanceDiario/{dni}', [MultimarcaAvanceDiarioController::class, 'getAvanceDiario'])->name('avanceDiarioMM  .user.api');
-Route::middleware(['jwt.apiRest.jsMarket'])->group(function () {
+// Route::get('/api/v1/multimarca/getAvanceDiario/{dni}', [MultimarcaAvanceDiarioController::class, 'getAvanceDiario'])->name('avanceDiarioMM  .user.api');
+// Route::middleware(['jwt.apiRest.jsMarket'])->group(function () {
 
-});
+// });

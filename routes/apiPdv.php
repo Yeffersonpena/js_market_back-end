@@ -7,4 +7,4 @@ use Illuminate\Support\Facades\Route;
 
 
 // Route::post('/users/login', [LoginController::class, 'loginLocalUser'])->name('login.user.api');
-Route::get('/api/v1/multimarca/{user}', [AvanceDiarioController::class, 'day'])->name('day.user.api');
+// Route::get('/api/v1/multimarca/{user}', [AvanceDiarioController::class, 'day'])->name('day.user.api');

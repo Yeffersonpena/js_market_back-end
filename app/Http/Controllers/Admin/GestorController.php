@@ -14,7 +14,7 @@ class GestorController extends Controller
         try{
             $existeUser = User::exists();
             if($existeUser){
-                $listUser = User::get();    
+                $listUser = User::paginate(10);    
             return response()->json(["status" => Response::HTTP_OK, "message" => "Lista de usuarios", "data"=>$listUser], Response::HTTP_OK);
         } else {
             return response()->json(["status" => Response::HTTP_UNAUTHORIZED, "message" => "No hay usuarios"], Response::HTTP_UNAUTHORIZED);
