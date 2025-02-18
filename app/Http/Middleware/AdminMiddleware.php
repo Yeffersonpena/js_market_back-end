@@ -16,7 +16,7 @@ class AdminMiddleware
     public function handle(Request $request, Closure $next): Response
     {
             $user=$request->get('user');
-            if ($user['perfil'] != 1) {
+            if ($user['idPerfil'] != 1) {
                 return response()->json(['status' => Response::HTTP_UNAUTHORIZED, 'message' => 'Usuraio sin permiso'], Response::HTTP_UNAUTHORIZED);
             }
             return $next($request);

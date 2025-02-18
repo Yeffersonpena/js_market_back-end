@@ -16,7 +16,7 @@ class MultimarcaMiddleware
     public function handle(Request $request, Closure $next): Response
     {
         $user=$request->get('user');
-        if ($user['perfil'] != 3) {
+        if ($user['idPerfil'] != 3) {
             return response()->json(['status' => Response::HTTP_UNAUTHORIZED, 'message' => 'Usuraio sin permiso'], Response::HTTP_UNAUTHORIZED);
         }
         return $next($request);

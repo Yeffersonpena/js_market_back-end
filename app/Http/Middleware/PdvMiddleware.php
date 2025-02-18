@@ -16,7 +16,7 @@ class PdvMiddleware
     public function handle(Request $request, Closure $next): Response
     {
         $user=$request->get('user');
-        if ($user['perfil'] != 2) {
+        if ($user['idPerfil'] != 2) {
             return response()->json(['status' => Response::HTTP_UNAUTHORIZED, 'message' => 'Usuraio sin permiso'], Response::HTTP_UNAUTHORIZED);
         }
         return $next($request);
