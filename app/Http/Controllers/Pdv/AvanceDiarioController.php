@@ -99,10 +99,7 @@ class AvanceDiarioController extends Controller
                     "avancePrepago"=>19,
                     "recargasTotales"=>$infoVendedor->RECARGA_TOTAL
                 ];
-                // $infoVendedor->recargas_totales="xx";
-
             return response()->json(["status" => Response::HTTP_OK, "message" => "Información", "data"=>$infoVendedor ], Response::HTTP_OK);
-           // return response()->json(["status" => Response::HTTP_OK, "message" => "Información", "data"=>$avances[0] ], Response::HTTP_OK);
         } else {
             return response()->json(["status" => Response::HTTP_UNAUTHORIZED, "message" => "No hay información"], Response::HTTP_UNAUTHORIZED);
         }

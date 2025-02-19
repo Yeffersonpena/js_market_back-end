@@ -13,14 +13,23 @@ use Symfony\Component\HttpFoundation\Response;
 class LogicController extends Controller
 {
     public function getAvanceDiario($dni){
-        // return response()->json(["status" => Response::HTTP_OK, "message" => "usuario creado"], Response::HTTP_OK);
         try{
 
             $existeAvance = VI_AVANCES_DIARIOS::where('DNI_Responsable', $dni)->exists();
-            // return response()->json($avances);
             if($existeAvance){
                 $avances = VI_AVANCES_DIARIOS::where('DNI_Responsable', $dni)->get();
-                $avances->makeHidden(['id', 'DNI ']);
+                // return response()->json($avances);
+                $avances->makeHidden(['id', 'DNI ', 'MAX_FECHA']);
+                $avances= $avances->map(function ($item){
+                    return [
+                        "fecha"=>$item->FECHA,
+                        "altaPrepago"=>$item->{"ALTA PREPAGO"},
+                        "portaPrepago"=>$item->{"PORTA PREPAGO"},
+                        "altaPostpago"=>$item->{"ALTA POSTPAGO"},
+                        "portaPostpago"=>$item->{"PORTA POSTPAGO"},
+                    ];
+                    
+                });
             return response()->json(["status" => Response::HTTP_OK, "message" => "Avance Diario", "data"=>$avances], Response::HTTP_OK);
         } else {
             return response()->json(["status" => Response::HTTP_UNAUTHORIZED, "message" => "No hay avance diario para el usuario ".$dni], Response::HTTP_UNAUTHORIZED);
@@ -68,7 +77,14 @@ class LogicController extends Controller
             $existeAbono = PDV_ABONOS::where('DNI', $dni)->where('año', '=', $anio)->where('mes','=',$mes)->exists();
             if($existeAbono){
                 $abono = PDV_ABONOS::where('DNI', $dni)->where('año', '=', $anio)->where('mes','=',$mes)->get();
-                $abono->makeHidden(['id', 'DNI ']);
+                $abono->makeHidden(['DNI ']);
+                $abono=$abono->map(function ($item){
+                    return ["id"=>$item->id,
+                    "detalle"=>$item->DETALLE,
+                    "estado"=>$item->{"STATUS DEL ABONO"},
+                    "total"=>$item->{"BONO TOTAL"}
+                ];
+                });
             return response()->json(["status" => Response::HTTP_OK, "message" => "Historial de Abono", "data"=>$abono], Response::HTTP_OK);
         } else {
             return response()->json(["status" => Response::HTTP_UNAUTHORIZED, "message" => "No hay historial de Abono"], Response::HTTP_UNAUTHORIZED);
