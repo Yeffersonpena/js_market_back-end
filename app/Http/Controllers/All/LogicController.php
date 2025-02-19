@@ -21,7 +21,7 @@ class LogicController extends Controller
             if($existeAvance){
                 $avances = VI_AVANCES_DIARIOS::where('DNI_Responsable', $dni)->get();
                 $avances->makeHidden(['id', 'DNI ']);
-            return response()->json(["status" => Response::HTTP_OK, "message" => "Avance Diario MM", "data"=>$avances], Response::HTTP_OK);
+            return response()->json(["status" => Response::HTTP_OK, "message" => "Avance Diario", "data"=>$avances], Response::HTTP_OK);
         } else {
             return response()->json(["status" => Response::HTTP_UNAUTHORIZED, "message" => "No hay avance diario para el usuario ".$dni], Response::HTTP_UNAUTHORIZED);
         }

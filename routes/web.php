@@ -13,16 +13,16 @@ Route::post('/users/login', [LoginController::class, 'loginLocalUser'])->name('l
 Route::get('/users/validation-user/{user}', [LoginController::class, 'validarUser'])->name('validation.user.api');
 
 // Route::get('/users/create-user', [Controller::class, 'createUser'])->name('create.user.api');
-Route::post('/users/create-user', [LoginController::class, 'createUser_new'])->name('create.user.api');
 
 
 Route::middleware(['jwt.apiRest.jsMarket'])->group(function () {
     Route::get('/users/view-token-user', [LoginController::class, 'viewToken'])->name('viewPerfil.user.api');
-
+    
 });
 
 
 Route::middleware(['jwt.apiRest.jsMarket', 'jwt.user.admin'])->group(function () {
+    Route::post('/api/v1/admin/create-user', [LoginController::class, 'createUser_new'])->name('create.user.api');
     Route::get('/api/v1/admin/getListUser', [GestorController::class, 'getListUser'])->name('getListUser.user.api');
     Route::get('/api/v1/admin/deleteUser/{dni}', [GestorController::class, 'deleteUser'])->name('delete.user.api');
     Route::put('/api/v1/admin/updateUser/{dni}', [GestorController::class, 'updateDataUser'])->name('update.user.api');
@@ -30,15 +30,17 @@ Route::middleware(['jwt.apiRest.jsMarket', 'jwt.user.admin'])->group(function ()
 
 });
 Route::middleware(['jwt.apiRest.jsMarket', 'jwt.user.pdv'])->group(function () {
-    Route::get('/api/v1/pdv/getAvanceDiario/{dni}', [LogicController::class, 'getAvanceDiario'])->name('avanceDiarioMM.user.api');
+    Route::get('/api/v1/pdv/getAvanceDiario/{dni}/{anio}/{mes}', [LogicController::class, 'getAvanceDiario'])->name('avanceDiarioMM.user.api');
     Route::get('/api/v1/pdv/getFlyers/{dni}/{anio}/{mes}', [LogicController::class, 'getFlyers'])->name('flyers.user.api');
     Route::get('/api/v1/pdv/getAbono/{dni}/{anio}/{mes}', [LogicController::class, 'getAbono'])->name('flyers.user.api');
     Route::get('/api/v1/pdv/getHistoryVenta/{dni}/{anio}/{mes}', [LogicController::class, 'getHistoryVenta'])->name('history.user.api');
     Route::get('/api/v1/pdv/getDataPdv/{dni}/{anio}/{mes}', [AvanceDiarioController::class, 'getDataPdv'])->name('getDataPdv.user.api');
-    
+    // 
+    Route::get('/api/v1/pdv/getAllMonto/{dni}/{anio}/{mes}', [AvanceDiarioController::class, 'getAllMonto'])->name('getAllMonto.user.api');
+
 });
 Route::middleware(['jwt.apiRest.jsMarket', 'jwt.user.multimarca'])->group(function () {
-    Route::get('/api/v1/multimarca/getAvanceDiario/{dni}', [LogicController::class, 'getAvanceDiario'])->name('avanceDiarioMM.user.api');
+    Route::get('/api/v1/multimarca/getAvanceDiario/{dni}/{anio}/{mes}', [LogicController::class, 'getAvanceDiario'])->name('avanceDiarioMM.user.api');
     Route::get('/api/v1/multimarca/getFlyers/{dni}/{anio}/{mes}', [LogicController::class, 'getFlyers'])->name('flyers.user.api');
     Route::get('/api/v1/multimarca/getAbono/{dni}/{anio}/{mes}', [LogicController::class, 'getAbono'])->name('flyers.user.api');
     // Route::get('/api/v1/multimarca/getAbono/{dni}/{anio}/{mes}', [LogicController::class, 'getAbono'])->name('flyers.user.api');

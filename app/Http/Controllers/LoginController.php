@@ -84,21 +84,30 @@ class LoginController extends Controller
 
     function createUser_new(Request $request){
             try {
+                $userConsulta = User::where('user', $request->userName)->exists();
+                if ($userConsulta) {
+                    return response()->json(["status" => Response::HTTP_OK, "message" => "Usuario ".$request->userName." existe "], Response::HTTP_OK);
+                }
                 $createUser=new User();
                 $createUser->idPerfil = $request->idPerfil;
-                $createUser->user = $request->user;
+                $createUser->user = $request->userName;
                 $createUser->password = bcrypt($request->password);
                 $createUser->zonal = $request->zonal;
                 $createUser->created_by = $request->created_by;
                 $createUser->created_at = now();
                 $createUser->updated_by = $request->updated_by;
                 $createUser->updated_at = now();
-                $createUser->save();
+                // $createUser->save();
+                if($createUser->save()){
                 $userData=[
-                    'user'=>$request->user,
+                    'user'=>$request->userName,
                     'perfil'=>$request->idPerfil
                 ];
                 return response()->json(["status" => Response::HTTP_OK, "message" => "usuario creado", "data_users" => $userData], Response::HTTP_OK);
+            } 
+                else {
+                    return response()->json(["status" => Response::HTTP_UNAUTHORIZED, "message" => "El usuario ".$userConsulta." no se puedo crear"], Response::HTTP_UNAUTHORIZED);
+                }
             } catch (\Exception $ex) {
                 return response()->json(["status" => Response::HTTP_BAD_REQUEST, "message- " => $ex->getMessage()], Response::HTTP_BAD_REQUEST);
                 
