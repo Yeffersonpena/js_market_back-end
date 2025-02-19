@@ -95,9 +95,9 @@ class AvanceDiarioController extends Controller
                     "celularVendedor"=> $infoVendedor->CELULAR_VENDEDOR,
                     "canal"=> $infoVendedor->ACCION,
                     "cluster"=> $infoVendedor->CLUSTER_PDV_REGULAR,
-                    "cuotaPrepago"=>30,
-                    "avancePrepago"=>19,
-                    "recargasTotales"=>$infoVendedor->RECARGA_TOTAL
+                    "cuotaPrepago"=>(float)$infoVendedor->CUOTA_PREPAGO,
+                    "avancePrepago"=>(float)$infoVendedor->{'AVANCE PREPAGO'},
+                    "recargasTotales"=>(float)$infoVendedor->RECARGA_TOTAL
                 ];
             return response()->json(["status" => Response::HTTP_OK, "message" => "Información", "data"=>$infoVendedor ], Response::HTTP_OK);
         } else {
