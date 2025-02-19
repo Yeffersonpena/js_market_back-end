@@ -11,6 +11,8 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware) {
+        // $middleware->push(\Fruitcake\Cors\HandleCors::class);
+
           $middleware->alias([
             'jwt.apiRest.jsMarket'=> \App\Http\Middleware\JwtJsMarket::class,
             'jwt.user.admin'=>\App\Http\Middleware\AdminMiddleware::class,

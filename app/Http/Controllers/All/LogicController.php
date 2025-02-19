@@ -23,10 +23,10 @@ class LogicController extends Controller
                 $avances= $avances->map(function ($item){
                     return [
                         "fecha"=>$item->FECHA,
-                        "altaPrepago"=>intval($item->{"ALTA PREPAGO"}),
-                        "portaPrepago"=>intval($item->{"PORTA PREPAGO"}),
-                        "altaPostpago"=>intval($item->{"ALTA POSTPAGO"}),
-                        "portaPostpago"=>intval($item->{"PORTA POSTPAGO"}),
+                        "altaPrepago"=>(float)$item->{"ALTA PREPAGO"},
+                        "portaPrepago"=>(float)$item->{"PORTA PREPAGO"},
+                        "altaPostpago"=>(float)$item->{"ALTA POSTPAGO"},
+                        "portaPostpago"=>(float)$item->{"PORTA POSTPAGO"},
                     ];
                     
                 });
@@ -82,7 +82,7 @@ class LogicController extends Controller
                     return ["id"=>$item->id,
                     "detalle"=>$item->DETALLE,
                     "estado"=>$item->{"STATUS DEL ABONO"},
-                    "total"=>$item->{"BONO TOTAL"}
+                    "total" => (float)$item->{"BONO TOTAL"}
                 ];
                 });
             return response()->json(["status" => Response::HTTP_OK, "message" => "Historial de Abono", "data"=>$abono], Response::HTTP_OK);
