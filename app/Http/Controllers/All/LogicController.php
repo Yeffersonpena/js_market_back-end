@@ -23,16 +23,16 @@ class LogicController extends Controller
                 $avances= $avances->map(function ($item){
                     return [
                         "fecha"=>$item->FECHA,
-                        "altaPrepago"=>$item->{"ALTA PREPAGO"},
-                        "portaPrepago"=>$item->{"PORTA PREPAGO"},
-                        "altaPostpago"=>$item->{"ALTA POSTPAGO"},
-                        "portaPostpago"=>$item->{"PORTA POSTPAGO"},
+                        "altaPrepago"=>intval($item->{"ALTA PREPAGO"}),
+                        "portaPrepago"=>intval($item->{"PORTA PREPAGO"}),
+                        "altaPostpago"=>intval($item->{"ALTA POSTPAGO"}),
+                        "portaPostpago"=>intval($item->{"PORTA POSTPAGO"}),
                     ];
                     
                 });
             return response()->json(["status" => Response::HTTP_OK, "message" => "Avance Diario", "data"=>$avances], Response::HTTP_OK);
         } else {
-            return response()->json(["status" => Response::HTTP_UNAUTHORIZED, "message" => "No hay avance diario para el usuario ".$dni], Response::HTTP_UNAUTHORIZED);
+            return response()->json(["status" => Response::HTTP_OK, "message" => "No hay avance diario para el usuario ".$dni], Response::HTTP_OK);
         }
 
         } catch (\Exception $ex) {
