@@ -72,9 +72,22 @@ class LogicController extends Controller
     
     public function getFlyers($dni, $anio, $mes){
         try{
-            $avances = VI_FLYERS::where('DNI_Responsable', $dni)->where('año', '=', $anio)->where('mes','=',$mes)->get();
             $existeAvance = VI_FLYERS::where('DNI_Responsable', $dni)->exists();
             if($existeAvance){
+                $avances = VI_FLYERS::where('DNI_Responsable', $dni)->where('año', '=', $anio)->where('mes','=',$mes)->get();
+                $avances= $avances->map(function ($item){
+                  return [  "año"=>$item->año,
+                    "mes"=>$item->mes,
+                    "dni_responsable"=>$item->dni_responsable,
+                    "zonal"=>$item->zonal,
+                    // "foto_esquema"=>env('APP_DOMAIN').'/api/v1/pictures/img/'.$item->foto_esquema,
+                    "foto_esquema"=>env('APP_DOMAIN').'/storage/img/'.$item->foto_esquema,
+                    // http://127.0.0.1:8000/storage/img/Esquema_PDV_Febrero1.jpg
+                    // http://127.0.0.1:8000/api/v1/pictures/img/Esquema_PDV_Febrero1.jpg
+                    "fecha_inicio"=>$item->fecha_inicio,
+                    "fecha_fin"=>$item->fecha_fin
+                ];
+                });
             return response()->json(["status" => Response::HTTP_OK, "message" => "Fyers", "data"=>$avances], Response::HTTP_OK);
         } else {
             return response()->json(["status" => Response::HTTP_UNAUTHORIZED, "message" => "No hay fyers ".$dni], Response::HTTP_UNAUTHORIZED);
