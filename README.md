@@ -6,7 +6,8 @@
 - Tener instalado sql server
 ### Requisitos para levantar un proyecto en local
 - crear la base de datos js_BD_PLANIFICACION_OUTLET_AD
-- ejecutar la migración con `php artisan migrate:fresh --seed`
+<!-- - ejecutar la migración con `php artisan migrate:fresh --seed` -->
+- Ejecutar el comando `php artisan storage:link` para dar acceso a las imagenes de schema
 ##### Base de datos provisional 
 - Modifique el .env en la propiedad database `DB_DATABASE=BD_PLANIFICACION_OUTLET_AD``
 - Elimina la basa de datos 

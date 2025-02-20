@@ -61,7 +61,7 @@ class LogicController extends Controller
                 });
             return response()->json(["status" => Response::HTTP_OK, "message" => "Historial de Venta", "data"=>$avances], Response::HTTP_OK);
         } else {
-            return response()->json(["status" => Response::HTTP_UNAUTHORIZED, "message" => "No hay historial de venta"], Response::HTTP_UNAUTHORIZED);
+            return response()->json(["status" => Response::HTTP_OK, "message" => "No hay historial de venta"], Response::HTTP_OK);
         }
 
         } catch (\Exception $ex) {
@@ -90,7 +90,7 @@ class LogicController extends Controller
                 });
             return response()->json(["status" => Response::HTTP_OK, "message" => "Fyers", "data"=>$avances], Response::HTTP_OK);
         } else {
-            return response()->json(["status" => Response::HTTP_UNAUTHORIZED, "message" => "No hay fyers ".$dni], Response::HTTP_UNAUTHORIZED);
+            return response()->json(["status" => Response::HTTP_OK, "message" => "No hay fyers ".$dni], Response::HTTP_OK);
         }
 
         } catch (\Exception $ex) {
@@ -112,7 +112,7 @@ class LogicController extends Controller
                 });
             return response()->json(["status" => Response::HTTP_OK, "message" => "Historial de Abono", "data"=>$abono], Response::HTTP_OK);
         } else {
-            return response()->json(["status" => Response::HTTP_UNAUTHORIZED, "message" => "No hay historial de Abono"], Response::HTTP_UNAUTHORIZED);
+            return response()->json(["status" => Response::HTTP_OK, "message" => "No hay historial de Abono"], Response::HTTP_OK);
         }
 
         } catch (\Exception $ex) {
@@ -121,12 +121,37 @@ class LogicController extends Controller
     }
     public function getDataMM($dni, $anio, $mes){
         try{
-            $avances = PDV_AVANCES_DIARIOS_MM::where('DNI VENDEDOR', $dni)->where('año', '=', $anio)->where('mes','=',$mes)->get();
             $existeAvance = PDV_AVANCES_DIARIOS_MM::where('DNI VENDEDOR', $dni)->where('año', '=', $anio)->where('mes','=',$mes)->exists();
             if($existeAvance){
-            return response()->json(["status" => Response::HTTP_OK, "message" => "Información", "data"=>$avances], Response::HTTP_OK);
+                $infoVendedor = PDV_AVANCES_DIARIOS_MM::where('DNI VENDEDOR', $dni)->where('año', '=', $anio)->where('mes','=',$mes)->firstOrFail();
+                $infoVendedor=[
+                    "zonal"=> $infoVendedor->ZONAL,
+                    "dni_vendedor"=> $infoVendedor->{'DNI VENDEDOR'},
+                    "nombre_vendedor"=> $infoVendedor->{'NOMBRE VENDEDOR'},
+                    "fecha_inicio"=> $infoVendedor->{'FECHA INICIO'},
+                    "dni_responsable"=> $infoVendedor->{'DNI RESPONSABLE'},
+                    "supervisor"=> $infoVendedor->SUPERVISOR,
+                    "proyecto"=> $infoVendedor->PROYECTO,
+                    "prepago_total_1"=> (float)$infoVendedor->{'PREPAGO TOTAL'},
+                    "porta_pre_1"=> (float)$infoVendedor->{'PORTA PRE'},
+                    "recarga_total_1"=> (float)$infoVendedor->{'RECARGAS TOTAL'},
+                    "porta_post_1"=> (float)$infoVendedor->{'PORTA POST'},
+                    "rango_pre_total_2"=> $infoVendedor->{'RANGO PRE TOTAL'},
+                    "rango_porta_pre_2"=> $infoVendedor->{'RANGO PORTA PRE'},
+                    "rango_recarga_2"=> $infoVendedor->{'RANGO RECARGAS'},
+                    "rango_final_2"=> $infoVendedor->{'RANGO FINAL'},
+                    "bono_pre_3"=> (float)$infoVendedor->{'BONO PRE'},
+                    "bono_porta_post_3"=> (float)$infoVendedor->{'BONO PORTA POST'},
+                    "bono_adicional_porta_post_3"=> (float)$infoVendedor->{'BONO ADICIONAL PORTA POST'},
+                    "bono_total_3"=> (float)$infoVendedor->{'BONO TOTAL'},
+                    "raecarga_finaciada_3"=> (float)$infoVendedor->{'RECARGA FINANCIADA'},
+                    "chips_financiados_3"=> (float)$infoVendedor->{'CHIPS FINANCIADO'},
+                    "total_financiado_3"=> (float)$infoVendedor->{'TOTAL FINANCIADO'},
+                    "bono_total_a_pagar_3"=> (float)$infoVendedor->{'BONO TOTAL A PAGAR'}
+                ];
+            return response()->json(["status" => Response::HTTP_OK, "message" => "Información", "data"=>$infoVendedor], Response::HTTP_OK);
         } else {
-            return response()->json(["status" => Response::HTTP_UNAUTHORIZED, "message" => "No hay información"], Response::HTTP_UNAUTHORIZED);
+            return response()->json(["status" => Response::HTTP_OK, "message" => "No hay información"], Response::HTTP_OK);
         }
         } catch (\Exception $ex) {
             return response()->json(["status" => Response::HTTP_BAD_REQUEST,"message" => $ex->getMessage()], Response::HTTP_BAD_REQUEST);

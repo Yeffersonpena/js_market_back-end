@@ -17,7 +17,7 @@ class GestorController extends Controller
                 $listUser = User::paginate(10);    
             return response()->json(["status" => Response::HTTP_OK, "message" => "Lista de usuarios", "data"=>$listUser], Response::HTTP_OK);
         } else {
-            return response()->json(["status" => Response::HTTP_UNAUTHORIZED, "message" => "No hay usuarios"], Response::HTTP_UNAUTHORIZED);
+            return response()->json(["status" => Response::HTTP_OK, "message" => "No hay usuarios"], Response::HTTP_OK);
         }
 
         } catch (\Exception $ex) {
@@ -34,7 +34,7 @@ class GestorController extends Controller
                 $deleteUser->delete();
             return response()->json(["status" => Response::HTTP_OK, "message" => "El usuario ".$dni." se elimino"], Response::HTTP_OK);
         } else {
-            return response()->json(["status" => Response::HTTP_UNAUTHORIZED, "message" => "El usuario a eliminar no existe"], Response::HTTP_UNAUTHORIZED);
+            return response()->json(["status" => Response::HTTP_OK, "message" => "El usuario a eliminar no existe"], Response::HTTP_OK);
         }
 
         } catch (\Exception $ex) {
@@ -55,7 +55,7 @@ class GestorController extends Controller
                 $updateUser->save();
             return response()->json(["status" => Response::HTTP_OK, "message" => "Se actualizo los datos del usuario ".$dni], Response::HTTP_OK);
         } else {
-            return response()->json(["status" => Response::HTTP_UNAUTHORIZED, "message" => "El usuario no existe"], Response::HTTP_UNAUTHORIZED);
+            return response()->json(["status" => Response::HTTP_OK, "message" => "El usuario no existe"], Response::HTTP_OK);
         }
 
         } catch (\Exception $ex) {
@@ -69,7 +69,7 @@ class GestorController extends Controller
                 $lisPerfil = Perfil::all();    
             return response()->json(["status" => Response::HTTP_OK, "message" => "Lista de perfiles", "data"=>$lisPerfil], Response::HTTP_OK);
         } else {
-            return response()->json(["status" => Response::HTTP_UNAUTHORIZED, "message" => "No hay lista de perfiles"], Response::HTTP_UNAUTHORIZED);
+            return response()->json(["status" => Response::HTTP_OK, "message" => "No hay lista de perfiles"], Response::HTTP_OK);
         }
 
         } catch (\Exception $ex) {

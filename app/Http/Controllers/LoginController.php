@@ -45,7 +45,7 @@ class LoginController extends Controller
                 // }
                 return response()->json(["status" => Response::HTTP_OK, "message" => "Usuario valido", "token" => $token], Response::HTTP_OK);
             } else {
-                return response()->json(["status" => Response::HTTP_UNAUTHORIZED, "message" => "Usuario invalido o contraseña no valida"], Response::HTTP_UNAUTHORIZED);
+                return response()->json(["status" => Response::HTTP_OK, "message" => "Usuario invalido o contraseña no valida"], Response::HTTP_OK);
             }
     } catch (\Exception $ex) {
         return response()->json(["status" => Response::HTTP_BAD_REQUEST,"message" => $ex->getMessage()], Response::HTTP_BAD_REQUEST);
@@ -58,7 +58,7 @@ class LoginController extends Controller
             if ($userConsulta) {
                 return response()->json(["status" => Response::HTTP_OK, "message" => "Usuario ".$userExists." existe ", "user" => $userConsulta], Response::HTTP_OK);
             } else {
-                return response()->json(["status" => Response::HTTP_UNAUTHORIZED, "message" => "Usuario ".$userExists." no existe"], Response::HTTP_UNAUTHORIZED);
+                return response()->json(["status" => Response::HTTP_OK, "message" => "Usuario ".$userExists." no existe"], Response::HTTP_OK);
             }
         } catch (\Throwable $th) {
             return response()->json(["status" => Response::HTTP_BAD_REQUEST, "message" => $th], Response::HTTP_BAD_REQUEST);
@@ -106,7 +106,7 @@ class LoginController extends Controller
                 return response()->json(["status" => Response::HTTP_OK, "message" => "usuario creado", "data_users" => $userData], Response::HTTP_OK);
             } 
                 else {
-                    return response()->json(["status" => Response::HTTP_UNAUTHORIZED, "message" => "El usuario ".$userConsulta." no se puedo crear"], Response::HTTP_UNAUTHORIZED);
+                    return response()->json(["status" => Response::HTTP_OK, "message" => "El usuario ".$userConsulta." no se puedo crear"], Response::HTTP_OK);
                 }
             } catch (\Exception $ex) {
                 return response()->json(["status" => Response::HTTP_BAD_REQUEST, "message- " => $ex->getMessage()], Response::HTTP_BAD_REQUEST);
