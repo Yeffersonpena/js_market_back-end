@@ -43,11 +43,10 @@ class LogicController extends Controller
     
     public function getHistoryVenta($dni, $anio, $mes){
         try{
-            // $existeAvance = VI_AVANCES_DIARIOS::where('DNI_Responsable', $dni)->where('año', '=', $anio)->where('mes','=',$mes)->exists();
-            $existeAvance = VI_AVANCES_DIARIOS::where('DNI_Responsable', $dni)->exists();
+            $existeAvance = VI_AVANCES_DIARIOS::where('DNI_Responsable', $dni)->whereYear('FECHA', $anio)->whereMonth('FECHA', $mes)->exists();
             if($existeAvance){
                 // $avances->makeHidden(['id', 'canal', 'cluster', 'DNI_RESPONSABLE', 'Nombre AD', 'Vendedor AD', 'Cuota PDV', 'cuota_enero', 'Celular Vendedor AD', 'MAX_FECHA', 'RECARGAS']);
-                $avances = VI_AVANCES_DIARIOS::where('DNI_Responsable', $dni)->orderBy('FECHA','asc')->get();
+                $avances = VI_AVANCES_DIARIOS::where('DNI_Responsable', $dni)->whereYear('FECHA', $anio)->whereMonth('FECHA', $mes)->orderBy('FECHA','asc')->get();
                 $avances->makeHidden(['id', 'DNI ', 'MAX_FECHA']);
                 $avances= $avances->map(function ($item){
                     return [
@@ -57,7 +56,6 @@ class LogicController extends Controller
                         "altaPostpago"=>(float)$item->{"ALTA POSTPAGO"},
                         "portaPostpago"=>(float)$item->{"PORTA POSTPAGO"},
                     ];
-                    
                 });
             return response()->json(["status" => Response::HTTP_OK, "message" => "Historial de Venta", "data"=>$avances], Response::HTTP_OK);
         } else {
