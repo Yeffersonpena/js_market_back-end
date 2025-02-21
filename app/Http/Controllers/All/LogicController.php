@@ -103,9 +103,12 @@ class LogicController extends Controller
                 $abono->makeHidden(['DNI ']);
                 $abono=$abono->map(function ($item){
                     return ["id"=>$item->id,
+                    "año" => $item->año,
+                    "mes" => $item->mes,
                     "detalle"=>$item->DETALLE,
                     "estado"=>$item->{"STATUS DEL ABONO"},
-                    "total" => (float)$item->{"BONO TOTAL"}
+                    "total" => (float)$item->{"BONO TOTAL"},
+                    "fecha" => $item->{"FECHAS_ABONO"},
                 ];
                 });
             return response()->json(["status" => Response::HTTP_OK, "message" => "Historial de Abono", "data"=>$abono], Response::HTTP_OK);

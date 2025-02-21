@@ -94,3 +94,41 @@ pdv :
     - solo existe un dni en el home
 .
 ```
+```json
+// no hay datos
+{
+    "status": 200,
+    "message": "No hay historial de Abono"
+}
+// cuando hay datos 
+{
+    "status": 200,
+    "message": "Historial de Abono",
+    "data": [
+        {
+            "id": 100497,
+            "detalle": "Esquema sem 3 Enero",
+            "estado": "Abono Inicial",
+            "total": 19
+        },
+        {
+            "id": 101212,
+            "detalle": "Incentivo 17-21.01 Rango 2",
+            "estado": "Abono Inicial",
+            "total": 30
+        },
+        {
+            "id": 106603,
+            "detalle": "Esquema sem 3 Enero",
+            "estado": "Abono Inicial",
+            "total": 19
+        },
+        {
+            "id": 107318,
+            "detalle": "Incentivo 17-21.01 Rango 2",
+            "estado": "Abono Inicial",
+            "total": 30
+        }
+    ]
+}
+```
