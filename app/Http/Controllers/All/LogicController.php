@@ -12,12 +12,12 @@ use Symfony\Component\HttpFoundation\Response;
 
 class LogicController extends Controller
 {
-    public function getAvanceDiario($dni){
+    public function getAvanceDiario($dni, $anio, $mes){
         try{
 
-            $existeAvance = VI_AVANCES_DIARIOS::where('DNI_Responsable', $dni)->exists();
+            $existeAvance = VI_AVANCES_DIARIOS::where('DNI_Responsable', $dni)->whereYear('FECHA', $anio)->whereMonth('FECHA', $mes)->exists();
             if($existeAvance){
-                $avances = VI_AVANCES_DIARIOS::where('DNI_Responsable', $dni)->get();
+                $avances = VI_AVANCES_DIARIOS::where('DNI_Responsable', $dni)->whereYear('FECHA', $anio)->whereMonth('FECHA', $mes)->get();
                 // return response()->json($avances);
                 $avances->makeHidden(['id', 'DNI ', 'MAX_FECHA']);
                 $avances= $avances->map(function ($item){
