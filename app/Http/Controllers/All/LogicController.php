@@ -7,6 +7,7 @@ use App\Models\PDV_ABONOS;
 use App\Models\PDV_AVANCES_DIARIOS_MM;
 use App\Models\VI_AVANCES_DIARIOS;
 use App\Models\VI_FLYERS;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -22,7 +23,7 @@ class LogicController extends Controller
                 $avances->makeHidden(['id', 'DNI ', 'MAX_FECHA']);
                 $avances= $avances->map(function ($item){
                     return [
-                        "fecha"=>$item->FECHA,
+                        "fecha"=>Carbon::parse($item->FECHA)->format('m-d'),
                         "altaPrepago"=>(float)$item->{"ALTA PREPAGO"},
                         "portaPrepago"=>(float)$item->{"PORTA PREPAGO"},
                         "altaPostpago"=>(float)$item->{"ALTA POSTPAGO"},
