@@ -9,56 +9,54 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cookie;
 use Symfony\Component\HttpFoundation\Response;
 use Tymon\JWTAuth\Facades\JWTAuth;
+use Tymon\JWTAuth\Exceptions\JWTException;
+use Illuminate\Support\Facades\DB;
 
 class LoginController extends Controller
 {
     function loginLocalUser(Request $request)
     {
         try {
+            $request->validate([
+                'user' => 'required|max:10|min:3',
+                'password' => 'required|max:10|min:4',
+            ], [
+                'user.min' => 'El usuario debe tener al menos 3 caracteres.',
+                'password.min' => 'La contraseña debe tener al menos 4 caracteres.',
+                'password.max' => 'La contraseña no puede tener más de 10 caracteres.',
+                'user.max' => 'El usuario no puede tener más de 10 caracteres.',
+            ]);
+
+            $userData = DB::selectOne("EXEC sp_LoginUser ?, ?", [$request->user, $request->password]);
+
+            if (!$userData) {
+                return response()->json(["status" => Response::HTTP_UNAUTHORIZED, "message" => "Usuario no encontrado"], Response::HTTP_UNAUTHORIZED);
+            }
+
+            $user = User::where('user', $userData->user)->first();
+            if (!$user) {
+                return response()->json(["status" => Response::HTTP_UNAUTHORIZED, "message" => "Error al cargar el usuario"], Response::HTTP_UNAUTHORIZED);
+            }
+
             try {
-                $request->validate([
-                    'user' => 'required|max:10|min:3',
-                    'password' => 'required|max:10|min:4',
-                ],
-                [
-                    'user.min' => 'El campo de usuario debe tener al menos 8 caracteres.',
-                    'password.min' => 'El campo de contraseña debe tener al menos 8 caracteres.',
-                    'password.max' => 'El campo de contraseña no puede tener más de 10 caracteres.',
-                    'user.max' => 'El campo de usuario no puede tener más de 10 caracteres.',
-                ]);
-            } catch (\Illuminate\Validation\ValidationException $e) {
-                return response()->json(["status" => Response::HTTP_BAD_REQUEST, "message-" => $e->errors()], Response::HTTP_BAD_REQUEST);
+                $token = JWTAuth::fromUser($user);
+            } catch (JWTException $e) {
+                return response()->json(["status" => Response::HTTP_INTERNAL_SERVER_ERROR, "message" => "No se pudo generar el token"], Response::HTTP_INTERNAL_SERVER_ERROR);
             }
-            $credencials = [
-                'user' => $request->user,
-                'password' => $request->password
-            ];
-            if ($token = JWTAuth::attempt($credencials)) {
-                // if (password_verify('10167834', $hashedPasswordFromDB)) {
-                // $user = User::where('user', $request->user)->get();
-                // foreach ($user as $item) {
-                //     $data = [
-                //         'id' => $item->id,
-                //         'name' => $item->user,
-                //         'perfil' => $item->perfil,
-                //     ];
-                // }
-                return response()->json(["status" => Response::HTTP_OK, "message" => "Usuario valido", "token" => $token], Response::HTTP_OK);
-            } else {
-                return response()->json(["status" => Response::HTTP_OK, "message" => "Usuario invalido o contraseña no valida"], Response::HTTP_OK);
-            }
-    } catch (\Exception $ex) {
-        return response()->json(["status" => Response::HTTP_BAD_REQUEST,"message" => $ex->getMessage()], Response::HTTP_BAD_REQUEST);
-    }
+
+            return response()->json(["status" => Response::HTTP_OK, "message" => "Login exitoso", "token" => $token], Response::HTTP_OK);
+        } catch (\Exception $ex) {
+            return response()->json(["status" => Response::HTTP_BAD_REQUEST, "message" => $ex->getMessage()], Response::HTTP_BAD_REQUEST);
+        }
     }
     function validarUser($userExists)
     {
         try {
             $userConsulta = User::where('user', $userExists)->exists();
             if ($userConsulta) {
-                return response()->json(["status" => Response::HTTP_OK, "message" => "Usuario ".$userExists." existe ", "user" => $userConsulta], Response::HTTP_OK);
+                return response()->json(["status" => Response::HTTP_OK, "message" => "Usuario " . $userExists . " existe ", "user" => $userConsulta], Response::HTTP_OK);
             } else {
-                return response()->json(["status" => Response::HTTP_OK, "message" => "Usuario ".$userExists." no existe"], Response::HTTP_OK);
+                return response()->json(["status" => Response::HTTP_OK, "message" => "Usuario " . $userExists . " no existe"], Response::HTTP_OK);
             }
         } catch (\Throwable $th) {
             return response()->json(["status" => Response::HTTP_BAD_REQUEST, "message" => $th], Response::HTTP_BAD_REQUEST);
@@ -67,14 +65,14 @@ class LoginController extends Controller
 
     function viewToken(Request $request)
     {
-        try{
+        try {
             $tokenData = $request->bearerToken();
             $token = JWTAuth::parseToken()->authenticate();
-            $user=[
+            $user = [
                 // "id"=>$token->id,
-                "user"=>$token->user,
-                "perfil"=>$token->idPerfil,
-                "zonal"=>$token->zonal,
+                "user" => $token->user,
+                "perfil" => $token->idPerfil,
+                "zonal" => $token->zonal,
             ];
             return response()->json(["status" => Response::HTTP_OK, "message" => "token valido", "user" => $user], Response::HTTP_OK);
         } catch (\Throwable $th) {
@@ -82,35 +80,34 @@ class LoginController extends Controller
         }
     }
 
-    function createUser_new(Request $request){
-            try {
-                $userConsulta = User::where('user', $request->userName)->exists();
-                if ($userConsulta) {
-                    return response()->json(["status" => Response::HTTP_OK, "message" => "Usuario ".$request->userName." existe "], Response::HTTP_OK);
-                }
-                $createUser=new User();
-                $createUser->idPerfil = $request->idPerfil;
-                $createUser->user = $request->userName;
-                $createUser->password = bcrypt($request->password);
-                $createUser->zonal = $request->zonal;
-                $createUser->created_by = $request->created_by;
-                $createUser->created_at = now();
-                $createUser->updated_by = $request->updated_by;
-                $createUser->updated_at = now();
-                // $createUser->save();
-                if($createUser->save()){
-                $userData=[
-                    'user'=>$request->userName,
-                    'perfil'=>$request->idPerfil
+    function createUser_new(Request $request)
+    {
+        try {
+            $userConsulta = User::where('user', $request->userName)->exists();
+            if ($userConsulta) {
+                return response()->json(["status" => Response::HTTP_OK, "message" => "Usuario " . $request->userName . " existe "], Response::HTTP_OK);
+            }
+            $createUser = new User();
+            $createUser->idPerfil = $request->idPerfil;
+            $createUser->user = $request->userName;
+            $createUser->password = bcrypt($request->password);
+            $createUser->zonal = $request->zonal;
+            $createUser->created_by = $request->created_by;
+            $createUser->created_at = now();
+            $createUser->updated_by = $request->updated_by;
+            $createUser->updated_at = now();
+            // $createUser->save();
+            if ($createUser->save()) {
+                $userData = [
+                    'user' => $request->userName,
+                    'perfil' => $request->idPerfil
                 ];
                 return response()->json(["status" => Response::HTTP_OK, "message" => "usuario creado", "data_users" => $userData], Response::HTTP_OK);
-            } 
-                else {
-                    return response()->json(["status" => Response::HTTP_OK, "message" => "El usuario ".$userConsulta." no se puedo crear"], Response::HTTP_OK);
-                }
-            } catch (\Exception $ex) {
-                return response()->json(["status" => Response::HTTP_BAD_REQUEST, "message- " => $ex->getMessage()], Response::HTTP_BAD_REQUEST);
-                
+            } else {
+                return response()->json(["status" => Response::HTTP_OK, "message" => "El usuario " . $userConsulta . " no se puedo crear"], Response::HTTP_OK);
             }
+        } catch (\Exception $ex) {
+            return response()->json(["status" => Response::HTTP_BAD_REQUEST, "message- " => $ex->getMessage()], Response::HTTP_BAD_REQUEST);
         }
+    }
 }
