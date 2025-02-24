@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Controllers\LoginController;
 use App\Http\Controllers\Multimarca\AvanceDiarioController as MultimarcaAvanceDiarioController;
 use App\Http\Controllers\Pdv\AvanceDiarioController;
+use App\Http\Controllers\Admin\PerfilController;
 use Illuminate\Support\Facades\Route;
 
 
@@ -28,6 +29,12 @@ Route::middleware(['jwt.apiRest.jsMarket', 'jwt.user.admin'])->group(function ()
     Route::get('/api/v1/admin/deleteUser/{dni}', [GestorController::class, 'deleteUser'])->name('delete.user.api');
     Route::put('/api/v1/admin/updateUser/{dni}', [GestorController::class, 'updateDataUser'])->name('update.user.api');
     Route::get('/api/v1/admin/getListPerfil', [GestorController::class, 'getListPerfil'])->name('getListPerfil.user.api');
+
+    Route::get('/api/v1/admin/perfiles', [PerfilController::class, 'index'])->name('getListPerfil.perfil.api');
+    Route::post('/api/v1/admin/perfiles', [PerfilController::class, 'store'])->name('createPerfil.perfil.api');
+    Route::get('/api/v1/admin/perfiles/{idPerfil}', [PerfilController::class, 'show'])->name('getPerfil.perfil.api');
+    Route::put('/api/v1/admin/perfiles/{idPerfil}', [PerfilController::class, 'update'])->name('updatePerfil.perfil.api');
+    Route::delete('/api/v1/admin/perfiles/{idPerfil}', [PerfilController::class, 'destroy'])->name('deletePerfil.perfil.api');
 
 });
 Route::middleware(['jwt.apiRest.jsMarket', 'jwt.user.pdv'])->group(function () {
