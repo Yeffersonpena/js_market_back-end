@@ -107,27 +107,39 @@ pdv :
     "data": [
         {
             "id": 100497,
+            "año": "2025",
+            "mes": "1",
             "detalle": "Esquema sem 3 Enero",
             "estado": "Abono Inicial",
-            "total": 19
+            "total": 19,
+            "fecha abono": "24 y 25 Ene"
         },
         {
             "id": 101212,
+            "año": "2025",
+            "mes": "1",
             "detalle": "Incentivo 17-21.01 Rango 2",
             "estado": "Abono Inicial",
-            "total": 30
+            "total": 30,
+            "fecha abono": "24 y 25 Ene"
         },
         {
             "id": 106603,
+            "año": "2025",
+            "mes": "1",
             "detalle": "Esquema sem 3 Enero",
             "estado": "Abono Inicial",
-            "total": 19
+            "total": 19,
+            "fecha abono": "24 y 25 Ene"
         },
         {
             "id": 107318,
+            "año": "2025",
+            "mes": "1",
             "detalle": "Incentivo 17-21.01 Rango 2",
             "estado": "Abono Inicial",
-            "total": 30
+            "total": 30,
+            "fecha abono": "24 y 25 Ene"
         }
     ]
 }
