@@ -56,7 +56,7 @@ class LoginController extends Controller
             if ($userConsulta) {
                 return response()->json(["status" => Response::HTTP_OK, "message" => "El usuario " . $userExists . " existe ", "user" => $userConsulta], Response::HTTP_OK);
             } else {
-                return response()->json(["status" => Response::HTTP_OK, "message" => "El usuario " . $userExists . " no existe","data"=>[]], Response::HTTP_OK);
+                return response()->json(["status" => Response::HTTP_OK, "message" => "El usuario " . $userExists . " no existe", "data" => []], Response::HTTP_OK);
             }
         } catch (\Throwable $th) {
             return response()->json(["status" => Response::HTTP_BAD_REQUEST, "message" => $th], Response::HTTP_BAD_REQUEST);
@@ -79,31 +79,37 @@ class LoginController extends Controller
             return response()->json(["status" => Response::HTTP_BAD_REQUEST, "message" => $th], Response::HTTP_BAD_REQUEST);
         }
     }
-    function createUserSp(Request $request){
+    function createUserSp(Request $request)
+    {
         try {
-            $userConsulta = User::where('user', $request->userName)->exists();
+            $datosToken = JWTAuth::parseToken()->authenticate();
+            $userConsulta = User::where('user', $request->usuario)->exists();
             if ($userConsulta) {
-                return response()->json(["status" => Response::HTTP_OK, "message" => "El usuario " . $request->userName . " ya existe"], Response::HTTP_OK);
+                return response()->json(["status" => Response::HTTP_OK, "message" => "El usuario " . $request->usuario . " ya existe"], Response::HTTP_OK);
             }
-            $userData = DB::statement("EXEC paCrearUsuario ?, ?, ?, ?, ?", 
-            [$request->userName, $request->password, $request->idPerfil,  $request->zonal, $request->created_by]);
-            if($userData){
-            return response()->json(["status" => Response::HTTP_OK, "message" => "Se ejecuto exitosamente el Store Procedure"], Response::HTTP_OK);
+            $userData = DB::statement(
+                "EXEC paCrearUsuario ?, ?, ?, ?, ?",
+                [$request->usuario, $request->clave, $request->idPerfil,  $request->zonal,  $datosToken->user]
+            );
+            if ($userData) {
+                return response()->json(["status" => Response::HTTP_OK, "message" => "Se ejecuto exitosamente el Store Procedure"], Response::HTTP_OK);
             } else {
-                return response()->json(["status" => Response::HTTP_OK, "message" => "No se pudo ejecutar el Store Procedure" ], Response::HTTP_OK);
-            } 
+                return response()->json(["status" => Response::HTTP_OK, "message" => "No se pudo ejecutar el Store Procedure"], Response::HTTP_OK);
+            }
         } catch (\Exception $ex) {
             return response()->json(["status" => Response::HTTP_BAD_REQUEST, "message" => $ex->getMessage()], Response::HTTP_BAD_REQUEST);
         }
     }
-    function createUserAll(){
+
+    function createUserAll()
+    {
         try {
             $createUserList = DB::statement("EXEC paRegistrarUsuariosMasivo");
-            if($createUserList){
-            return response()->json(["status" => Response::HTTP_OK, "message" => "Se ejecuto exitosamente la creación de todo los usuario del excel entregable"], Response::HTTP_OK);
+            if ($createUserList) {
+                return response()->json(["status" => Response::HTTP_OK, "message" => "Se ejecuto exitosamente la creación de todo los usuario del excel entregable"], Response::HTTP_OK);
             } else {
-                return response()->json(["status" => Response::HTTP_OK, "message" => "No se pudo ejecutar el Store Procedure" ], Response::HTTP_OK);
-            } 
+                return response()->json(["status" => Response::HTTP_OK, "message" => "No se pudo ejecutar el Store Procedure"], Response::HTTP_OK);
+            }
         } catch (\Exception $ex) {
             return response()->json(["status" => Response::HTTP_BAD_REQUEST, "message" => $ex->getMessage()], Response::HTTP_BAD_REQUEST);
         }

@@ -18,16 +18,16 @@ Route::get('/api/v1/users/validation-user/{user}', [LoginController::class, 'val
 
 Route::middleware(['jwt.apiRest.jsMarket'])->group(function () {
     Route::get('/api/v1/users/view-token-user', [LoginController::class, 'viewToken'])->name('viewPerfil.user.api');
-    
+    Route::patch('/api/v1/users/actualizar-clave', [GestorController::class, 'actualizaClave'])->name('actualizaClave.user.api');
 });
 
 
 Route::middleware(['jwt.apiRest.jsMarket', 'jwt.user.admin'])->group(function () {
-    Route::post('/api/v1/admin/create-user', [LoginController::class, 'createUserSp'])->name('create.user.api');
+    Route::post('/api/v1/users', [LoginController::class, 'createUserSp'])->name('create.user.api');
     Route::get('/api/v1/admin/create-userAllSp', [LoginController::class, 'createUserAll'])->name('createAll.user.api');
     Route::get('/api/v1/users/getListUser', [GestorController::class, 'getListUser'])->name('getListUser.user.api');
     Route::get('/api/v1/admin/deleteUser/{dni}', [GestorController::class, 'deleteUser'])->name('delete.user.api');
-    Route::put('/api/v1/admin/updateUser/{dni}', [GestorController::class, 'updateDataUser'])->name('update.user.api');
+    Route::put('/api/v1/users/{dni}', [GestorController::class, 'updateDataUser'])->name('update.user.api');
     Route::get('/api/v1/admin/getListPerfil', [GestorController::class, 'getListPerfil'])->name('getListPerfil.user.api');
 
     Route::get('/api/v1/admin/perfiles', [PerfilController::class, 'index'])->name('getListPerfil.perfil.api');
