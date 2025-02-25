@@ -7,6 +7,7 @@ use App\Http\Controllers\LoginController;
 use App\Http\Controllers\Multimarca\AvanceDiarioController as MultimarcaAvanceDiarioController;
 use App\Http\Controllers\Pdv\AvanceDiarioController;
 use App\Http\Controllers\Admin\PerfilController;
+use App\Http\Controllers\Admin\ImagenController;
 use Illuminate\Support\Facades\Route;
 
 
@@ -35,6 +36,10 @@ Route::middleware(['jwt.apiRest.jsMarket', 'jwt.user.admin'])->group(function ()
     Route::get('/api/v1/admin/perfiles/{idPerfil}', [PerfilController::class, 'show'])->name('getPerfil.perfil.api');
     Route::put('/api/v1/admin/perfiles/{idPerfil}', [PerfilController::class, 'update'])->name('updatePerfil.perfil.api');
     Route::delete('/api/v1/admin/perfiles/{idPerfil}', [PerfilController::class, 'destroy'])->name('deletePerfil.perfil.api');
+
+    Route::get('/api/v1/imagenes', [ImagenController::class, 'getPaginatedData'])->name('getPaginatedData.imagen.api');
+    Route::post('/api/v1/imagenes', [ImagenController::class, 'upload'])->name('upload.imagen.api');
+    Route::delete('/api/v1/imagenes/{id}', [ImagenController::class, 'deleteImage'])->name('delete.imagen.api');
 
 });
 Route::middleware(['jwt.apiRest.jsMarket', 'jwt.user.pdv'])->group(function () {
