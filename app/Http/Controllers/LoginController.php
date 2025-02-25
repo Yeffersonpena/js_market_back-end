@@ -54,9 +54,9 @@ class LoginController extends Controller
         try {
             $userConsulta = User::where('user', $userExists)->exists();
             if ($userConsulta) {
-                return response()->json(["status" => Response::HTTP_OK, "message" => "Usuario " . $userExists . " existe ", "user" => $userConsulta], Response::HTTP_OK);
+                return response()->json(["status" => Response::HTTP_OK, "message" => "El usuario " . $userExists . " existe ", "user" => $userConsulta], Response::HTTP_OK);
             } else {
-                return response()->json(["status" => Response::HTTP_OK, "message" => "Usuario " . $userExists . " no existe"], Response::HTTP_OK);
+                return response()->json(["status" => Response::HTTP_OK, "message" => "El usuario " . $userExists . " no existe","data"=>[]], Response::HTTP_OK);
             }
         } catch (\Throwable $th) {
             return response()->json(["status" => Response::HTTP_BAD_REQUEST, "message" => $th], Response::HTTP_BAD_REQUEST);
