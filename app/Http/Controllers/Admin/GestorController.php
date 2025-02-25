@@ -65,13 +65,13 @@ class GestorController extends Controller
         try {
             $existeUser = User::where('user', '=', $dni)->exists();
             if ($existeUser) {
-                $updateUser = User::where('user', '=', $dni)->first();
-                $updateUser->idPerfil = $request->idPerfil;
-                $updateUser->password = bcrypt($request->password);
-                $updateUser->zonal = $request->zonal;
-                $updateUser->updated_by = $request->updated_by;
-                $updateUser->updated_at = now();
-                $updateUser->save();
+                // $updateUser = User::where('user', '=', $dni)->first();
+                // $updateUser->idPerfil = $request->idPerfil;
+                // $updateUser->password = bcrypt($request->password);
+                // $updateUser->zonal = $request->zonal;
+                // $updateUser->updated_by = $request->updated_by;
+                // $updateUser->updated_at = now();
+                // $updateUser->save();
                 return response()->json(["status" => Response::HTTP_OK, "message" => "Se actualizo los datos del usuario " . $dni], Response::HTTP_OK);
             } else {
                 return response()->json(["status" => Response::HTTP_OK, "message" => "El usuario no existe"], Response::HTTP_OK);

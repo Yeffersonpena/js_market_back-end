@@ -101,7 +101,7 @@ class AvanceDiarioController extends Controller
                 ];
             return response()->json(["status" => Response::HTTP_OK, "message" => "Información", "data"=>$infoVendedor ], Response::HTTP_OK);
         } else {
-            return response()->json(["status" => Response::HTTP_OK, "message" => "No hay información"], Response::HTTP_OK);
+            return response()->json(["status" => Response::HTTP_OK, "message" => "No hay información","data"=>[]], Response::HTTP_OK);
         }
         } catch (\Exception $ex) {
             return response()->json(["status" => Response::HTTP_BAD_REQUEST,"message" => $ex->getMessage()], Response::HTTP_BAD_REQUEST);
