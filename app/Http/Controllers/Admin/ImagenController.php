@@ -86,4 +86,35 @@ class ImagenController extends Controller
         $imagen->delete();
         return response()->json(['message' => 'Imagen eliminada correctamente']);
     }
+
+    public function update(Request $request, $id): JsonResponse
+    {
+        if (!$request->hasFile('image')) {
+            return response()->json([
+                'message' => 'No se recibió ninguna imagen en la petición',
+            ], 400);
+        }
+        $request->validate([
+            'image' => 'required|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
+        ]);
+        $imagen = PDVOutImagen::find($id);
+        if (!$imagen) {
+            return response()->json(['message' => 'Imagen no encontrada'], 404);
+        }
+        $oldFilePath = 'public/img/' . $imagen->nombre_imagen;
+        if (Storage::exists($oldFilePath)) {
+            Storage::delete($oldFilePath);
+        }
+        $filename = $request->file('image')->getClientOriginalName();
+        $request->file('image')->storeAs('img', $filename, 'public');
+        $imagen->update([
+            'nombre_imagen' => $filename,
+            'fecha_modificacion' => Carbon::now(),
+        ]);
+        $imageUrl = env('APP_DOMAIN') . '/storage/img/' . $filename;
+        return response()->json([
+            'message' => 'Imagen actualizada exitosamente',
+            'url' => $imageUrl,
+        ]);
+    }
 }
