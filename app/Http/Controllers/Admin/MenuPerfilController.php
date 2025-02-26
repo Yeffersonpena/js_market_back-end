@@ -52,11 +52,12 @@ class MenuPerfilController extends Controller
             ->where('tbl_menu_perfil.idPerfil', $datosToken->idPerfil)
             ->orderBy('tbl_menu.orden')
             ->select([
-                'tbl_menu.idMenu as id',
-                'tbl_menu.menu',
+                'tbl_menu.idMenu',
+                'tbl_menu.nombre as menu',
                 'tbl_menu.ruta',
                 'tbl_menu.icono',
-                'tbl_menu.orden'
+                'tbl_menu.orden',
+                'tbl_menu.componente',
             ])
             ->get();
         return response()->json($menus);
