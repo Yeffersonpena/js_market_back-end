@@ -29,7 +29,7 @@ class ImagenController extends Controller
                         'id' => $item->id,
                         'nombre_imagen' => $item->nombre_imagen,
                         'fecha_modificacion' => $item->fecha_modificacion,
-                        'ruta_imagen' =>env('APP_DOMAIN').'/storage/img/'.$item->nombre_imagen,
+                        'ruta_imagen' => env('APP_DOMAIN') . '/storage/img/' . $item->nombre_imagen,
                     ];
                 }, $data);
                 return response()->json([
@@ -58,16 +58,17 @@ class ImagenController extends Controller
         $request->validate([
             'image' => 'required|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
         ]);
-        $path = $request->file('image')->store('images', 'public');
+        $path = $request->file('image')->store('img', 'public');
         $filename = basename($path);
         PDVOutImagen::create([
             'nombre_imagen' => $filename,
             'fecha_modificacion' => Carbon::now(),
         ]);
 
+        $imageUrl = env('APP_DOMAIN') . '/storage/img/' . $filename;
         return response()->json([
             'message' => 'Imagen subida exitosamente',
-            'url' => Storage::url($path),
+            'url' => $imageUrl,
         ]);
     }
 
