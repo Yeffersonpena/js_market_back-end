@@ -58,8 +58,9 @@ class ImagenController extends Controller
         $request->validate([
             'image' => 'required|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
         ]);
-        $path = $request->file('image')->store('img', 'public');
-        $filename = basename($path);
+        $filename = $request->file('image')->getClientOriginalName();
+        $request->file('image')->storeAs('img', $filename, 'public');
+
         PDVOutImagen::create([
             'nombre_imagen' => $filename,
             'fecha_modificacion' => Carbon::now(),
@@ -72,21 +73,17 @@ class ImagenController extends Controller
         ]);
     }
 
-    public function deleteImage($id)
+    public function delete($id): JsonResponse
     {
         $imagen = PDVOutImagen::find($id);
-
         if (!$imagen) {
             return response()->json(['message' => 'Imagen no encontrada'], 404);
         }
-
-        $imagePath = 'public/uploads/' . $imagen->nombre_imagen;
-        if (Storage::exists($imagePath)) {
-            Storage::delete($imagePath);
+        $filePath = 'public/img/' . $imagen->nombre_imagen;
+        if (Storage::exists($filePath)) {
+            Storage::delete($filePath);
         }
-
         $imagen->delete();
-
-        return response()->json(['message' => 'Imagen eliminada exitosamente'], 200);
+        return response()->json(['message' => 'Imagen eliminada correctamente']);
     }
 }
