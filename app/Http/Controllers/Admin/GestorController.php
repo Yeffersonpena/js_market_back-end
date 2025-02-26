@@ -11,6 +11,7 @@ use Symfony\Component\HttpFoundation\Response;
 use Tymon\JWTAuth\Facades\JWTAuth;
 use Tymon\JWTAuth\Exceptions\JWTException;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 
 class GestorController extends Controller
 {
@@ -111,6 +112,66 @@ class GestorController extends Controller
                 return response()->json(["status" => Response::HTTP_OK, "message" => "No se pudo actualizar la clave"], Response::HTTP_OK);
             }
         } catch (\Exception $ex) {
+            return response()->json(["status" => Response::HTTP_BAD_REQUEST, "message" => $ex->getMessage()], Response::HTTP_BAD_REQUEST);
+        }
+    }
+
+    function loadEntregable(Request $request){
+        try{
+            if ($request->hasFile('file_entregable') && $request->file('file_entregable')->isValid()) {
+                $file = $request->file('file_entregable');
+                $fileName = 'Entregable'.'.'.$file->getClientOriginalExtension();
+                $pathEntregable='public/file_xlsx/'.$fileName;
+                Storage::exists($pathEntregable)? Storage::delete($pathEntregable):false;
+                $path = $file->storeAs('public/file_xlsx', $fileName);
+                if($path){
+                    // server 
+                    $loadEntregable=DB::select("EXEC spLoadFileEntregable");
+                    if ($loadEntregable) {
+                        return response()->json(["status" => Response::HTTP_OK, "message" => "Se ejecuto exitosamente la carga del archivo entregable"], Response::HTTP_OK);
+                    } else {
+                        return response()->json(["status" => Response::HTTP_OK, "message" => "No se pudo ejecutar el Store Procedure spLoadFileEntregable"], Response::HTTP_OK);
+                    }
+                }
+                return response()->json([ "status" => Response::HTTP_OK, "message" => "Carga de archivo entregable", "file_path" => Storage::url($path),
+                    "name_file"=>$fileName
+                ]);
+
+            }else{
+                return response()->json(["status" => Response::HTTP_BAD_REQUEST, "message" => "Problema al cargar el archivo entregable"], Response::HTTP_BAD_REQUEST);
+            }
+            return $request->all();
+        }catch(\Exception $ex){
+            return response()->json(["status" => Response::HTTP_BAD_REQUEST, "message" => $ex->getMessage()], Response::HTTP_BAD_REQUEST);
+        }
+    }
+    
+    function loadFunnel(Request $request){
+        try{
+            if ($request->hasFile('file_funnel') && $request->file('file_funnel')->isValid()) {
+                $file = $request->file('file_funnel');
+                $fileName = 'Funnel'.'.'.$file->getClientOriginalExtension();
+                $pathFunnel='public/file_xlsx/'.$fileName;
+                Storage::exists($pathFunnel)? Storage::delete($pathFunnel):false;
+                $path = $file->storeAs('public/file_xlsx', $fileName);
+                if($path){
+                    // server 
+                    $loadEntregable=DB::select("EXEC spLoadFileFunnel");
+                    if ($loadEntregable) {
+                        return response()->json(["status" => Response::HTTP_OK, "message" => "Se ejecuto exitosamente la carga del archivo funnel"], Response::HTTP_OK);
+                    } else {
+                        return response()->json(["status" => Response::HTTP_OK, "message" => "No se pudo ejecutar el Store Procedure spLoadFileFunnel"], Response::HTTP_OK);
+                    }
+                }
+                return response()->json([ "status" => Response::HTTP_OK, "message" => "Carga de archivo Funnel", "file_path" => Storage::url($path),
+                    "name_file"=>$fileName
+                ]);
+
+            }else{
+                return response()->json(["status" => Response::HTTP_BAD_REQUEST, "message" => "Problema al cargar el archivo Funnel"], Response::HTTP_BAD_REQUEST);
+            }
+            return $request->all();
+        }catch(\Exception $ex){
             return response()->json(["status" => Response::HTTP_BAD_REQUEST, "message" => $ex->getMessage()], Response::HTTP_BAD_REQUEST);
         }
     }

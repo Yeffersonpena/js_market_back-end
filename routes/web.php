@@ -42,6 +42,8 @@ Route::middleware(['jwt.apiRest.jsMarket', 'jwt.user.admin'])->group(function ()
     Route::post('/api/v1/imagenes/actualiza/{id}', [ImagenController::class, 'update'])->name('update.imagen.api');
     Route::delete('/api/v1/imagenes/{id}', [ImagenController::class, 'delete'])->name('delete.imagen.api');
 
+    Route::post('/api/v1/admin/updateEntregable', [GestorController::class, 'loadEntregable'])->name('entregable.carga.api');
+    Route::post('/api/v1/admin/updateFunnel', [GestorController::class, 'loadFunnel'])->name('funnel.carga.api');
 });
 Route::middleware(['jwt.apiRest.jsMarket', 'jwt.user.pdv'])->group(function () {
     Route::get('/api/v1/pdv/getDataPdv/{dni}/{anio}/{mes}', [AvanceDiarioController::class, 'getDataPdv'])->name('getDataPdv.user.api');
