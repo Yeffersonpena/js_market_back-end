@@ -8,6 +8,7 @@ use App\Http\Controllers\Multimarca\AvanceDiarioController as MultimarcaAvanceDi
 use App\Http\Controllers\Pdv\AvanceDiarioController;
 use App\Http\Controllers\Admin\PerfilController;
 use App\Http\Controllers\Admin\ImagenController;
+use App\Http\Controllers\Admin\MenuPerfilController;
 use Illuminate\Support\Facades\Route;
 
 
@@ -44,6 +45,12 @@ Route::middleware(['jwt.apiRest.jsMarket', 'jwt.user.admin'])->group(function ()
 
     Route::post('/api/v1/admin/updateEntregable', [GestorController::class, 'loadEntregable'])->name('entregable.carga.api');
     Route::post('/api/v1/admin/updateFunnel', [GestorController::class, 'loadFunnel'])->name('funnel.carga.api');
+
+    Route::get('/api/v1/menu-perfil/asignados/{idPerfil}', [MenuPerfilController::class, 'obtenerMenusAsignados']);
+    Route::get('/api/v1/menu-perfil/no-asignados/{idPerfil}', [MenuPerfilController::class, 'obtenerMenusNoAsignados']);
+    Route::get('/api/v1/menu-perfil/permisos', [MenuPerfilController::class, 'getPermisosPerfil']);
+    Route::post('/api/v1/menu-perfil', [MenuPerfilController::class, 'asignarMenu']);
+    Route::delete('/api/v1/menu-perfil/{idMenuPerfil}', [MenuPerfilController::class, 'eliminarMenu']);
 });
 Route::middleware(['jwt.apiRest.jsMarket', 'jwt.user.pdv'])->group(function () {
     Route::get('/api/v1/pdv/getDataPdv/{dni}/{anio}/{mes}', [AvanceDiarioController::class, 'getDataPdv'])->name('getDataPdv.user.api');
