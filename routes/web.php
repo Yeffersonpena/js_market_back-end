@@ -9,14 +9,15 @@ use App\Http\Controllers\Pdv\AvanceDiarioController;
 use App\Http\Controllers\Admin\PerfilController;
 use App\Http\Controllers\Admin\ImagenController;
 use App\Http\Controllers\Admin\MenuPerfilController;
+use App\Http\Controllers\Admin\ImportacionController;
 use Illuminate\Support\Facades\Route;
 
 
 Route::post('/api/v1/users/login', [LoginController::class, 'loginLocalUser'])->name('login.user.api');
 Route::get('/api/v1/users/validation-user/{user}', [LoginController::class, 'validarUser'])->name('validation.user.api');
-Route::get('/api/v1/users/testServer', function (){
-return response()->json(["status"=>200, "message"=>"server start"]);
-} );
+Route::get('/api/v1/users/testServer', function () {
+    return response()->json(["status" => 200, "message" => "server start"]);
+});
 
 // Route::get('/users/create-user', [Controller::class, 'createUser'])->name('create.user.api');
 
@@ -54,6 +55,8 @@ Route::middleware(['jwt.apiRest.jsMarket', 'jwt.user.admin'])->group(function ()
     Route::get('/api/v1/menu-perfil/no-asignados/{idPerfil}', [MenuPerfilController::class, 'obtenerMenusNoAsignados']);
     Route::post('/api/v1/menu-perfil', [MenuPerfilController::class, 'asignarMenu']);
     Route::delete('/api/v1/menu-perfil/{idMenuPerfil}', [MenuPerfilController::class, 'eliminarMenu']);
+
+    Route::get('/api/v1/importaciones/hoy', [ImportacionController::class, 'getLogActual']);
 });
 Route::middleware(['jwt.apiRest.jsMarket', 'jwt.user.pdv'])->group(function () {
     Route::get('/api/v1/pdv/getDataPdv/{dni}/{anio}/{mes}', [AvanceDiarioController::class, 'getDataPdv'])->name('getDataPdv.user.api');
@@ -62,7 +65,6 @@ Route::middleware(['jwt.apiRest.jsMarket', 'jwt.user.pdv'])->group(function () {
     Route::get('/api/v1/pdv/getHistoryVenta/{dni}/{anio}/{mes}', [LogicController::class, 'getHistoryVenta'])->name('history.user.api');
     Route::get('/api/v1/pdv/getAllMonto/{dni}/{anio}/{mes}', [AvanceDiarioController::class, 'getAllMonto'])->name('getAllMonto.user.api');
     Route::get('/api/v1/pdv/getFlyers/{dni}/{anio}/{mes}', [LogicController::class, 'getFlyers'])->name('flyers.user.api');
-
 });
 Route::middleware(['jwt.apiRest.jsMarket', 'jwt.user.multimarca'])->group(function () {
     Route::get('/api/v1/multimarca/getDataMM/{dni}/{anio}/{mes}', [LogicController::class, 'getDataMM'])->name('getDataMM.user.api');
@@ -71,5 +73,4 @@ Route::middleware(['jwt.apiRest.jsMarket', 'jwt.user.multimarca'])->group(functi
     Route::get('/api/v1/multimarca/getAbono/{dni}/{anio}/{mes}', [LogicController::class, 'getAbono'])->name('flyers.user.api');
     // Route::get('/api/v1/multimarca/getAbono/{dni}/{anio}/{mes}', [LogicController::class, 'getAbono'])->name('flyers.user.api');
     Route::get('/api/v1/multimarca/getHistoryVenta/{dni}/{anio}/{mes}', [LogicController::class, 'getHistoryVenta'])->name('history.user.api');
-    
 });
