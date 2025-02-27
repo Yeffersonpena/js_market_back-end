@@ -117,55 +117,55 @@ class GestorController extends Controller
     }
 
     function loadEntregable(Request $request){
-        try{
+        try {
             if ($request->hasFile('file_entregable') && $request->file('file_entregable')->isValid()) {
                 $file = $request->file('file_entregable');
-                $fileName = 'Entregable'.'.'.$file->getClientOriginalExtension();
-                $pathEntregable='public/file_xlsx/'.$fileName;
-                Storage::exists($pathEntregable)? Storage::delete($pathEntregable):false;
-                $path = $file->storeAs('public/file_xlsx', $fileName);
-                if($path){
+                $fileName = 'Entregable' . '.' . $file->getClientOriginalExtension();
+                $pathEntregable = 'file_xlsx/' . $fileName;
+                Storage::exists($pathEntregable) ? Storage::delete($pathEntregable) : false;
+                $path = $file->storeAs('file_xlsx', $fileName);
+                if ($path) {
                     // server 
-                    $loadEntregable=DB::select("EXEC spLoadFileEntregable");
-                    if ($loadEntregable) {
-                        return response()->json(["status" => Response::HTTP_OK, "message" => "Se ejecuto exitosamente la carga del archivo entregable"], Response::HTTP_OK);
-                    } else {
-                        return response()->json(["status" => Response::HTTP_OK, "message" => "No se pudo ejecutar el Store Procedure spLoadFileEntregable"], Response::HTTP_OK);
-                    }
+                    // $pathAllEntregable=env("PATH_LOAD_XLSX").$fileName;
+                    // $loadEntregable=DB::select("EXEC spLoadFileEntregable ?", [$pathAllEntregable]);
+                    $loadEntregable = DB::statement("EXEC spLoadFileEntregable");
+                        if ($loadEntregable) {
+                            return response()->json(["status" => Response::HTTP_OK, "message" => "Se ejecuto exitosamente la carga del archivo entregable"], Response::HTTP_OK);
+                        } else {
+                            return response()->json(["status" => Response::HTTP_OK, "message" => "No se pudo ejecutar el Store Procedure spLoadFileEntregable"], Response::HTTP_OK);
+                        }
                 }
-                return response()->json([ "status" => Response::HTTP_OK, "message" => "Carga de archivo entregable", "file_path" => Storage::url($path),
-                    "name_file"=>$fileName
-                ]);
-
-            }else{
+            } else {
                 return response()->json(["status" => Response::HTTP_BAD_REQUEST, "message" => "Problema al cargar el archivo entregable"], Response::HTTP_BAD_REQUEST);
             }
             return $request->all();
-        }catch(\Exception $ex){
+        } catch (\Exception $ex) {
             return response()->json(["status" => Response::HTTP_BAD_REQUEST, "message" => $ex->getMessage()], Response::HTTP_BAD_REQUEST);
         }
     }
     
     function loadFunnel(Request $request){
         try{
+            $request->validate([
+                'file_funnel' => 'required|file|max:51200',
+            ]);
             if ($request->hasFile('file_funnel') && $request->file('file_funnel')->isValid()) {
                 $file = $request->file('file_funnel');
                 $fileName = 'Funnel'.'.'.$file->getClientOriginalExtension();
-                $pathFunnel='public/file_xlsx/'.$fileName;
+                $pathFunnel='file_xlsx/'.$fileName;
                 Storage::exists($pathFunnel)? Storage::delete($pathFunnel):false;
-                $path = $file->storeAs('public/file_xlsx', $fileName);
+                $path = $file->storeAs('file_xlsx', $fileName);
                 if($path){
-                    // server 
-                    $loadEntregable=DB::select("EXEC spLoadFileFunnel");
+                    $loadEntregable=DB::statement("EXEC spLoadFileFunnel");
                     if ($loadEntregable) {
                         return response()->json(["status" => Response::HTTP_OK, "message" => "Se ejecuto exitosamente la carga del archivo funnel"], Response::HTTP_OK);
                     } else {
                         return response()->json(["status" => Response::HTTP_OK, "message" => "No se pudo ejecutar el Store Procedure spLoadFileFunnel"], Response::HTTP_OK);
                     }
                 }
-                return response()->json([ "status" => Response::HTTP_OK, "message" => "Carga de archivo Funnel", "file_path" => Storage::url($path),
-                    "name_file"=>$fileName
-                ]);
+                // return response()->json([ "status" => Response::HTTP_OK, "message" => "Carga de archivo Funnel", "file_path" => Storage::url($path),
+                //     "name_file"=>$fileName
+                // ]);
 
             }else{
                 return response()->json(["status" => Response::HTTP_BAD_REQUEST, "message" => "Problema al cargar el archivo Funnel"], Response::HTTP_BAD_REQUEST);
