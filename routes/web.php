@@ -27,7 +27,7 @@ Route::middleware(['jwt.apiRest.jsMarket'])->group(function () {
 
 Route::middleware(['jwt.apiRest.jsMarket', 'jwt.user.admin'])->group(function () {
     Route::post('/api/v1/users', [LoginController::class, 'createUserSp'])->name('create.user.api');
-    Route::get('/api/v1/admin/create-userAllSp', [LoginController::class, 'createUserAll'])->name('createAll.user.api');
+    Route::post('/api/v1/users/registro-masivo', [LoginController::class, 'createUserAll'])->name('createAll.user.api');
     Route::get('/api/v1/users/getListUser', [GestorController::class, 'getListUser'])->name('getListUser.user.api');
     Route::get('/api/v1/admin/deleteUser/{dni}', [GestorController::class, 'deleteUser'])->name('delete.user.api');
     Route::put('/api/v1/users/{dni}', [GestorController::class, 'updateDataUser'])->name('update.user.api');
