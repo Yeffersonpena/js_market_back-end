@@ -14,6 +14,9 @@ use Illuminate\Support\Facades\Route;
 
 Route::post('/api/v1/users/login', [LoginController::class, 'loginLocalUser'])->name('login.user.api');
 Route::get('/api/v1/users/validation-user/{user}', [LoginController::class, 'validarUser'])->name('validation.user.api');
+Route::get('/api/v1/users/testServer', function (){
+return response()->json(["status"=>200, "message"=>"server start"]);
+} );
 
 // Route::get('/users/create-user', [Controller::class, 'createUser'])->name('create.user.api');
 
@@ -44,8 +47,8 @@ Route::middleware(['jwt.apiRest.jsMarket', 'jwt.user.admin'])->group(function ()
     Route::post('/api/v1/imagenes/actualiza/{id}', [ImagenController::class, 'update'])->name('update.imagen.api');
     Route::delete('/api/v1/imagenes/{id}', [ImagenController::class, 'delete'])->name('delete.imagen.api');
 
-    Route::post('/api/v1/admin/updateEntregable', [GestorController::class, 'loadEntregable'])->name('entregable.carga.api');
-    Route::post('/api/v1/admin/updateFunnel', [GestorController::class, 'loadFunnel'])->name('funnel.carga.api');
+    Route::post('/api/v1/admin/updateFileSp', [GestorController::class, 'loadFileSp'])->name('fileSp.carga.api');
+    // Route::post('/api/v1/admin/updateFunnel', [GestorController::class, 'loadFunnel'])->name('funnel.carga.api');
 
     Route::get('/api/v1/menu-perfil/asignados/{idPerfil}', [MenuPerfilController::class, 'obtenerMenusAsignados']);
     Route::get('/api/v1/menu-perfil/no-asignados/{idPerfil}', [MenuPerfilController::class, 'obtenerMenusNoAsignados']);

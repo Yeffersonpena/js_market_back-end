@@ -3,15 +3,19 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\HistoryStoreProcedure;
 use App\Models\Perfil;
 use App\Models\User;
 use App\Models\ViewUser;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 use Symfony\Component\HttpFoundation\Response;
 use Tymon\JWTAuth\Facades\JWTAuth;
 use Tymon\JWTAuth\Exceptions\JWTException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
+
+use function Laravel\Prompts\select;
 
 class GestorController extends Controller
 {
@@ -116,7 +120,7 @@ class GestorController extends Controller
         }
     }
 
-    function loadEntregable(Request $request){
+    function loadFileSp(Request $request){
         try {
             $request->validate([
                 'typeSp' => 'required|integer|min:1|max:12',
@@ -140,12 +144,18 @@ class GestorController extends Controller
 
             $nameSp=$mapingSp[$request->typeSp] ?? "";
             $msgAlertFile=$msgAlert[$request->typeSp] ?? "";
-            $loadEntregable = DB::statement("EXEC $nameSp");
+            // sp
+            $fechaHoy = Carbon::now()->toDateString();
+            $validateSp=HistoryStoreProcedure::where('nombre_procedimiento','=', $nameSp)->whereDate('fecha_hora_registro', $fechaHoy)->exists();
+            if(!($validateSp)){
+                $loadEntregable = DB::statement("EXEC $nameSp");
                 if ($loadEntregable) {
                     return response()->json(["status" => Response::HTTP_OK, "message" => "Se ejecuto exitosamente la carga del archivo {$msgAlertFile}"], Response::HTTP_OK);
                 } else {
                     return response()->json(["status" => Response::HTTP_OK, "message" => "No se pudo ejecutar el Store Procedure {$mapingSp}"], Response::HTTP_OK);
                 }
+            }
+            return response()->json(["status" => Response::HTTP_OK, "message" => "El archivo {$msgAlertFile} ya se ejecuto el dia de hoy"], Response::HTTP_OK);
             // return response()->json(["status" => Response::HTTP_OK, "message" => $nameSp], Response::HTTP_OK);
             
             // if ($request->hasFile('file_entregable') && $request->file('file_entregable')->isValid()) {
