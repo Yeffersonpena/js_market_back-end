@@ -118,27 +118,56 @@ class GestorController extends Controller
 
     function loadEntregable(Request $request){
         try {
-            if ($request->hasFile('file_entregable') && $request->file('file_entregable')->isValid()) {
-                $file = $request->file('file_entregable');
-                $fileName = 'Entregable' . '.' . $file->getClientOriginalExtension();
-                $pathEntregable = 'file_xlsx/' . $fileName;
-                Storage::exists($pathEntregable) ? Storage::delete($pathEntregable) : false;
-                $path = $file->storeAs('file_xlsx', $fileName);
-                if ($path) {
-                    // server 
-                    // $pathAllEntregable=env("PATH_LOAD_XLSX").$fileName;
-                    // $loadEntregable=DB::select("EXEC spLoadFileEntregable ?", [$pathAllEntregable]);
-                    $loadEntregable = DB::statement("EXEC spLoadFileEntregable");
-                        if ($loadEntregable) {
-                            return response()->json(["status" => Response::HTTP_OK, "message" => "Se ejecuto exitosamente la carga del archivo entregable"], Response::HTTP_OK);
-                        } else {
-                            return response()->json(["status" => Response::HTTP_OK, "message" => "No se pudo ejecutar el Store Procedure spLoadFileEntregable"], Response::HTTP_OK);
-                        }
+            $request->validate([
+                'typeSp' => 'required|integer|min:1|max:12',
+            ]);
+            $mapingSp=[
+                1 => "spLoadFileEntregable",
+                2 => "spLoadFileFunnel",
+                3 => "spLoadFileAbono",
+                4 => "spLoadFileAvanceDiario",
+                5 => "spLoadFileEsquema",
+                6 => "spLoadFileMesaAyuda",
+            ];
+            $msgAlert=[
+                1 => "entregable",
+                2 => "funnel",
+                3 => "abono",
+                4 => "avance diario",
+                5 => "esquema",
+                6 => "mesa de ayuda",
+            ];
+
+            $nameSp=$mapingSp[$request->typeSp] ?? "";
+            $msgAlertFile=$msgAlert[$request->typeSp] ?? "";
+            $loadEntregable = DB::statement("EXEC $nameSp");
+                if ($loadEntregable) {
+                    return response()->json(["status" => Response::HTTP_OK, "message" => "Se ejecuto exitosamente la carga del archivo {$msgAlertFile}"], Response::HTTP_OK);
+                } else {
+                    return response()->json(["status" => Response::HTTP_OK, "message" => "No se pudo ejecutar el Store Procedure {$mapingSp}"], Response::HTTP_OK);
                 }
-            } else {
-                return response()->json(["status" => Response::HTTP_BAD_REQUEST, "message" => "Problema al cargar el archivo entregable"], Response::HTTP_BAD_REQUEST);
-            }
-            return $request->all();
+            // return response()->json(["status" => Response::HTTP_OK, "message" => $nameSp], Response::HTTP_OK);
+            
+            // if ($request->hasFile('file_entregable') && $request->file('file_entregable')->isValid()) {
+            //     $file = $request->file('file_entregable');
+            //     $fileName = 'Entregable' . '.' . $file->getClientOriginalExtension();
+            //     $pathEntregable = 'file_xlsx/' . $fileName;
+            //     Storage::exists($pathEntregable) ? Storage::delete($pathEntregable) : false;
+            //     $path = $file->storeAs('file_xlsx', $fileName);
+            //     if ($path) {
+            //         // server 
+            //         // $pathAllEntregable=env("PATH_LOAD_XLSX").$fileName;
+            //         // $loadEntregable=DB::select("EXEC spLoadFileEntregable ?", [$pathAllEntregable]);
+            //         $loadEntregable = DB::statement("EXEC spLoadFileEntregable");
+            //             if ($loadEntregable) {
+            //                 return response()->json(["status" => Response::HTTP_OK, "message" => "Se ejecuto exitosamente la carga del archivo entregable"], Response::HTTP_OK);
+            //             } else {
+            //                 return response()->json(["status" => Response::HTTP_OK, "message" => "No se pudo ejecutar el Store Procedure spLoadFileEntregable"], Response::HTTP_OK);
+            //             }
+            //     }
+            // } else {
+            //     return response()->json(["status" => Response::HTTP_BAD_REQUEST, "message" => "Problema al cargar el archivo entregable"], Response::HTTP_BAD_REQUEST);
+            // }
         } catch (\Exception $ex) {
             return response()->json(["status" => Response::HTTP_BAD_REQUEST, "message" => $ex->getMessage()], Response::HTTP_BAD_REQUEST);
         }
@@ -170,7 +199,6 @@ class GestorController extends Controller
             }else{
                 return response()->json(["status" => Response::HTTP_BAD_REQUEST, "message" => "Problema al cargar el archivo Funnel"], Response::HTTP_BAD_REQUEST);
             }
-            return $request->all();
         }catch(\Exception $ex){
             return response()->json(["status" => Response::HTTP_BAD_REQUEST, "message" => $ex->getMessage()], Response::HTTP_BAD_REQUEST);
         }
