@@ -1,5 +1,6 @@
-USE BD_PLANIFICACION_OUTLET_AD;
-CREATE PROCEDURE spLoadFileFunnel
+-- USE BD_PLANIFICACION_OUTLET_AD;
+CREATE PROCEDURE dbo.spLoadFileFunnel
+    -- @pathFile NVARCHAR(255) 
 AS
 BEGIN
     BEGIN TRY
@@ -55,13 +56,15 @@ BEGIN
             TRIPLICADO_SI_NO
         FROM OPENROWSET(
             'Microsoft.ACE.OLEDB.12.0', 
-            'Excel 12.0; Database=D:\JS-MARKET\Proyecto\v2\js_market_back-end\storage\app\private\public\file_xlsx\Funnel.xlsm;',
+            -- 'Excel 12.0; Database=' + @pathFile + ';',
+            -- 'Excel 12.0; Database=D:\JS-MARKET\Proyecto\v2\js_market_back-end\storage\app\private\file_xlsx\Funnel.xlsm;',
+            'Excel 12.0; Database=D:\OneDrive - J.S. Market Solutions SAC\PLANIFICACION\MAESTRAS\fuente_portal_AD\FUNNEL\Funnel.xlsm;',
             'SELECT * FROM [BASE$]'
         );
+        RETURN 0; 
     END TRY
     BEGIN CATCH
-        SELECT ERROR_MESSAGE() AS ErrorMessage;
-        THROW;
+        RETURN ERROR_MESSAGE();
     END CATCH
 END
 

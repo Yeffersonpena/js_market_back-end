@@ -144,3 +144,15 @@ pdv :
     ]
 }
 ```
+## Ejecución de la cargar de los excel
+##### Requisitos 
+- spLoadFileFunnel
+- spLoadFileEntregable
+- path del directorio del archivo excel `D:\OneDrive - J.S. Market Solutions SAC\PLANIFICACION\MAESTRAS\fuente_portal_AD\nameCarpeta\name_file_xlsx` para que pueda acceder la funcion openrowset
+
+```json
+{
+    "status": 400,
+    "message": "SQLSTATE[42S22]: [Microsoft][ODBC Driver 17 for SQL Server][SQL Server]Invalid column name 'Nombre Vendedor_1'. (Connection: sqlsrv, SQL: EXEC spLoadFileEntregable)"
+}
+```

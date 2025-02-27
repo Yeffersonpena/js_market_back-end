@@ -1,5 +1,6 @@
-USE BD_PLANIFICACION_OUTLET_AD;
-CREATE PROCEDURE spLoadFileEntregable
+-- USE BD_PLANIFICACION_OUTLET_AD;
+-- DROP PROCEDURE IF EXISTS dbo.spLoadFileEntregable;
+CREATE PROCEDURE dbo.spLoadFileEntregable
 AS
 BEGIN
     BEGIN TRY
@@ -64,12 +65,19 @@ BEGIN
                 [CELULAR_VENDEDOR]
             FROM OPENROWSET(
                 'Microsoft.ACE.OLEDB.12.0', 
-                'Excel 12.0; Database=D:\JS-MARKET\Proyecto\v2\js_market_back-end\storage\app\private\public\file_xlsx\Entregable.xlsx;',
+                --'Excel 12.0; Database=' + @pathFile + ';',
+                -- 'Excel 12.0; Database=D:\JS-MARKET\Proyecto\v2\js_market_back-end\storage\app\private\file_xlsx\Entregable.xlsx;',
+                'Excel 12.0; Database=D:\OneDrive - J.S. Market Solutions SAC\PLANIFICACION\MAESTRAS\fuente_portal_AD\ENTREGABLE\Entregable.xlsx;',
                 'SELECT * FROM [BASE JS$]'
             );
+        -- PRINT 'El procedimiento se ejecutó correctamente.';
+        RETURN 0; 
     END TRY
     BEGIN CATCH
-        SELECT ERROR_MESSAGE() AS ErrorMessage;
-        THROW;
+        -- SELECT ERROR_MESSAGE() AS ErrorMessage;
+        -- THROW;
+        -- PRINT 'Ocurrió un error durante la ejecución del procedimiento.';
+        -- RETURN 1;  
+        RETURN ERROR_MESSAGE();  
     END CATCH
 END
