@@ -85,8 +85,6 @@ class AvanceDiarioController extends Controller
         
         if($existeAvance){
                 $infoVendedor = VI_AVANCES_INFO_VENDEDOR::where('DNI_RESPONSABLE', $dni)->firstOrFail();
-                $infoVendedor->cuota_pre=30;
-                $infoVendedor->avance_pre=19;
                 $infoVendedor=[
                     "fecha"=> $infoVendedor->ULTIMA_FECHA,
                     "nombrePDV"=> $infoVendedor->NOMBRE_RESPONSABLE,
