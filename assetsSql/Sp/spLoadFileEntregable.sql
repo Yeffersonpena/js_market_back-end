@@ -71,6 +71,7 @@ BEGIN
                 'SELECT * FROM [BASE JS$]'
             );
         -- PRINT 'El procedimiento se ejecutó correctamente.';
+        insert into dbo.tbl_log_procedimientos values ('spLoadFileEntregable', GETDATE());
         RETURN 0; 
     END TRY
     BEGIN CATCH

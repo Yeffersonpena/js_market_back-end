@@ -61,6 +61,8 @@ BEGIN
             'Excel 12.0; Database=D:\OneDrive - J.S. Market Solutions SAC\PLANIFICACION\MAESTRAS\fuente_portal_AD\FUNNEL\Funnel.xlsm;',
             'SELECT * FROM [BASE$]'
         );
+
+        insert into dbo.tbl_log_procedimientos values ('spLoadFileEntregable', GETDATE());
         RETURN 0; 
     END TRY
     BEGIN CATCH
