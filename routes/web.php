@@ -20,6 +20,7 @@ Route::get('/api/v1/users/validation-user/{user}', [LoginController::class, 'val
 
 Route::middleware(['jwt.apiRest.jsMarket'])->group(function () {
     Route::get('/api/v1/users/view-token-user', [LoginController::class, 'viewToken'])->name('viewPerfil.user.api');
+    Route::get('/api/v1/menu-perfil/permisos', [MenuPerfilController::class, 'getPermisosPerfil']);
     Route::patch('/api/v1/users/actualizar-clave', [GestorController::class, 'actualizaClave'])->name('actualizaClave.user.api');
 });
 
@@ -48,7 +49,6 @@ Route::middleware(['jwt.apiRest.jsMarket', 'jwt.user.admin'])->group(function ()
 
     Route::get('/api/v1/menu-perfil/asignados/{idPerfil}', [MenuPerfilController::class, 'obtenerMenusAsignados']);
     Route::get('/api/v1/menu-perfil/no-asignados/{idPerfil}', [MenuPerfilController::class, 'obtenerMenusNoAsignados']);
-    Route::get('/api/v1/menu-perfil/permisos', [MenuPerfilController::class, 'getPermisosPerfil']);
     Route::post('/api/v1/menu-perfil', [MenuPerfilController::class, 'asignarMenu']);
     Route::delete('/api/v1/menu-perfil/{idMenuPerfil}', [MenuPerfilController::class, 'eliminarMenu']);
 });
