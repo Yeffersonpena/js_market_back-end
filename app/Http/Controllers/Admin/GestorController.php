@@ -108,7 +108,7 @@ class GestorController extends Controller
         try {
             $userData = DB::statement(
                 "EXEC paActualizarClave ?, ?",
-                [$request->idUsuario, $request->clave]
+                [$request->usuario, $request->clave]
             );
             if ($userData) {
                 return response()->json(["status" => Response::HTTP_OK, "message" => "Clave actualizada"], Response::HTTP_OK);
