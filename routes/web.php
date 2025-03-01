@@ -10,17 +10,21 @@ use App\Http\Controllers\Admin\PerfilController;
 use App\Http\Controllers\Admin\ImagenController;
 use App\Http\Controllers\Admin\MenuPerfilController;
 use App\Http\Controllers\Admin\ImportacionController;
+use App\Models\PDV_ABONOS;
 use Illuminate\Support\Facades\Route;
 
 
-Route::post('/api/v1/users/login', [LoginController::class, 'loginLocalUser'])->name('login.user.api');
-Route::get('/api/v1/users/validation-user/{user}', [LoginController::class, 'validarUser'])->name('validation.user.api');
-Route::get('/api/v1/users/testServer', function () {
+Route::get('/api/v1/test/server', function () {
     return response()->json(["status" => 200, "message" => "server start"]);
 });
+Route::get('/api/v1/test/db', function (){
+    $test=PDV_ABONOS::where('año','=','2025')->where('mes','=','2')->first();
+    return response()->json(["status"=>200, "message"=>$test]);
+});
+Route::post('/api/v1/users/login', [LoginController::class, 'loginLocalUser'])->name('login.user.api');
+Route::get('/api/v1/users/validation-user/{user}', [LoginController::class, 'validarUser'])->name('validation.user.api');
 
 // Route::get('/users/create-user', [Controller::class, 'createUser'])->name('create.user.api');
-
 
 Route::middleware(['jwt.apiRest.jsMarket'])->group(function () {
     Route::get('/api/v1/users/view-token-user', [LoginController::class, 'viewToken'])->name('viewPerfil.user.api');
