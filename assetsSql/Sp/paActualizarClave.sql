@@ -5,7 +5,7 @@ SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
 GO
-ALTER PROCEDURE [dbo].[paActualizarClave]
+CREATE PROCEDURE [dbo].[paActualizarClave]
     @usuario varchar(30),
     @password VARCHAR(200)
 AS
