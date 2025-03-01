@@ -3,7 +3,7 @@
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
-
+use App\Http\Middleware\Cors;
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
         web: __DIR__.'/../routes/web.php',
@@ -11,8 +11,6 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware) {
-        // $middleware->push(\Fruitcake\Cors\HandleCors::class);
-
           $middleware->alias([
             'jwt.apiRest.jsMarket'=> \App\Http\Middleware\JwtJsMarket::class,
             'jwt.user.admin'=>\App\Http\Middleware\AdminMiddleware::class,
@@ -20,6 +18,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'jwt.user.multimarca'=>\App\Http\Middleware\MultimarcaMiddleware::class,
         ]);
         $middleware->validateCsrfTokens(except: ['*']);
+        $middleware->append(Cors::class);
     })
     ->withExceptions(function (Exceptions $exceptions) {
         //

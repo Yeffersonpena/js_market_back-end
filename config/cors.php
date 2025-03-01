@@ -15,12 +15,11 @@ return [
     |
     */
 
-    // 'paths' => ['api/*', 'sanctum/csrf-cookie', '*'],
-    'paths' => ['*'],
+    'paths' => ['*','api/*', 'sanctum/csrf-cookie'],
 
     'allowed_methods' => ['*'],
 
-    'allowed_origins' => ['*', 'https://*.ngrok.io'],
+    'allowed_origins' => ['*'],
 
     'allowed_origins_patterns' => [],
 
