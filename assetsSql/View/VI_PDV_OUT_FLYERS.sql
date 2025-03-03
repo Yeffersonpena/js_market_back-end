@@ -1,0 +1,13 @@
+USE [BD_PLANIFICACION_OUTLET_AD]
+GO
+
+/****** Object:  View [dbo].[VI_PDV_OUT_FLYERS]    Script Date: 3/03/2025 13:02:27 ******/
+SET ANSI_NULLS ON
+GO
+
+SET QUOTED_IDENTIFIER ON
+GO
+
+CREATE VIEW [dbo].[VI_PDV_OUT_FLYERS] AS SELECT dbo.PDV_OUT_FLYERS.año, dbo.PDV_OUT_FLYERS.mes, dbo.PDV_OUT_FLYERS.dni_responsable, dbo.PDV_OUT_FLYERS.zonal, dbo.PDV_OUT_FLYERS.foto_esquema, dbo.PDV_OUT_FLYERS.fecha_inicio, dbo.PDV_OUT_FLYERS.fecha_fin FROM dbo.PDV_OUT_FLYERS
+GO
+
