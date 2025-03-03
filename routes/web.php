@@ -47,7 +47,7 @@ Route::middleware(['jwt.apiRest.jsMarket', 'jwt.user.admin'])->group(function ()
     Route::put('/api/v1/admin/perfiles/{idPerfil}', [PerfilController::class, 'update'])->name('updatePerfil.perfil.api');
     Route::delete('/api/v1/admin/perfiles/{idPerfil}', [PerfilController::class, 'destroy'])->name('deletePerfil.perfil.api');
 
-    Route::get('/api/v1/imagenes', [ImagenController::class, 'getPaginatedData'])->name('getPaginatedData.imagen.api');
+    Route::get('/api/v1/imagenes/listado', [ImagenController::class, 'getPaginatedData'])->name('getPaginatedData.imagen.api');
     Route::post('/api/v1/imagenes', [ImagenController::class, 'upload'])->name('upload.imagen.api');
     Route::post('/api/v1/imagenes/actualiza/{id}', [ImagenController::class, 'update'])->name('update.imagen.api');
     Route::delete('/api/v1/imagenes/{id}', [ImagenController::class, 'delete'])->name('delete.imagen.api');
