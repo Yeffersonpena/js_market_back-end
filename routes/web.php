@@ -42,22 +42,22 @@ Route::middleware(['jwt.apiRest.jsMarket', 'jwt.user.admin'])->group(function ()
     Route::get('/api/v1/admin/getListPerfil', [GestorController::class, 'getListPerfil'])->name('getListPerfil.user.api');
 
     Route::get('/api/v1/admin/perfiles', [PerfilController::class, 'index'])->name('getListPerfilAll.perfil.api');
-    Route::post('/api/v1/admin/perfilesPost', [PerfilController::class, 'store'])->name('createPerfil.perfil.api');
-    Route::get('/api/v1/admin/perfilesGet/{idPerfil}', [PerfilController::class, 'show'])->name('getPerfil.perfil.api');
-    Route::put('/api/v1/admin/perfilesPut/{idPerfil}', [PerfilController::class, 'update'])->name('updatePerfil.perfil.api');
-    Route::delete('/api/v1/admin/perfilesDelete/{idPerfil}', [PerfilController::class, 'destroy'])->name('deletePerfil.perfil.api');
+    Route::post('/api/v1/admin/perfiles', [PerfilController::class, 'store'])->name('createPerfil.perfil.api');
+    Route::get('/api/v1/admin/perfiles/{idPerfil}', [PerfilController::class, 'show'])->name('getPerfil.perfil.api');
+    Route::put('/api/v1/admin/perfiles/{idPerfil}', [PerfilController::class, 'update'])->name('updatePerfil.perfil.api');
+    Route::delete('/api/v1/admin/perfiles/{idPerfil}', [PerfilController::class, 'destroy'])->name('deletePerfil.perfil.api');
 
     Route::get('/api/v1/imagenes', [ImagenController::class, 'getPaginatedData'])->name('getPaginatedData.imagen.api');
-    Route::post('/api/v1/imagenesPost', [ImagenController::class, 'upload'])->name('upload.imagen.api');
+    Route::post('/api/v1/imagenes', [ImagenController::class, 'upload'])->name('upload.imagen.api');
     Route::post('/api/v1/imagenes/actualiza/{id}', [ImagenController::class, 'update'])->name('update.imagen.api');
-    Route::delete('/api/v1/imagenesDelete/{id}', [ImagenController::class, 'delete'])->name('delete.imagen.api');
+    Route::delete('/api/v1/imagenes/{id}', [ImagenController::class, 'delete'])->name('delete.imagen.api');
 
     Route::post('/api/v1/admin/updateFileSp', [GestorController::class, 'loadFileSp'])->name('fileSp.carga.api');
     // Route::post('/api/v1/admin/updateFunnel', [GestorController::class, 'loadFunnel'])->name('funnel.carga.api');
 
     Route::get('/api/v1/menu-perfil/asignados/{idPerfil}', [MenuPerfilController::class, 'obtenerMenusAsignados']);
     Route::get('/api/v1/menu-perfil/no-asignados/{idPerfil}', [MenuPerfilController::class, 'obtenerMenusNoAsignados']);
-    Route::post('/api/v1/menu-perfilPost', [MenuPerfilController::class, 'asignarMenu']);
+    Route::post('/api/v1/menu-perfil', [MenuPerfilController::class, 'asignarMenu']);
     Route::delete('/api/v1/menu-perfil/{idMenuPerfil}', [MenuPerfilController::class, 'eliminarMenu']);
 
     Route::get('/api/v1/importaciones/hoy', [ImportacionController::class, 'getLogActual']);
