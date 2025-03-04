@@ -71,7 +71,9 @@ class LogicController extends Controller
         try {
             $existeAvance = VI_FLYERS::where('DNI_Responsable', $dni)->exists();
             if ($existeAvance) {
-                $avances = VI_FLYERS::where('DNI_Responsable', $dni)->where('año', '=', $anio)->where('mes', '=', $mes)->get();
+                $avances = VI_FLYERS::where('DNI_Responsable', $dni)
+                    ->whereRaw('? BETWEEN MONTH(fecha_inicio) AND MONTH(fecha_fin)', [$mes])
+                    ->get();
                 $avances = $avances->map(function ($item) {
                     return [
                         "año" => $item->año,
