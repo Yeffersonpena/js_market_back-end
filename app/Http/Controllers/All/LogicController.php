@@ -133,6 +133,7 @@ class LogicController extends Controller
                     "dni_vendedor" => $infoVendedor->{'DNI VENDEDOR'},
                     "nombre_vendedor" => $infoVendedor->{'NOMBRE VENDEDOR'},
                     "fecha_inicio" => $infoVendedor->{'FECHA INICIO'},
+                    "fecha_cierre" => $infoVendedor->{'FECHA CIERRE'},
                     "dni_responsable" => $infoVendedor->{'DNI RESPONSABLE'},
                     "supervisor" => $infoVendedor->SUPERVISOR,
                     "proyecto" => $infoVendedor->PROYECTO,

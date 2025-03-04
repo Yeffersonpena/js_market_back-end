@@ -19,7 +19,7 @@ class LoginController extends Controller
         try {
             $request->validate([
                 'user' => 'required|max:10|min:3',
-                'password' => 'required|max:10|min:4',
+                'password' => 'required|max:10|min:3',
             ], [
                 'user.min' => 'El usuario debe tener al menos 3 caracteres.',
                 'password.min' => 'La contraseña debe tener al menos 4 caracteres.',
