@@ -17,4 +17,5 @@ VALUES
 ('Abonos', '/abonos', 'MdAttachMoney', 1, 5, 'HistoricoAbonosPage'),
 ('Campañas', '/campañas', 'MdCampaign', 1, 6, 'FlyersPage'),
 ('Ventas M.M', '/avance-ventas', 'MdTrendingUp', 1, 7, 'HistoricoVentasMMPage'),
-('Carga Imágenes', '/carga-imagenes', 'MdTrendingUp', 1, 8, 'ImagenesPage');
+('Carga Imágenes', '/carga-imagenes', 'MdTrendingUp', 1, 8, 'ImagenesPage'),
+('Importar Data','/importar-data','FaFileExcel',1,9,'ImportarDataPage');
