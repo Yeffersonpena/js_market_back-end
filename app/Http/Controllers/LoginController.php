@@ -30,12 +30,12 @@ class LoginController extends Controller
             $userData = DB::selectOne("EXEC sp_LoginUser ?, ?", [$request->user, $request->password]);
 
             if (!$userData) {
-                return response()->json(["status" => Response::HTTP_UNAUTHORIZED, "message" => "Usuario no encontrado"], Response::HTTP_UNAUTHORIZED);
+                return response()->json(["status" => Response::HTTP_OK, "message" => "Usuario no encontrado"], Response::HTTP_UNAUTHORIZED);
             }
 
             $user = User::where('user', $userData->user)->first();
             if (!$user) {
-                return response()->json(["status" => Response::HTTP_UNAUTHORIZED, "message" => "Error al cargar el usuario"], Response::HTTP_UNAUTHORIZED);
+                return response()->json(["status" => Response::HTTP_OK, "message" => "Error al cargar el usuario"], Response::HTTP_UNAUTHORIZED);
             }
 
             try {
@@ -54,9 +54,9 @@ class LoginController extends Controller
         try {
             $userConsulta = User::where('user', $userExists)->exists();
             if ($userConsulta) {
-                return response()->json(["status" => Response::HTTP_OK, "message" => "El usuario " . $userExists . " existe ", "user" => $userConsulta], Response::HTTP_OK);
+                return response()->json(["status" => Response::HTTP_OK, "message" => "true", "user" => $userConsulta], Response::HTTP_OK);
             } else {
-                return response()->json(["status" => Response::HTTP_OK, "message" => "El usuario " . $userExists . " no existe", "data" => []], Response::HTTP_OK);
+                return response()->json(["status" => Response::HTTP_OK, "message" => "false", "user" => []], Response::HTTP_OK);
             }
         } catch (\Throwable $th) {
             return response()->json(["status" => Response::HTTP_BAD_REQUEST, "message" => $th], Response::HTTP_BAD_REQUEST);
