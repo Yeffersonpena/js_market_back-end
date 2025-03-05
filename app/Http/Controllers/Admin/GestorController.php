@@ -151,7 +151,7 @@ class GestorController extends Controller
             if(!($validateSp)){
                 // $loadEntregable = DB::statement("EXEC $nameSp");
                 $month=(int)$request->dateSp;
-                $loadEntregable = DB::select("EXEC $nameSp ?", [$month]);
+                $loadEntregable = DB::statement("EXEC $nameSp ?", [$month]);
                 if ($loadEntregable) {
                     return response()->json(["status" => Response::HTTP_OK, "message" => "Se ejecuto exitosamente la carga del archivo {$msgAlertFile}"], Response::HTTP_OK);
                 } else {
