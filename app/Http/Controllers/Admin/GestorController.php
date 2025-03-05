@@ -150,7 +150,8 @@ class GestorController extends Controller
             $validateSp=HistoryStoreProcedure::where('nombre_procedimiento','=', $nameSp)->whereDate('fecha_hora_registro', $fechaHoy)->exists();
             if(!($validateSp)){
                 // $loadEntregable = DB::statement("EXEC $nameSp");
-                $loadEntregable = DB::select("EXEC $nameSp ?", [$request->dateSp]);
+                $month=(int)$request->dateSp;
+                $loadEntregable = DB::select("EXEC $nameSp ?", [$month]);
                 if ($loadEntregable) {
                     return response()->json(["status" => Response::HTTP_OK, "message" => "Se ejecuto exitosamente la carga del archivo {$msgAlertFile}"], Response::HTTP_OK);
                 } else {
