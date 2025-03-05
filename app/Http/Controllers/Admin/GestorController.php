@@ -124,7 +124,7 @@ class GestorController extends Controller
         try {
             $request->validate([
                 'typeSp' => 'required|integer|min:1|max:12',
-                'dateSp' => 'required|integer|min:1|max:12'
+                'monthSp' => 'required|integer|min:1|max:12'
             ]);
             $mapingSp=[
                 1 => "spLoadFileEntregable",
@@ -150,7 +150,7 @@ class GestorController extends Controller
             $validateSp=HistoryStoreProcedure::where('nombre_procedimiento','=', $nameSp)->whereDate('fecha_hora_registro', $fechaHoy)->exists();
             if(!($validateSp)){
                 // $loadEntregable = DB::statement("EXEC $nameSp");
-                $month=(int)$request->dateSp;
+                $month=(int)$request->monthSp;
                 $loadEntregable = DB::statement("EXEC $nameSp ?", [$month]);
                 if ($loadEntregable) {
                     return response()->json(["status" => Response::HTTP_OK, "message" => "Se ejecuto exitosamente la carga del archivo {$msgAlertFile}"], Response::HTTP_OK);
