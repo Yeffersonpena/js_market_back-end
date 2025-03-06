@@ -1,9 +1,11 @@
 -- USE BD_PLANIFICACION_OUTLET_AD;
 -- DROP PROCEDURE IF EXISTS dbo.spLoadFileEntregable;
 CREATE PROCEDURE dbo.spLoadFileEntregable
+@month INT
 AS
 BEGIN
     BEGIN TRY
+    delete from dbo.PDV_OUT_ENTREGABLE where AÑO=YEAR(GETDATE())  and MES=@month
         INSERT INTO PDV_OUT_ENTREGABLE (
             AÑO,
             MES, 

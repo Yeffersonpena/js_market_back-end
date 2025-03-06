@@ -125,18 +125,17 @@ class LogicController extends Controller
     public function getDataMM($dni, $anio, $mes)
     {
         try {
-            $existeAvance = PDV_AVANCES_DIARIOS_MM::where('DNI VENDEDOR', $dni)->where('año', '=', $anio)->where('mes', '=', $mes)->exists();
+            $existeAvance = PDV_AVANCES_DIARIOS_MM::where('DNI_VENDEDOR', $dni)->where('año', '=', $anio)->where('mes', '=', $mes)->exists();
             if ($existeAvance) {
-                $infoVendedor = PDV_AVANCES_DIARIOS_MM::where('DNI VENDEDOR', $dni)->where('año', '=', $anio)->where('mes', '=', $mes)->firstOrFail();
-                // return  response()->json(["status" => Response::HTTP_OK, "message" => "test", "data" => $infoVendedor], Response::HTTP_OK);
+                $infoVendedor = PDV_AVANCES_DIARIOS_MM::where('DNI_VENDEDOR', $dni)->where('año', '=', $anio)->where('mes', '=', $mes)->firstOrFail();
                 $infoVendedor = [
                     "zonal" => $infoVendedor->ZONAL,
-                    "dni_vendedor" => $infoVendedor->{'DNI VENDEDOR'},
-                    "nombre_vendedor" => $infoVendedor->{'NOMBRE VENDEDOR'},
+                    "dni_vendedor" => $infoVendedor->{'DNI_VENDEDOR'},
+                    "nombre_vendedor" => $infoVendedor->{'NOMBRE_VENDEDOR'},
                     "fecha_inicio" => $infoVendedor->{'FECHA INICIO'},
                     "fecha_cierre" => $infoVendedor->{'FECHA CIERRE'},
-                    "dni_responsable" => $infoVendedor->{'DNI RESPONSABLE'},
-                    "supervisor" => $infoVendedor->SUPERVISOR,
+                    "dni_responsable" => $infoVendedor->{'DNI_RESPONSABLE'},
+                    "supervisor" => $infoVendedor->{'NOMBRE_SUPERVISOR'},
                     "proyecto" => $infoVendedor->PROYECTO,
                     "prepago_total_1" => (float)$infoVendedor->{'PREPAGO TOTAL'},
                     "porta_pre_1" => (float)$infoVendedor->{'PORTA PRE'},
