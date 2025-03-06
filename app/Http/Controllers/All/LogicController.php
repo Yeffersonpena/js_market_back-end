@@ -128,6 +128,7 @@ class LogicController extends Controller
             $existeAvance = PDV_AVANCES_DIARIOS_MM::where('DNI VENDEDOR', $dni)->where('año', '=', $anio)->where('mes', '=', $mes)->exists();
             if ($existeAvance) {
                 $infoVendedor = PDV_AVANCES_DIARIOS_MM::where('DNI VENDEDOR', $dni)->where('año', '=', $anio)->where('mes', '=', $mes)->firstOrFail();
+                return  response()->json(["status" => Response::HTTP_OK, "message" => "test", "data" => $infoVendedor], Response::HTTP_OK);
                 $infoVendedor = [
                     "zonal" => $infoVendedor->ZONAL,
                     "dni_vendedor" => $infoVendedor->{'DNI VENDEDOR'},
