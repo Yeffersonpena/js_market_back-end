@@ -4,17 +4,23 @@ AS
 BEGIN
     BEGIN TRY
         INSERT INTO dbo.PDV_OUT_AVANCES_DIARIOS_MM (
-           columan_name_tbl
+           [ZONAL], [DNI VENDEDOR], [NOMBRE VENDEDOR], [FECHA INICIO], [DNI RESPONSABLE], [SUPERVISOR], 
+		   [PROYECTO], [PREPAGO TOTAL], [PORTA PRE], [RECARGAS TOTAL], [PORTA POST], [RANGO PRE TOTAL], 
+		   [RANGO RECARGAS], [RANGO PORTA PRE], [RANGO FINAL], [BONO PRE], [BONO PORTA POST], [BONO ADICIONAL PORTA POST], 
+		   [BONO TOTAL], [RECARGA FINANCIADA], [CHIPS FINANCIADO], [TOTAL FINANCIADO], [BONO TOTAL A PAGAR], [Año], [Mes]
         )
-        SELECT columna_NAME_xlsx,
-                --
+        SELECT 
+		[ZONAL], [DNI VENDEDOR], [NOMBRE VENDEDOR], [FECHA INICIO], [DNI RESPONSABLE], [SUPERVISOR], 
+		[PROYECTO], [PREPAGO TOTAL], [PORTA PRE], [RECARGAS TOTAL], [PORTA POST], [RANGO PRE TOTAL], 
+		[RANGO RECARGAS], [RANGO PORTA PRE], [RANGO FINAL], [BONO PRE], [BONO PORTA POST], [BONO ADICIONAL PORTA POST], 
+		[BONO TOTAL], [RECARGA FINANCIADA], [CHIPS FINANCIADO], [TOTAL FINANCIADO], [BONO TOTAL A PAGAR], [Año], [Mes]
         FROM OPENROWSET(
             'Microsoft.ACE.OLEDB.12.0', 
             'Excel 12.0; Database=D:\OneDrive - J.S. Market Solutions SAC\PLANIFICACION\MAESTRAS\fuente_portal_AD\AVANCE_DIARIO\Avance_diario.xlsx;',
             'SELECT * FROM [name_pestaña$]'
         );
         
-        insert into dbo.tbl_log_procedimientos values ('spLoadFileEntregable', GETDATE());
+        insert into dbo.tbl_log_procedimientos values ('spLoadFileAvanceDiario', GETDATE());
         RETURN 0; 
     END TRY
     BEGIN CATCH
