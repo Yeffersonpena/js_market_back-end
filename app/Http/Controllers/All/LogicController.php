@@ -125,9 +125,11 @@ class LogicController extends Controller
     public function getDataMM($dni, $anio, $mes)
     {
         try {
-            $existeAvance = PDV_AVANCES_DIARIOS_MM::where('DNI_VENDEDOR', $dni)->where('año', '=', $anio)->where('mes', '=', $mes)->exists();
+            // $existeAvance = PDV_AVANCES_DIARIOS_MM::where('DNI_VENDEDOR', $dni)->where('año', '=', $anio)->where('mes', '=', $mes)->exists();
+            $existeAvance = PDV_AVANCES_DIARIOS_MM::where('DNI_VENDEDOR', $dni)->where('año', '=', $anio)->exists();
             if ($existeAvance) {
-                $infoVendedor = PDV_AVANCES_DIARIOS_MM::where('DNI_VENDEDOR', $dni)->where('año', '=', $anio)->where('mes', '=', $mes)->firstOrFail();
+                // $infoVendedor = PDV_AVANCES_DIARIOS_MM::where('DNI_VENDEDOR', $dni)->where('año', '=', $anio)->where('mes', '=', $mes)->firstOrFail();
+                $infoVendedor = PDV_AVANCES_DIARIOS_MM::where('DNI_VENDEDOR', $dni)->where('año', '=', $anio)->orderByDesc('mes')->firstOrFail();
                 $infoVendedor = [
                     "zonal" => $infoVendedor->ZONAL,
                     "dni_vendedor" => $infoVendedor->{'DNI_VENDEDOR'},
