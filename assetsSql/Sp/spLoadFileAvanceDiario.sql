@@ -1,8 +1,10 @@
 -- USE BD_PLANIFICACION_OUTLET_AD;
 CREATE PROCEDURE dbo.spLoadFileAvanceDiario
+    @month INT
 AS
 BEGIN
     BEGIN TRY
+        -- delete from dbo.PDV_OUT_AVANCES_DIARIOS_MM where año=YEAR(GETDATE())  and mes=@month;
         INSERT INTO dbo.PDV_OUT_AVANCES_DIARIOS_MM (
            [ZONAL], [DNI VENDEDOR], [NOMBRE VENDEDOR], [FECHA INICIO], [DNI RESPONSABLE], [SUPERVISOR], 
 		   [PROYECTO], [PREPAGO TOTAL], [PORTA PRE], [RECARGAS TOTAL], [PORTA POST], [RANGO PRE TOTAL], 
@@ -16,8 +18,9 @@ BEGIN
 		[BONO TOTAL], [RECARGA FINANCIADA], [CHIPS FINANCIADO], [TOTAL FINANCIADO], [BONO TOTAL A PAGAR], [Año], [Mes]
         FROM OPENROWSET(
             'Microsoft.ACE.OLEDB.12.0', 
-            'Excel 12.0; Database=D:\OneDrive - J.S. Market Solutions SAC\PLANIFICACION\MAESTRAS\fuente_portal_AD\AVANCE_DIARIO\Avance_diario.xlsx;',
-            'SELECT * FROM [name_pestaña$]'
+            -- 'Excel 12.0; Database=D:\OneDrive - J.S. Market Solutions SAC\PLANIFICACION\MAESTRAS\fuente_portal_AD\AVANCE_DIARIO\Avance_diario.xlsx;',
+            'Excel 12.0; Database=D:\OneDrive - J.S. Market Solutions SAC\PLANIFICACION\MAESTRAS\fuente_portal_AD\AVANCE_DIARIO\carga_avance_multimarca.xlsx;',
+            'SELECT * FROM [DETALLE MM$]'
         );
         
         insert into dbo.tbl_log_procedimientos values ('spLoadFileAvanceDiario', GETDATE());
@@ -27,4 +30,3 @@ BEGIN
         RETURN ERROR_MESSAGE();  
     END CATCH
 END
-

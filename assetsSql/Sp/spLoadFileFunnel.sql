@@ -1,9 +1,11 @@
 -- USE BD_PLANIFICACION_OUTLET_AD;
 CREATE PROCEDURE dbo.spLoadFileFunnel
     -- @pathFile NVARCHAR(255) 
+    @month INT
 AS
 BEGIN
     BEGIN TRY
+        delete from dbo.PDV_OUT_FUNNEL  where YEAR(fecha)=YEAR(GETDATE()) and month(fecha) =@month;
         INSERT INTO dbo.PDV_OUT_FUNNEL (
             ZONAL,
             REGION,

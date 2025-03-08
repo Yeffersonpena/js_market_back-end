@@ -5,7 +5,7 @@ CREATE PROCEDURE dbo.spLoadFileEntregable
 AS
 BEGIN
     BEGIN TRY
-    delete from dbo.PDV_OUT_ENTREGABLE where AÑO=YEAR(GETDATE())  and MES=@month
+	    delete from dbo.PDV_OUT_ENTREGABLE where AÑO=YEAR(GETDATE())  and MES=@month
         INSERT INTO PDV_OUT_ENTREGABLE (
             AÑO,
             MES, 
