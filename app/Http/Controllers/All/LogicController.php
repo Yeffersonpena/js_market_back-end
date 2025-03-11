@@ -7,6 +7,7 @@ use App\Models\PDV_ABONOS;
 use App\Models\PDV_AVANCES_DIARIOS_MM;
 use App\Models\VI_AVANCES_DIARIOS;
 use App\Models\VI_FLYERS;
+use App\Models\VI_PDV_PAYMENT;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -161,6 +162,36 @@ class LogicController extends Controller
                 return response()->json(["status" => Response::HTTP_OK, "message" => "No hay información", "data" => []], Response::HTTP_OK);
             }
         } catch (\Exception $ex) {
+            return response()->json(["status" => Response::HTTP_BAD_REQUEST, "message" => $ex->getMessage()], Response::HTTP_BAD_REQUEST);
+        }
+    }
+    function getPayment($dni, $anio, $mes){
+        try{
+            // $existePayment = VI_PDV_PAYMENT::where('DNI', $dni)->where('año', '=', $anio)->where('mes', '=', $mes)->exists();
+            // if ($existePayment) {
+                // $pdvPayment = VI_PDV_PAYMENT::where('DNI', $dni)->where('año', '=', $anio)->where('mes', '=', $mes)->get();
+                // $pdvPayment->makeHidden(['DNI ']);
+                // $payment = 
+                // $pdvPayment->map(function ($item) {
+                    // return [
+                        $payment = [
+                        "unitarioRec"=>5.00,
+                        "bonoPre"=>20.00,
+                        "bonoRecargaPre"=>4.00,
+                        "bonoPortaPre"=>5.00,
+                        "bonoAltaPost"=>10.00,
+                        "bonoPortaPostOPost"=>0.00,
+                        "bonoPortaPostOPre"=>0,
+                        "bonoChips"=>10.00,
+                        "bonoTotalEfectivo"=>9.00,
+                        "bonoTotal"=>19.00
+                    ];
+                // });
+                return response()->json(["status" => Response::HTTP_OK, "message" => "Hay pago para el vendedor Pdv", "data" => $payment], Response::HTTP_OK);
+            // } else {
+            //     return response()->json(["status" => Response::HTTP_OK, "message" => "No hay pagos ", "data" => []], Response::HTTP_OK);
+            // }
+        }catch(\Exception $ex){
             return response()->json(["status" => Response::HTTP_BAD_REQUEST, "message" => $ex->getMessage()], Response::HTTP_BAD_REQUEST);
         }
     }
