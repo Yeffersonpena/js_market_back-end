@@ -22,7 +22,7 @@ BEGIN
           AND [RECARGAS>5] = 1
     ),
     tipoPDV AS (
-         SELECT TOP 1 ACCION_2 AS tipoPDV, MES
+         SELECT TOP 1 ACCION_2 AS tipoPDV
          FROM dbo.PDV_OUT_ENTREGABLE
          WHERE AÑO = @año 
            AND DNI_RESPONSABLE = @dni 
@@ -92,7 +92,7 @@ BEGIN
         f.ACCION_INTERNA,
         f.VENTAS_REPETIDAS,
         f.TRIPLICADO_SI_NO,
-        f.MONTO_ACUMULADO_RECARGAS AS unitarioRec,
+        (SELECT bonoPre FROM bonoPreCalc) AS unitarioRec,
         (SELECT bonoPre FROM bonoPreCalc) AS bonoPre,
         SUM(
             CASE 
