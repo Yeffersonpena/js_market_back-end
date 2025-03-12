@@ -167,8 +167,8 @@ class LogicController extends Controller
     }
     function getPayment($dni, $anio, $mes){
         try{
-            // $existePayment = VI_PDV_PAYMENT::where('DNI', $dni)->where('año', '=', $anio)->where('mes', '=', $mes)->exists();
-            // if ($existePayment) {
+            $existePayment = VI_PDV_PAYMENT::where('DNI', $dni)->where('año', '=', $anio)->where('mes', '=', $mes)->exists();
+            if ($existePayment) {
                 // $pdvPayment = VI_PDV_PAYMENT::where('DNI', $dni)->where('año', '=', $anio)->where('mes', '=', $mes)->get();
                 // $pdvPayment->makeHidden(['DNI ']);
                 // $payment = 
@@ -182,15 +182,15 @@ class LogicController extends Controller
                         "bonoAltaPost"=>10.00,
                         "bonoPortaPostOPost"=>0.00,
                         "bonoPortaPostOPre"=>0,
-                        "bonoChips"=>10.00,
-                        "bonoTotalEfectivo"=>9.00,
-                        "bonoTotal"=>19.00
+                        // "bonoChips"=>10.00,
+                        // "bonoTotalEfectivo"=>9.00,
+                        // "bonoTotal"=>19.00
                     ];
                 // });
                 return response()->json(["status" => Response::HTTP_OK, "message" => "Hay pago para el vendedor Pdv", "data" => $payment], Response::HTTP_OK);
-            // } else {
-            //     return response()->json(["status" => Response::HTTP_OK, "message" => "No hay pagos ", "data" => []], Response::HTTP_OK);
-            // }
+            } else {
+                return response()->json(["status" => Response::HTTP_OK, "message" => "No hay pagos ", "data" => []], Response::HTTP_OK);
+            }
         }catch(\Exception $ex){
             return response()->json(["status" => Response::HTTP_BAD_REQUEST, "message" => $ex->getMessage()], Response::HTTP_BAD_REQUEST);
         }
