@@ -1,7 +1,7 @@
 CREATE PROCEDURE spCalculoPayment
-    @mes INT,
+    @dni VARCHAR(10),
     @año INT,
-    @dni VARCHAR(10)
+    @mes INT
 AS
 BEGIN
     SET NOCOUNT ON;

@@ -10,6 +10,7 @@ use App\Models\VI_FLYERS;
 use App\Models\VI_PDV_PAYMENT;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Symfony\Component\HttpFoundation\Response;
 
 class LogicController extends Controller
@@ -167,26 +168,34 @@ class LogicController extends Controller
     }
     function getPayment($dni, $anio, $mes){
         try{
-            $existePayment = VI_PDV_PAYMENT::where('DNI', $dni)->where('año', '=', $anio)->where('mes', '=', $mes)->exists();
-            if ($existePayment) {
-                // $pdvPayment = VI_PDV_PAYMENT::where('DNI', $dni)->where('año', '=', $anio)->where('mes', '=', $mes)->get();
-                // $pdvPayment->makeHidden(['DNI ']);
-                // $payment = 
-                // $pdvPayment->map(function ($item) {
-                    // return [
-                        $payment = [
-                        "unitarioRec"=>5.00,
-                        "bonoPre"=>20.00,
-                        "bonoRecargaPre"=>4.00,
-                        "bonoPortaPre"=>5.00,
-                        "bonoAltaPost"=>10.00,
-                        "bonoPortaPostOPost"=>0.00,
-                        "bonoPortaPostOPre"=>0,
-                        // "bonoChips"=>10.00,
-                        // "bonoTotalEfectivo"=>9.00,
-                        // "bonoTotal"=>19.00
+            // $existePayment = VI_PDV_PAYMENT::where('DNI', $dni)->where('año', '=', $anio)->where('mes', '=', $mes)->exists();
+            $spPayment=DB::select("exec spCalculoPayment ?,?,?", [$dni, $anio, $mes]);
+            if ($spPayment) {
+                    $acumuladorPayment = [
+                        "unitarioRec" => 0.0,
+                        "bonoPre" => 0.0,
+                        "bonoRecargaPre" => 0.0,
+                        "bonoPortaPre" => 0.0,
+                        "bonoAltaPost" => 0.0,
+                        "bonoPortaPostOPost" => 0.0,
+                        "bonoPortaPostOPre" => 0.0,
+                        // 
+                        "bonoChips"=>0.00,
+                        "bonoTotalEfectivo"=>0.00,
+                        "bonoTotal"=>0.00
                     ];
-                // });
+                    
+                    foreach ($spPayment as $item) {
+                        $acumuladorPayment["unitarioRec"] += $item->unitarioRec ? (float) $item->unitarioRec : 0.0;
+                        $acumuladorPayment["bonoPre"] += $item->bonoPre ? (float) $item->bonoPre : 0.0;
+                        $acumuladorPayment["bonoRecargaPre"] += $item->bonoRecargaPre ? (float) $item->bonoRecargaPre : 0.0;
+                        $acumuladorPayment["bonoPortaPre"] += $item->bonoPortaPre ? (float) $item->bonoPortaPre : 0.0;
+                        $acumuladorPayment["bonoAltaPost"] += $item->bonoAltaPost ? (float) $item->bonoAltaPost : 0.0;
+                        $acumuladorPayment["bonoPortaPostOPost"] += $item->bonoPortaPostOPost ? (float) $item->bonoPortaPostOPost : 0.0;
+                        $acumuladorPayment["bonoPortaPostOPre"] += $item->bonoPortaPostOPre ? (float) $item->bonoPortaPostOPre : 0.0;
+                    }
+                    // $payment= $spPayment;
+                    $payment= $acumuladorPayment;
                 return response()->json(["status" => Response::HTTP_OK, "message" => "Hay pago para el vendedor Pdv", "data" => $payment], Response::HTTP_OK);
             } else {
                 return response()->json(["status" => Response::HTTP_OK, "message" => "No hay pagos ", "data" => []], Response::HTTP_OK);
