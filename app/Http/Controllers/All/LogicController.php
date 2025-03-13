@@ -172,7 +172,7 @@ class LogicController extends Controller
             $spPayment=DB::select("exec spCalculoPayment ?,?,?", [$dni, $anio, $mes]);
             if ($spPayment) {
                     $acumuladorPayment = [
-                        "unitarioRec" => 0.0,
+                        // "unitarioRec" => 0.0,
                         "bonoPre" => 0.0,
                         "bonoRecargaPre" => 0.0,
                         "bonoPortaPre" => 0.0,
@@ -185,7 +185,7 @@ class LogicController extends Controller
                     ];
                     
                     foreach ($spPayment as $item) {
-                        $acumuladorPayment["unitarioRec"] += $item->unitarioRec ? (float) $item->unitarioRec : 0.0;
+                        // $acumuladorPayment["unitarioRec"] += $item->unitarioRec ? (float) $item->unitarioRec : 0.0;
                         $acumuladorPayment["bonoPre"] += $item->bonoPre ? (float) $item->bonoPre : 0.0;
                         $acumuladorPayment["bonoRecargaPre"] += $item->bonoRecargaPre ? (float) $item->bonoRecargaPre : 0.0;
                         $acumuladorPayment["bonoPortaPre"] += $item->bonoPortaPre ? (float) $item->bonoPortaPre : 0.0;
