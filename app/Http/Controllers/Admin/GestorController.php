@@ -142,7 +142,14 @@ class GestorController extends Controller
                 5 => "esquema",
                 6 => "mesa de ayuda",
             ];
-
+            $pathFileInfo=[
+                1 => 'PLANIFICACION\MAESTRAS\fuente_portal_AD\ENTREGABLE\Entregable.xlsx',
+                2 => 'PLANIFICACION\MAESTRAS\fuente_portal_AD\FUNNEL\Funnel.xlsm',
+                3 => 'PLANIFICACION\MAESTRAS\fuente_portal_AD\ABONOS\Abonos.xlsx',
+                4 => 'PLANIFICACION\MAESTRAS\fuente_portal_AD\AVANCE_DIARIO\carga_avance_multimarca.xlsx',
+                5 => 'PLANIFICACION\MAESTRAS\fuente_portal_AD\ESQUEMAS\Listado de incentivos.xlsx',
+                6 => 'PLANIFICACION\MAESTRAS\fuente_portal_AD\MESA DE AYUDA\Mesa_de_ayuda.xlsx'
+            ];
             $nameSp=$mapingSp[$request->typeSp] ?? "";
             $msgAlertFile=$msgAlert[$request->typeSp] ?? "";
             // sp
@@ -151,6 +158,12 @@ class GestorController extends Controller
             if(!($validateSp)){
                 // $loadEntregable = DB::statement("EXEC $nameSp");
                 $month=(int)$request->monthSp;
+                $typeSpName= $request->typeSp;
+                $fileExist=DB::select("SELECT dbo.fnCheckFileExists($typeSpName) AS fileExists");
+                $textPathLoad=$pathFileInfo[$request->typeSp] ?? "";
+                if($fileExist[0]->fileExists !=1){
+                    return response()->json(["status" => Response::HTTP_OK, "message" => "El archivo {$msgAlertFile} no existe, porfavor cargalo en la ruta {$textPathLoad}"], Response::HTTP_OK);
+                }
                 $loadEntregable = DB::statement("EXEC $nameSp ?", [$month]);
                 if ($loadEntregable) {
                     return response()->json(["status" => Response::HTTP_OK, "message" => "Se ejecuto exitosamente la carga del archivo {$msgAlertFile}"], Response::HTTP_OK);
@@ -215,5 +228,37 @@ class GestorController extends Controller
         }catch(\Exception $ex){
             return response()->json(["status" => Response::HTTP_BAD_REQUEST, "message" => $ex->getMessage()], Response::HTTP_BAD_REQUEST);
         }
+    }
+    function validateLoadFile($typeFile){
+        try{
+            $msgAlert=[
+                1 => "entregable",
+                2 => "funnel",
+                3 => "abono",
+                4 => "avance diario",
+                5 => "esquema",
+                6 => "mesa de ayuda",
+            ];
+            $pathFileInfo=[
+                1 => 'PLANIFICACION\MAESTRAS\fuente_portal_AD\ENTREGABLE\Entregable.xlsx',
+                2 => 'PLANIFICACION\MAESTRAS\fuente_portal_AD\FUNNEL\Funnel.xlsm',
+                3 => 'PLANIFICACION\MAESTRAS\fuente_portal_AD\ABONOS\Abonos.xlsx',
+                4 => 'PLANIFICACION\MAESTRAS\fuente_portal_AD\AVANCE_DIARIO\carga_avance_multimarca.xlsx',
+                5 => 'PLANIFICACION\MAESTRAS\fuente_portal_AD\ESQUEMAS\Listado de incentivos.xlsx',
+                6 => 'PLANIFICACION\MAESTRAS\fuente_portal_AD\MESA DE AYUDA\Mesa_de_ayuda.xlsx'
+            ];
+            $msgAlertFile=$msgAlert[$typeFile] ?? "";
+            $typeSpName= $typeFile;
+            $fileExist=DB::select("SELECT dbo.fnCheckFileExists($typeSpName) AS fileExists");
+            $textPathLoad=$pathFileInfo[$typeFile] ?? "";
+            if($fileExist[0]->fileExists !=1){
+                return response()->json(["status" => Response::HTTP_OK, "message" => "El archivo {$msgAlertFile} no existe, porfavor cargalo en la ruta {$textPathLoad}"], Response::HTTP_OK);
+            }else{
+                return response()->json(["status" => Response::HTTP_OK, "message" => "El archivo {$msgAlertFile} existe"], Response::HTTP_OK);
+            }
+    }catch(\Exception $ex){
+        return response()->json(["status" => Response::HTTP_BAD_REQUEST, "message" => $ex->getMessage()], Response::HTTP_BAD_REQUEST);
+    }
+        
     }
 }

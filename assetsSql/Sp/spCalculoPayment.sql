@@ -46,10 +46,10 @@ BEGIN
                 ELSE 0.00 
             END
         ) AS bonoRecargaPre,
-        CASE WHEN f.PRODUCTO_WEB = 'PORT PREPAGO M7' THEN 4.00 ELSE 0.00 END AS bonoPortaPre,
-        CASE WHEN f.PRODUCTO_WEB = 'POSTPAGO M4' THEN 10.00 ELSE 0.00 END AS bonoAltaPost,
-        CASE WHEN f.PRODUCTOORIGEN = 'POSTPAGO' THEN 35.00 ELSE 0.00 END AS bonoPortaPostOPost,
-        CASE WHEN f.PRODUCTOORIGEN = 'PREPAGO' THEN 20.00 ELSE 0.00 END AS bonoPortaPostOPre,
+        sum(CASE WHEN f.PRODUCTO_WEB = 'PORT PREPAGO M7' THEN 4.00 ELSE 0.00 END) AS bonoPortaPre,
+        sum(CASE WHEN f.PRODUCTO_WEB = 'POSTPAGO M4' THEN 10.00 ELSE 0.00 END) AS bonoAltaPost,
+        sum(CASE WHEN f.PRODUCTOORIGEN = 'POSTPAGO' THEN 35.00 ELSE 0.00 END) AS bonoPortaPostOPost,
+        sum(CASE WHEN f.PRODUCTOORIGEN = 'PREPAGO' THEN 20.00 ELSE 0.00 END) AS bonoPortaPostOPre,
         tp.tipoPDV,
          v.totalVenta AS bonoChips, 
         isnull(dbo.fn_calcularBono(@dni, @mes, @año),0.00)
