@@ -179,7 +179,6 @@ class LogicController extends Controller
                         "bonoAltaPost" => 0.0,
                         "bonoPortaPostOPost" => 0.0,
                         "bonoPortaPostOPre" => 0.0,
-                        // 
                         "bonoChips"=>0.00,
                         "bonoTotalEfectivo"=>0.00,
                         "bonoTotal"=>0.00
