@@ -25,16 +25,17 @@ class LogicController extends Controller
                 // return response()->json($avances);
                 $avances->makeHidden(['id', 'DNI ', 'MAX_FECHA']);
                 $avances = $avances->map(function ($item) {
+                    // return $item;
                     return [
                         "fecha" => Carbon::parse($item->FECHA)->format('m-d'),
                         "altaPrepago" => (float)$item->{"ALTA PREPAGO"},
                         // "portaPrepago" => (float)$item->{"PORTA PREPAGO"},
                         "altaPostpago" => (float)$item->{"ALTA POSTPAGO"},
                         // "portaPostpago" => (float)$item->{"PORTA POSTPAGO"},
-                        "porta_pre_o_pre"=>0,
-                        "porta_post_o_pre"=>0,
-                        "porta_pre_o_pos"=>0,
-                        "porta_post_o_pos"=>0
+                        "porta_pre_o_pre"=>(float)$item->porta_pre_o_pre,
+                        "porta_post_o_pre"=>(float)$item->porta_post_o_pre,
+                        "porta_pre_o_pos"=>(float)$item->porta_pre_o_pos,
+                        "porta_post_o_pos"=>(float)$item->porta_post_o_pos
                     ];
                 });
                 return response()->json(["status" => Response::HTTP_OK, "message" => "Avance Diario", "data" => $avances], Response::HTTP_OK);
