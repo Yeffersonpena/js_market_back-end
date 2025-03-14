@@ -133,6 +133,7 @@ class GestorController extends Controller
                 4 => "spLoadFileAvanceDiario",
                 5 => "spLoadFileEsquema",
                 6 => "spLoadFileMesaAyuda",
+                7 => "spLoadFileVentaLog",
             ];
             $msgAlert=[
                 1 => "entregable",
@@ -141,6 +142,7 @@ class GestorController extends Controller
                 4 => "avance diario",
                 5 => "esquema",
                 6 => "mesa de ayuda",
+                7 => "venta log",
             ];
             $pathFileInfo=[
                 1 => 'PLANIFICACION\MAESTRAS\fuente_portal_AD\ENTREGABLE\Entregable.xlsx',
@@ -148,7 +150,8 @@ class GestorController extends Controller
                 3 => 'PLANIFICACION\MAESTRAS\fuente_portal_AD\ABONOS\Abonos.xlsx',
                 4 => 'PLANIFICACION\MAESTRAS\fuente_portal_AD\AVANCE_DIARIO\carga_avance_multimarca.xlsx',
                 5 => 'PLANIFICACION\MAESTRAS\fuente_portal_AD\ESQUEMAS\Listado de incentivos.xlsx',
-                6 => 'PLANIFICACION\MAESTRAS\fuente_portal_AD\MESA DE AYUDA\Mesa_de_ayuda.xlsx'
+                6 => 'PLANIFICACION\MAESTRAS\fuente_portal_AD\MESA DE AYUDA\Mesa_de_ayuda.xlsx',
+                7 => 'PLANIFICACION\MAESTRAS\fuente_portal_AD\ENTREGABLE\VentasLog.xlsm'
             ];
             $nameSp=$mapingSp[$request->typeSp] ?? "";
             $msgAlertFile=$msgAlert[$request->typeSp] ?? "";
