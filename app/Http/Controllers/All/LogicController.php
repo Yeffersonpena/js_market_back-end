@@ -21,7 +21,7 @@ class LogicController extends Controller
 
             $existeAvance = VI_AVANCES_DIARIOS::where('DNI_Responsable', $dni)->whereYear('FECHA', $anio)->whereMonth('FECHA', $mes)->exists();
             if ($existeAvance) {
-                $avances = VI_AVANCES_DIARIOS::where('DNI_Responsable', $dni)->whereYear('FECHA', $anio)->whereMonth('FECHA', $mes)->get();
+                $avances = VI_AVANCES_DIARIOS::where('DNI_Responsable', $dni)->whereYear('FECHA', $anio)->whereMonth('FECHA', $mes)->orderBy('FECHA')->get();
                 // return response()->json($avances);
                 $avances->makeHidden(['id', 'DNI ', 'MAX_FECHA']);
                 $avances = $avances->map(function ($item) {
