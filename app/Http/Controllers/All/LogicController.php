@@ -32,9 +32,10 @@ class LogicController extends Controller
                         // "portaPrepago" => (float)$item->{"PORTA PREPAGO"},
                         "altaPostpago" => (float)$item->{"ALTA POSTPAGO"},
                         // "portaPostpago" => (float)$item->{"PORTA POSTPAGO"},
-                        "porta_pre_o_pre"=>(float)$item->porta_pre_o_pre,
+                        "porta_pre"=>(float)$item->porta_pre,
+                        // "porta_pre_o_pre"=>(float)$item->porta_pre_o_pre,
                         "porta_post_o_pre"=>(float)$item->porta_post_o_pre,
-                        "porta_pre_o_pos"=>(float)$item->porta_pre_o_pos,
+                        // "porta_pre_o_pos"=>(float)$item->porta_pre_o_pos,
                         "porta_post_o_pos"=>(float)$item->porta_post_o_pos
                     ];
                 });
