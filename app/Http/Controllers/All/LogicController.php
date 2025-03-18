@@ -107,20 +107,24 @@ class LogicController extends Controller
     public function getAbono($dni, $anio, $mes)
     {
         try {
-            $existeAbono = PDV_ABONOS::where('DNI', $dni)->where('año', '=', $anio)->where('mes', '=', $mes)->exists();
+            $existeAbono = PDV_ABONOS::where('DNI RESP', $dni)->where('año', '=', $anio)->where('mes', '=', $mes)->exists();
             if ($existeAbono) {
-                $abono = PDV_ABONOS::where('DNI', $dni)->where('año', '=', $anio)->where('mes', '=', $mes)->get();
+                $abono = PDV_ABONOS::where('DNI RESP', $dni)->where('año', '=', $anio)->where('mes', '=', $mes)->get();
+                // return 2;
+                // return $abono;
                 $abono->makeHidden(['DNI ']);
                 $abono = $abono->map(function ($item) {
                     return [
-                        "id" => $item->id,
-                        "año" => $item->año,
-                        "mes" => $item->mes,
+                        // "id" => $item->id,
+                        "año" => $item->AÑO,
+                        "mes" => $item->MES,
                         "detalle" => $item->DETALLE,
-                        "estado" => $item->{"STATUS DEL ABONO"},
-                        "total" => (float)$item->{"BONO TOTAL"},
-                        "fecha" => $item->{"FECHAS_ABONO"},
-                        "dniGanador"=> 0,
+                        // "estado" => $item->{"STATUS DEL ABONO"},
+                        "estado" => 0,
+                        // "total" => (float)$item->{"BONO TOTAL"},
+                        "total" => 0,
+                        "fecha" => $item->{"FECHAS_ ABONO"},
+                        "dniGanador"=> $item->{"DNI GANADOR"},
                     ];
                 });
                 return response()->json(["status" => Response::HTTP_OK, "message" => "Historial de Abono", "data" => $abono], Response::HTTP_OK);
