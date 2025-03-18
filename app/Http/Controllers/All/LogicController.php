@@ -120,6 +120,7 @@ class LogicController extends Controller
                         "estado" => $item->{"STATUS DEL ABONO"},
                         "total" => (float)$item->{"BONO TOTAL"},
                         "fecha" => $item->{"FECHAS_ABONO"},
+                        "dniGanador"=> 0,
                     ];
                 });
                 return response()->json(["status" => Response::HTTP_OK, "message" => "Historial de Abono", "data" => $abono], Response::HTTP_OK);
