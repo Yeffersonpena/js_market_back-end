@@ -9,7 +9,20 @@ BEGIN
               [año],[mes],[DNI],[DETALLE],[BONO TOTAL],[STATUS DEL ABONO],[FECHAS_ABONO]
             )
         SELECT 
-         [AÑO],[MES],CONVERT(VARCHAR(50), CAST([DNI] AS BIGINT)) AS DNI,[DETALLE],[BONO TOTAL],[STATUS DEL ABONO],[FECHAS_ ABONO]
+         --[AÑO],[MES],CONVERT(VARCHAR(50), CAST([DNI] AS BIGINT)) AS DNI,[DETALLE],[BONO TOTAL],[STATUS DEL ABONO],[FECHAS_ ABONO]
+            [ZONAL], 
+            [DNI RESP],
+            [DNI GANADOR],
+            [NOMBRE TITULAR],
+            [CANAL],
+            [DETALLE],
+            [BONO TOTAL],
+            [MÉTODO DE PAGO],
+            [ARCHIVO],
+            [FECHAS_ ABONO],
+            [AÑO],
+            [MES]
+
             --    [AÑO],[MES],cast([DNI] as varchar),[DETALLE],[BONO TOTAL],[STATUS DEL ABONO],[FECHAS_ ABONO]
         FROM OPENROWSET(
             'Microsoft.ACE.OLEDB.12.0', 

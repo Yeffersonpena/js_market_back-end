@@ -255,9 +255,9 @@ class GestorController extends Controller
             $fileExist=DB::select("SELECT dbo.fnCheckFileExists($typeSpName) AS fileExists");
             $textPathLoad=$pathFileInfo[$typeFile] ?? "";
             if($fileExist[0]->fileExists !=1){
-                return response()->json(["status" => Response::HTTP_OK, "message" => "El archivo {$msgAlertFile} no existe, porfavor cargalo en la ruta {$textPathLoad}"], Response::HTTP_OK);
+                return response()->json(["status" => Response::HTTP_OK, "message" => "El archivo {$msgAlertFile} no existe, porfavor cargalo en la ruta {$textPathLoad}", "boolExist"=>0], Response::HTTP_OK);
             }else{
-                return response()->json(["status" => Response::HTTP_OK, "message" => "El archivo {$msgAlertFile} existe"], Response::HTTP_OK);
+                return response()->json(["status" => Response::HTTP_OK, "message" => "El archivo {$msgAlertFile} existe","boolExist"=>1], Response::HTTP_OK);
             }
     }catch(\Exception $ex){
         return response()->json(["status" => Response::HTTP_BAD_REQUEST, "message" => $ex->getMessage()], Response::HTTP_BAD_REQUEST);
