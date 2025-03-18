@@ -120,9 +120,8 @@ class LogicController extends Controller
                         "mes" => $item->MES,
                         "detalle" => $item->DETALLE,
                         // "estado" => $item->{"STATUS DEL ABONO"},
-                        "estado" => 0,
-                        // "total" => (float)$item->{"BONO TOTAL"},
-                        "total" => 0,
+                        "estado" => $item->{"MÉTODO DE PAGO"},
+                        "total" => (float)$item->{"BONO TOTAL"},
                         "fecha" => $item->{"FECHAS_ ABONO"},
                         "dniGanador"=> $item->{"DNI GANADOR"},
                     ];
