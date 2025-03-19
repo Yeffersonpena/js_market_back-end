@@ -198,6 +198,7 @@ class LogicController extends Controller
                         "ventaTotal"=>0.00,
                         // "precioUni"=>0.00,
                         // 
+                        "faltaVenta"=>0.00,
                         "cantidadPortaPre"=>0.00,
                         "precioUniPortaPre"=>0.00,
                         "cantidadAltaPost"=>0.00,
@@ -225,6 +226,7 @@ class LogicController extends Controller
                         $acumuladorPayment["bonoTotalEfectivo"] += $item->bonoTotalEfectivo ? (float) $item->bonoTotalEfectivo : 0.0;
                         $acumuladorPayment["bonoTotal"] += $item->bonoTotal ? (float) $item->bonoTotal : 0.0;
                         // 
+                        $acumuladorPayment["faltaVenta"] = (float) $item->faltaVenta;
                         $acumuladorPayment["cantidadPortaPre"] = (float) $item->cantidadPortaPre;
                         $acumuladorPayment["precioUniPortaPre"] =(float) $item->precioUniPortaPre;
                         $acumuladorPayment["cantidadAltaPost"] =(float) $item->cantidadAltaPost;
