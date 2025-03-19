@@ -79,24 +79,27 @@ class LogicController extends Controller
         try {
             $existeAvance = VI_FLYERS::where('DNI_Responsable', $dni)->exists();
             if ($existeAvance) {
-                $avances = VI_FLYERS::where('DNI_Responsable', $dni)
-                    ->whereRaw('? BETWEEN MONTH(fecha_inicio) AND MONTH(fecha_fin)', [$mes])
-                    ->get();
-                $avances = $avances->map(function ($item) {
-                    return [
-                        "año" => $item->año,
-                        "mes" => $item->mes,
-                        "dni_responsable" => $item->dni_responsable,
-                        "zonal" => $item->zonal,
-                        // "foto_esquema"=>env('APP_DOMAIN').'/api/v1/pictures/img/'.$item->foto_esquema,
-                        "foto_esquema" => env('APP_DOMAIN') . '/storage/img/' . $item->foto_esquema,
-                        // http://127.0.0.1:8000/storage/img/Esquema_PDV_Febrero1.jpg
-                        // http://127.0.0.1:8000/api/v1/pictures/img/Esquema_PDV_Febrero1.jpg
-                        "fecha_inicio" => $item->fecha_inicio,
-                        "fecha_fin" => $item->fecha_fin
-                    ];
-                });
-                return response()->json(["status" => Response::HTTP_OK, "message" => "Fyers", "data" => $avances], Response::HTTP_OK);
+                $avances = VI_FLYERS::where('DNI_Responsable', $dni)->whereRaw('? BETWEEN MONTH(fecha_inicio) AND MONTH(fecha_fin)', [$mes])->get();
+                    $agrupados = $avances->groupBy('tipoImg');
+                    $agrupados->each(function ($items) {
+                        foreach ($items as $item) {
+                        // foreach ($items as $key=>$item) {
+                            // foreach ($items as $key=>$item) {
+                            // $item[$key]= [
+                            //     "año" => $item->año,
+                            //     "mes" => $item->mes,
+                            //     "dni_responsable" => $item->dni_responsable,
+                            //     "zonal" => $item->zonal,
+                            //     "foto_esquema" => env('APP_DOMAIN') . '/storage/img/' . $item->foto_esquema,
+                            //     "fecha_inicio" => $item->fecha_inicio,
+                            //     "fecha_fin" => $item->fecha_fin,
+                            //     "tipoImg"=> $item->tipoImg
+                            // ];
+                            $item->foto_esquema = env('APP_DOMAIN') . '/storage/img/' . $item->foto_esquema;
+                        }
+                    });
+                    // return $agrupados;
+                return response()->json(["status" => Response::HTTP_OK, "message" => "Fyers", "data" => $agrupados], Response::HTTP_OK);
             } else {
                 return response()->json(["status" => Response::HTTP_OK, "message" => "No hay fyers " . $dni, "data" => []], Response::HTTP_OK);
             }
