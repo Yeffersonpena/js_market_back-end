@@ -191,10 +191,26 @@ class LogicController extends Controller
                         "bonoPortaPostOPre" => 0.0,
                         "bonoChips"=>0.00,
                         "bonoTotalEfectivo"=>0.00,
-                        "bonoTotal"=>0.00
+                        "bonoTotal"=>0.00,
+                        "ventaTotal"=>0.00,
+                        "precioUni"=>0.00,
+                        // 
+                        "cantidadPortaPre"=>0.00,
+                        "precioUniPortaPre"=>0.00,
+                        "cantidadAltaPost"=>0.00,
+                        "precioUniAltaPost"=>0.00,
+                        "cantidadPortaPostOPost"=>0.00,
+                        "precioPortaPostOPost"=>0.00,
+                        "cantidadPortaPostOPre"=>0.00,
+                        "precioPortaPostOPre"=>0.00,
+                        "precioUniSchema"=>0.00,
+                        "levelUser"=>0.00,
+                        "cantidadRecarga"=>0.00,
+
                     ];
                     
                     foreach ($spPayment as $item) {
+                        // return $spPayment;
                         // $acumuladorPayment["unitarioRec"] += $item->unitarioRec ? (float) $item->unitarioRec : 0.0;
                         $acumuladorPayment["bonoPre"] += $item->bonoPre ? (float) $item->bonoPre : 0.0;
                         $acumuladorPayment["bonoRecargaPre"] += $item->bonoRecargaPre ? (float) $item->bonoRecargaPre : 0.0;
@@ -205,6 +221,19 @@ class LogicController extends Controller
                         $acumuladorPayment["bonoChips"] += $item->bonoChips ? (float) $item->bonoChips : 0.0;
                         $acumuladorPayment["bonoTotalEfectivo"] += $item->bonoTotalEfectivo ? (float) $item->bonoTotalEfectivo : 0.0;
                         $acumuladorPayment["bonoTotal"] += $item->bonoTotal ? (float) $item->bonoTotal : 0.0;
+                        // 
+                        $acumuladorPayment["cantidadPortaPre"] = (float) $item->cantidadPortaPre;
+                        $acumuladorPayment["precioUniPortaPre"] =(float) $item->precioUniPortaPre;
+                        $acumuladorPayment["cantidadAltaPost"] =(float) $item->cantidadAltaPost;
+                        $acumuladorPayment["precioUniAltaPost"] =(float) $item->precioUniAltaPost;
+                        $acumuladorPayment["cantidadPortaPostOPost"] =(float) $item->cantidadPortaPostOPost;
+                        $acumuladorPayment["precioPortaPostOPost"] =(float) $item->precioPortaPostOPost;
+                        $acumuladorPayment["cantidadPortaPostOPre"] =(float) $item->cantidadPortaPostOPre;
+                        $acumuladorPayment["precioPortaPostOPre"] =(float) $item->precioPortaPostOPre;
+                        $acumuladorPayment["precioUniSchema"] =(float) $item->precioUniSchema;
+                        $acumuladorPayment["levelUser"] =(float) $item->levelUser;
+                        $acumuladorPayment["cantidadRecarga"] =(float) $item->cantidadRecarga;
+                        
                     }
                     // $payment= $spPayment;
                     $payment= $acumuladorPayment;
