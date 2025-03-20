@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\IngresoUser;
 use App\Models\User;
 use App\Models\VI_AVANCES_DIARIOS;
 use Illuminate\Http\Request;
@@ -43,7 +44,12 @@ class LoginController extends Controller
             } catch (JWTException $e) {
                 return response()->json(["status" => Response::HTTP_INTERNAL_SERVER_ERROR, "message" => "No se pudo generar el token"], Response::HTTP_INTERNAL_SERVER_ERROR);
             }
-
+            // 
+            $ingreso=new IngresoUser();
+            $ingreso->user=$request->user;
+            $ingreso->ip=$request->ip();
+            $ingreso->fecha=now();
+            $ingreso->save();
             return response()->json(["status" => Response::HTTP_OK, "message" => "Login exitoso", "token" => $token], Response::HTTP_OK);
         } catch (\Exception $ex) {
             return response()->json(["status" => Response::HTTP_BAD_REQUEST, "message" => $ex->getMessage()], Response::HTTP_BAD_REQUEST);
@@ -151,6 +157,18 @@ class LoginController extends Controller
             }
         } catch (\Exception $ex) {
             return response()->json(["status" => Response::HTTP_BAD_REQUEST, "message- " => $ex->getMessage()], Response::HTTP_BAD_REQUEST);
+        }
+    }
+    function ingreso(Request $request)
+    {
+        try {
+            $ingreso=new IngresoUser();
+            $ingreso->user=$request->user;
+            $ingreso->ip=$request->ip();
+            $ingreso->fecha=now();
+            $ingreso->save();
+        } catch (\Exception $ex) {
+            return response()->json(["status" => Response::HTTP_BAD_REQUEST, "message" => $ex->getMessage()], Response::HTTP_BAD_REQUEST);
         }
     }
 }

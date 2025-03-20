@@ -23,6 +23,7 @@ Route::get('/api/v1/test/db', function (){
 });
 Route::post('/api/v1/users/login', [LoginController::class, 'loginLocalUser'])->name('login.user.api');
 Route::get('/api/v1/users/validation-user/{user}', [LoginController::class, 'validarUser'])->name('validation.user.api');
+// Route::get('/api/v1/users/ingreso', [LoginController::class, 'ingreso'])->name('ingreso.user.api');
 
 // Route::get('/users/create-user', [Controller::class, 'createUser'])->name('create.user.api');
 
@@ -63,6 +64,8 @@ Route::middleware(['jwt.apiRest.jsMarket', 'jwt.user.admin'])->group(function ()
     Route::delete('/api/v1/menu-perfil/{idMenuPerfil}', [MenuPerfilController::class, 'eliminarMenu']);
 
     Route::get('/api/v1/importaciones/hoy', [ImportacionController::class, 'getLogActual']);
+    Route::get('/api/v1/admin/historyIngreso/{user}/{fecha}', [GestorController::class, 'historyIngreso'])->name('historyIngreso.admin.api');
+
 });
 Route::middleware(['jwt.apiRest.jsMarket', 'jwt.user.pdv'])->group(function () {
     Route::get('/api/v1/pdv/getDataPdv/{dni}/{anio}/{mes}', [AvanceDiarioController::class, 'getDataPdv'])->name('getDataPdv.user.api');
