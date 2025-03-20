@@ -271,15 +271,15 @@ class GestorController extends Controller
             if($exitsDate){
                 if($user !=0 && $fecha !=0){
                     $getUserData=IngresoUser::where('user','=',$user)->whereDate('fecha',$fecha)->get();
-                    $getUserData->makeHidden(['id']);
+                    // $getUserData->makeHidden(['id']);
                 }else{
                     if($user !=0){
                         $getUserData=IngresoUser::where('user','=',$user)->get();
-                        $getUserData->makeHidden(['id']);    
+                        // $getUserData->makeHidden(['id']);    
                     }
                     if($fecha !=0){
                         $getUserData=IngresoUser::whereDate('fecha',$fecha)->get();
-                        $getUserData->makeHidden(['id']);
+                        // $getUserData->makeHidden(['id']);
                     }
                 }
             return response()->json(["status" => Response::HTTP_OK, "message" => "Si hay historial de sesiones", "data"=>$getUserData], Response::HTTP_OK);
