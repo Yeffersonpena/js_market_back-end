@@ -6,6 +6,7 @@ use App\Models\IngresoUser;
 use App\Models\User;
 use App\Models\VI_AVANCES_DIARIOS;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cookie;
 use Symfony\Component\HttpFoundation\Response;
@@ -44,11 +45,11 @@ class LoginController extends Controller
             } catch (JWTException $e) {
                 return response()->json(["status" => Response::HTTP_INTERNAL_SERVER_ERROR, "message" => "No se pudo generar el token"], Response::HTTP_INTERNAL_SERVER_ERROR);
             }
-            // 
+         
             $ingreso=new IngresoUser();
             $ingreso->user=$request->user;
             $ingreso->ip=$request->ip();
-            $ingreso->fecha=now();
+            $ingreso->fecha=Carbon::now();
             $ingreso->save();
             return response()->json(["status" => Response::HTTP_OK, "message" => "Login exitoso", "token" => $token], Response::HTTP_OK);
         } catch (\Exception $ex) {
