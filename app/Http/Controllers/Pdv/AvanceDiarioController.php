@@ -90,7 +90,7 @@ class AvanceDiarioController extends Controller
                     "nombrePDV"=> $infoVendedor->NOMBRE_RESPONSABLE,
                     "dniResponsable"=> $infoVendedor->DNI_RESPONSABLE,
                     "vendedor"=> $infoVendedor->NOMBRE_VENDEDOR1,
-                    "celularVendedor"=> $infoVendedor->CELULAR_VENDEDOR,
+                    "celularVendedor"=> $infoVendedor->CELULAR_VENDEDOR !=0 ? $infoVendedor->CELULAR_VENDEDOR: "" ,
                     "canal"=> $infoVendedor->ACCION,
                     "cluster"=> $infoVendedor->CLUSTER_PDV_REGULAR,
                     "cuotaPrepago"=>(float)$infoVendedor->CUOTA_PREPAGO,
