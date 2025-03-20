@@ -282,19 +282,6 @@ class GestorController extends Controller
                         $getUserData->makeHidden(['id']);
                     }
                 }
-                // return $getUserData;
-            // $history=[
-            //     [
-            //         "user"=>"234234",
-            //         "ip"=>"192.342.234.2",
-            //         "fecha"=>"20/03/2025"
-            //     ],
-            //     [
-            //         "user"=>"234234",
-            //         "ip"=>"192.342.234.2",
-            //         "fecha"=>"20/03/2025"
-            //     ]
-            // ];
             return response()->json(["status" => Response::HTTP_OK, "message" => "Si hay historial de sesiones", "data"=>$getUserData], Response::HTTP_OK);
         } else {
             return response()->json(["status" => Response::HTTP_OK, "message" => "No hay historial de sesiones"], Response::HTTP_OK);
