@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\HistoryStoreProcedure;
+use App\Models\IngresoUser;
 use App\Models\Perfil;
 use App\Models\User;
 use App\Models\ViewUser;
@@ -266,20 +267,35 @@ class GestorController extends Controller
     }
     function historyIngreso($user, $fecha){
         try{
-        if(true){
-            $history=[
-                [
-                    "user"=>"234234",
-                    "ip"=>"192.342.234.2",
-                    "fecha"=>"20/03/2025"
-                ],
-                [
-                    "user"=>"234234",
-                    "ip"=>"192.342.234.2",
-                    "fecha"=>"20/03/2025"
-                ]
-            ];
-            return response()->json(["status" => Response::HTTP_OK, "message" => "Si hay historial de sesiones", "data"=>$history], Response::HTTP_OK);
+            $exitsDate=IngresoUser::exists();
+            if($exitsDate){
+                if($user !=0 && $fecha !=0){
+                    $getUserData=IngresoUser::where('user','=',$user)->whereDate('fecha',$fecha)->get();
+                    $getUserData->makeHidden(['id']);
+                }else{
+                    if($user !=0){
+                        $getUserData=IngresoUser::where('user','=',$user)->get();
+                        $getUserData->makeHidden(['id']);    
+                    }
+                    if($fecha !=0){
+                        $getUserData=IngresoUser::whereDate('fecha',$fecha)->get();
+                        $getUserData->makeHidden(['id']);
+                    }
+                }
+                // return $getUserData;
+            // $history=[
+            //     [
+            //         "user"=>"234234",
+            //         "ip"=>"192.342.234.2",
+            //         "fecha"=>"20/03/2025"
+            //     ],
+            //     [
+            //         "user"=>"234234",
+            //         "ip"=>"192.342.234.2",
+            //         "fecha"=>"20/03/2025"
+            //     ]
+            // ];
+            return response()->json(["status" => Response::HTTP_OK, "message" => "Si hay historial de sesiones", "data"=>$getUserData], Response::HTTP_OK);
         } else {
             return response()->json(["status" => Response::HTTP_OK, "message" => "No hay historial de sesiones"], Response::HTTP_OK);
         }
