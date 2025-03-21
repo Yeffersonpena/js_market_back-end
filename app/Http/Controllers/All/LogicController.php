@@ -28,15 +28,15 @@ class LogicController extends Controller
                     // return $item;
                     return [
                         "fecha" => Carbon::parse($item->FECHA)->format('m-d'),
-                        "altaPrepago" => (float)$item->{"ALTA PREPAGO"},
+                        "altaPrepago" => (float)$item->ALTA_PREPAGO, //{"ALTA PREPAGO"},
                         // "portaPrepago" => (float)$item->{"PORTA PREPAGO"},
-                        "altaPostpago" => (float)$item->{"ALTA POSTPAGO"},
+                        "altaPostpago" => (float)$item->ALTA_POSTPAGO,//{"ALTA POSTPAGO"},
                         // "portaPostpago" => (float)$item->{"PORTA POSTPAGO"},
-                        "portaPre"=>(float)$item->porta_pre,
+                        "portaPre"=>(float)$item->PORTA_PREPAGO, //porta_pre,
                         // "porta_pre_o_pre"=>(float)$item->porta_pre_o_pre,
-                        "porta_post_o_pre"=>(float)$item->porta_post_o_pre,
+                        "porta_post_o_pre"=>(float)$item->PORTA_POST_O_PRE, //porta_post_o_pre,
                         // "porta_pre_o_pos"=>(float)$item->porta_pre_o_pos,
-                        "porta_post_o_pos"=>(float)$item->porta_post_o_pos
+                        "porta_post_o_pos"=>(float)$item->PORTA_POST_O_POS //porta_post_o_pos
                     ];
                 });
                 return response()->json(["status" => Response::HTTP_OK, "message" => "Avance Diario", "data" => $avances], Response::HTTP_OK);
