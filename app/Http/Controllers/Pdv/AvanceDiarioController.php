@@ -2,13 +2,13 @@
 
 namespace App\Http\Controllers\Pdv;
 
+use Illuminate\Support\Str;
 use App\Http\Controllers\Controller;
 use App\Models\PDV_ENTREGABLE;
 use App\Models\VI_AVANCES_DIARIOS;
 use App\Models\VI_AVANCES_INFO_VENDEDOR;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
-
 class AvanceDiarioController extends Controller
 {
     public function day($dni){
@@ -96,7 +96,8 @@ class AvanceDiarioController extends Controller
                     "cuotaPrepago"=>(float)$infoVendedor->CUOTA_PREPAGO,
                     "avancePrepago"=>(float)$infoVendedor->{'AVANCE PREPAGO'},
                     "recargasTotales"=>(float)$infoVendedor->RECARGA_TOTAL,
-                    "levelPdv"=> $infoVendedor->ACCION_2
+                    "levelPdv"=> $infoVendedor->ACCION_2, 
+                    "textLevelPdv"=> Str::contains($infoVendedor->ACCION_2, 'PDV PREMIUM')? 'PDV PREMIUM':$infoVendedor->ACCION_2 
                 ];
             return response()->json(["status" => Response::HTTP_OK, "message" => "Información", "data"=>$infoVendedor ], Response::HTTP_OK);
         } else {
