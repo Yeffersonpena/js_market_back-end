@@ -8,6 +8,7 @@ use App\Models\PDV_ENTREGABLE;
 use App\Models\VI_AVANCES_DIARIOS;
 use App\Models\VI_AVANCES_INFO_VENDEDOR;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Symfony\Component\HttpFoundation\Response;
 class AvanceDiarioController extends Controller
 {
@@ -81,10 +82,13 @@ class AvanceDiarioController extends Controller
         //            */
         //         ];
         //     }
-        $existeAvance = VI_AVANCES_INFO_VENDEDOR::where('DNI_RESPONSABLE', $dni)->exists();
         
+        // $existeAvance = VI_AVANCES_INFO_VENDEDOR::where('DNI_RESPONSABLE', $dni)->exists();
+        $existeAvance = DB::select( "EXEC spViewInfoVendedor ?, ?, ?", [$dni, $anio, $mes]);
         if($existeAvance){
-                $infoVendedor = VI_AVANCES_INFO_VENDEDOR::where('DNI_RESPONSABLE', $dni)->firstOrFail();
+            $infoVendedor=$existeAvance[0];
+            // $existeAvance = DB::statement( "EXEC spViewInfoVendedor ?, ?, ?");
+                // $infoVendedor = VI_AVANCES_INFO_VENDEDOR::where('DNI_RESPONSABLE', $dni)->firstOrFail();
                 $infoVendedor=[
                     "fecha"=> $infoVendedor->ULTIMA_FECHA,
                     "nombrePDV"=> $infoVendedor->NOMBRE_RESPONSABLE,
