@@ -19,47 +19,35 @@ class LogicController extends Controller
     {
         try {
 
-            $existeAvance = VI_AVANCES_DIARIOS::where('DNI_Responsable', $dni)->whereYear('FECHA', $anio)->whereMonth('FECHA', $mes)->exists();
+            // $existeAvance = VI_AVANCES_DIARIOS::where('DNI_Responsable', $dni)->whereYear('FECHA', $anio)->whereMonth('FECHA', $mes)->exists();
             // $existeAvance = VI_AVANCES_DIARIOS::whereRaw("CAST(DNI_RESPONSABLE AS VARCHAR) = ?", [$dni])
             // ->whereYear('FECHA', $anio)
             // ->whereMonth('FECHA', $mes)
             // ->exists();
+        $existeAvance = DB::select( "EXEC spView_Avances_Diarios ?, ?, ?", [$dni, $anio, $mes]);
             if ($existeAvance) {
-                $avances = VI_AVANCES_DIARIOS::where('DNI_Responsable', $dni)->whereYear('FECHA', $anio)->whereMonth('FECHA', $mes)->orderBy('FECHA')->get();
+                $avances=$existeAvance;
+                // return $avances;
+                // $avances = VI_AVANCES_DIARIOS::where('DNI_Responsable', $dni)->whereYear('FECHA', $anio)->whereMonth('FECHA', $mes)->orderBy('FECHA')->get();
                 // $avances = VI_AVANCES_DIARIOS::whereRaw("CAST(DNI_RESPONSABLE AS VARCHAR) = ?", [$dni])
                 // ->whereYear('FECHA', $anio)
                 // ->whereMonth('FECHA', $mes)
                 // ->orderBy('FECHA')
                 // ->get();
                 // return response()->json($avances);
-                $avances->makeHidden(['id', 'DNI ', 'MAX_FECHA']);
-                $avances = $avances->map(function ($item) {
-                    // return $item;
+
+                // $avances->makeHidden(['id', 'DNI ', 'MAX_FECHA']);
+                // ------------
+                $avances = array_map(function ($item) {
                     return [
                         "fecha" => Carbon::parse($item->FECHA)->format('m-d'),
-                        "altaPrepago" => (float)$item->ALTA_PREPAGO, //{"ALTA PREPAGO"},
-                        // "portaPrepago" => (float)$item->{"PORTA PREPAGO"},
-                        "altaPostpago" => (float)$item->ALTA_POSTPAGO,//{"ALTA POSTPAGO"},
-                        // "portaPostpago" => (float)$item->{"PORTA POSTPAGO"},
-                        "portaPre"=>(float)$item->PORTA_PREPAGO, //porta_pre,
-                        // "porta_pre_o_pre"=>(float)$item->porta_pre_o_pre,
-                        "porta_post_o_pre"=>(float)$item->PORTA_POST_O_PRE, //porta_post_o_pre,
-                        // "porta_pre_o_pos"=>(float)$item->porta_pre_o_pos,
-                        "porta_post_o_pos"=>(float)$item->PORTA_POST_O_POS //porta_post_o_pos
+                        "altaPrepago" => (float) $item->ALTA_PREPAGO,
+                        "altaPostpago" => (float) $item->ALTA_POSTPAGO,
+                        "portaPre" => (float) $item->PORTA_PREPAGO,
+                        "porta_post_o_pre" => (float) $item->PORTA_POST_O_PRE,
+                        "porta_post_o_pos" => (float) $item->PORTA_POST_O_POS,
                     ];
-                    // return [
-                    //     "fecha" => Carbon::parse($item->FECHA)->format('m-d'),
-                    //     "altaPrepago" => (float)$item->{"ALTA PREPAGO"},
-                    //     // "portaPrepago" => (float)$item->{"PORTA PREPAGO"},
-                    //     "altaPostpago" => (float)$item->{"ALTA POSTPAGO"},
-                    //     // "portaPostpago" => (float)$item->{"PORTA POSTPAGO"},
-                    //     "portaPre"=>(float)$item->porta_pre,
-                    //     // "porta_pre_o_pre"=>(float)$item->porta_pre_o_pre,
-                    //     "porta_post_o_pre"=>(float)$item->porta_post_o_pre,
-                    //     // "porta_pre_o_pos"=>(float)$item->porta_pre_o_pos,
-                    //     "porta_post_o_pos"=>(float)$item->porta_post_o_pos
-                    // ];
-                });
+                }, $existeAvance);
                 return response()->json(["status" => Response::HTTP_OK, "message" => "Avance Diario", "data" => $avances], Response::HTTP_OK);
             } else {
                 return response()->json(["status" => Response::HTTP_OK, "message" => "No hay avance diario para el usuario " . $dni, "data" => []], Response::HTTP_OK);
