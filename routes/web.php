@@ -65,6 +65,7 @@ Route::middleware(['jwt.apiRest.jsMarket', 'jwt.user.admin'])->group(function ()
 
     Route::get('/api/v1/importaciones/hoy', [ImportacionController::class, 'getLogActual']);
     Route::get('/api/v1/admin/historyIngreso/{user}/{fecha}', [GestorController::class, 'historyIngreso'])->name('historyIngreso.admin.api');
+    Route::get('/api/v1/admin/getListZonal', [GestorController::class, 'getZonal'])->name('zonal.admin.api');
 
 });
 Route::middleware(['jwt.apiRest.jsMarket', 'jwt.user.pdv'])->group(function () {

@@ -8,6 +8,7 @@ use App\Models\IngresoUser;
 use App\Models\Perfil;
 use App\Models\User;
 use App\Models\ViewUser;
+use App\Models\Zonal;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Symfony\Component\HttpFoundation\Response;
@@ -265,6 +266,18 @@ class GestorController extends Controller
     }
         
     }
+    function getZonal(){
+        try{
+            $listZonal=Zonal::get();
+            if($listZonal){
+                return response()->json(["status"=>Response::HTTP_OK, "message"=>"Existe lista de zonal", "data"=>$listZonal],Response::HTTP_OK); 
+            }else{
+                return response()->json(["status"=>Response::HTTP_OK, "message"=>"No hay zonal", "data"=>[]],Response::HTTP_OK,); 
+            }
+        }catch(\Exception $ex){
+            return response()->json(["status" => Response::HTTP_BAD_REQUEST, "message" => $ex->getMessage()], Response::HTTP_BAD_REQUEST);
+        }
+    }
     function historyIngreso($user, $fecha){
         try{
             $exitsDate=IngresoUser::exists();
@@ -282,6 +295,8 @@ class GestorController extends Controller
                         // $getUserData->makeHidden(['id']);
                     }
                 }
+                // json obj
+                // return
             return response()->json(["status" => Response::HTTP_OK, "message" => "Si hay historial de sesiones", "data"=>$getUserData], Response::HTTP_OK);
         } else {
             return response()->json(["status" => Response::HTTP_OK, "message" => "No hay historial de sesiones"], Response::HTTP_OK);
