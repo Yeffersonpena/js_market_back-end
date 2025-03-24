@@ -278,12 +278,13 @@ class GestorController extends Controller
             return response()->json(["status" => Response::HTTP_BAD_REQUEST, "message" => $ex->getMessage()], Response::HTTP_BAD_REQUEST);
         }
     }
-    function historyIngreso($user, $fecha){
+    function historyIngreso($user, $fecha, $zonal){
         try{
             $exitsDate=IngresoUser::exists();
+            
             if($exitsDate){
-                if($user !=0 && $fecha !=0){
-                    $getUserData=IngresoUser::where('user','=',$user)->whereDate('fecha',$fecha)->get();
+                if($user !=0 && $fecha !=0 && $zonal !=0){
+                    $getUserData=IngresoUser::where('zonal','=',$zonal)->where('user','=',$user)->whereDate('fecha',$fecha)->get();
                     // $getUserData->makeHidden(['id']);
                 }else{
                     if($user !=0){
@@ -292,6 +293,10 @@ class GestorController extends Controller
                     }
                     if($fecha !=0){
                         $getUserData=IngresoUser::whereDate('fecha',$fecha)->get();
+                        // $getUserData->makeHidden(['id']);
+                    }
+                    if($zonal !=0){
+                        $getUserData=IngresoUser::where('zonal',$zonal)->get();
                         // $getUserData->makeHidden(['id']);
                     }
                 }
