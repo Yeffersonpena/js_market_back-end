@@ -7,6 +7,7 @@ use App\Models\HistoryStoreProcedure;
 use App\Models\IngresoUser;
 use App\Models\Perfil;
 use App\Models\User;
+use App\Models\VI_INGRESO_LOG;
 use App\Models\ViewUser;
 use App\Models\Zonal;
 use Illuminate\Http\Request;
@@ -280,33 +281,86 @@ class GestorController extends Controller
     }
     function historyIngreso($user, $fecha, $zonal){
         try{
-            $exitsDate=IngresoUser::exists();
-            
-            if($exitsDate){
-                if($user !=0 && $fecha !=0 && $zonal !=0){
-                    $getUserData=IngresoUser::where('zonal','=',$zonal)->where('user','=',$user)->whereDate('fecha',$fecha)->get();
-                    // $getUserData->makeHidden(['id']);
+            $messageInfo="";
+            $stateValue=false;
+                if($user ==0 && $fecha ==0 && $zonal ==0){
+                    $existUserData=VI_INGRESO_LOG::exists();
+                    if($existUserData){
+                        $stateValue=true;
+                        $getUserData=VI_INGRESO_LOG::get();
+                    }else{
+                        $stateValue=false;
+                        $messageInfo="No hay historial de sesiones";
+                    }
+                }else if($user !=0 && $fecha !=0 && $zonal !=0){
+                    $existUserData=VI_INGRESO_LOG::where('zonal','=',$zonal)->where('user','=',$user)->whereDate('fecha',$fecha)->exists();
+                    if($existUserData){
+                        $stateValue=true;
+                        $getUserData=VI_INGRESO_LOG::where('zonal','=',$zonal)->where('user','=',$user)->whereDate('fecha',$fecha)->get();
+                    }else{
+                        $stateValue=false;
+                        $messageInfo="No se encontro la información para el usuario ".$user." el dia ".$fecha." en la zonal de ".$zonal;
+                    }
+                }else if ($user !=0 && $fecha !=0){
+                    $existUserData=VI_INGRESO_LOG::where('user','=',$user)->whereDate('fecha',$fecha)->exists();
+                    if($existUserData){
+                        $stateValue=true;
+                        $getUserData=VI_INGRESO_LOG::where('user','=',$user)->whereDate('fecha',$fecha)->get();
+                    }else{
+                        $stateValue=false;
+                        $messageInfo="No se encontro la información para el usuario ".$user." el dia ".$fecha;
+                    }
+                }else if ($user !=0 && $zonal !=0){
+                    $existUserData=VI_INGRESO_LOG::where('user','=',$user)->where('zonal',$zonal)->exists();
+                    if($existUserData){
+                        $stateValue=true;
+                        $getUserData=VI_INGRESO_LOG::where('user','=',$user)->where('zonal',$zonal)->get();
+                    }else{
+                        $stateValue=false;
+                        $messageInfo="No se encontro la información para el usuario ".$user." en la zonal de ".$zonal;
+                    }
+                }else if($zonal !=0 && $fecha !=0){
+                    $existUserData=VI_INGRESO_LOG::where('zonal','=',$zonal)->whereDate('fecha',$fecha)->exists();
+                    if($existUserData){
+                        $stateValue=true;
+                        $getUserData=VI_INGRESO_LOG::where('zonal','=',$zonal)->whereDate('fecha',$fecha)->get();
+                    }else{
+                        $stateValue=false;
+                        $messageInfo="No se encontro la información de la zonal ".$zonal." para el dia ".$fecha;
+                    }
                 }else{
                     if($user !=0){
-                        $getUserData=IngresoUser::where('user','=',$user)->get();
-                        // $getUserData->makeHidden(['id']);    
+                        $existUserData=VI_INGRESO_LOG::where('user','=',$user)->exists();
+                        if($existUserData){
+                            $stateValue=true;
+                            $getUserData=VI_INGRESO_LOG::where('user','=',$user)->get();
+                        }else{
+                            $stateValue=false;
+                            $messageInfo="No se encontro el user ".$user;
+                        }
                     }
                     if($fecha !=0){
-                        $getUserData=IngresoUser::whereDate('fecha',$fecha)->get();
-                        // $getUserData->makeHidden(['id']);
+                        $existUserData=VI_INGRESO_LOG::whereDate('fecha',$fecha)->exists();
+                        if($existUserData){
+                            $stateValue=true;
+                            $getUserData=VI_INGRESO_LOG::whereDate('fecha',$fecha)->get();
+                        }else{
+                            $stateValue=false;
+                            $messageInfo="No hay datos para la fecha ".$fecha;
+                        }    
                     }
                     if($zonal !=0){
-                        $getUserData=IngresoUser::where('zonal',$zonal)->get();
-                        // $getUserData->makeHidden(['id']);
+                        $existUserData=VI_INGRESO_LOG::where('zonal',$zonal)->exists();
+                        if($existUserData){
+                            $stateValue=true;
+                            $getUserData=VI_INGRESO_LOG::where('zonal',$zonal)->get();
+                        }else{
+                            $stateValue=false;
+                            $messageInfo="No hay datos en la zonal ".$zonal;
+                        }    
                     }
                 }
-                // json obj
-                // return
-            return response()->json(["status" => Response::HTTP_OK, "message" => "Si hay historial de sesiones", "data"=>$getUserData], Response::HTTP_OK);
-        } else {
-            return response()->json(["status" => Response::HTTP_OK, "message" => "No hay historial de sesiones"], Response::HTTP_OK);
-        }
-
+                return response()->json(["status" => Response::HTTP_OK, "message" => $stateValue?"Si hay historial de sesiones":$messageInfo, "data"=>$stateValue?$getUserData:[]], Response::HTTP_OK);
         }catch(\Exception $ex){
             return response()->json(["status" => Response::HTTP_BAD_REQUEST, "message" => $ex->getMessage()], Response::HTTP_BAD_REQUEST);
         }
