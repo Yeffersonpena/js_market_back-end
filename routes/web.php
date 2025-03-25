@@ -85,4 +85,5 @@ Route::middleware(['jwt.apiRest.jsMarket', 'jwt.user.multimarca'])->group(functi
     Route::get('/api/v1/multimarca/getAbono/{dni}/{anio}/{mes}', [LogicController::class, 'getAbono'])->name('flyers.user.api');
     // Route::get('/api/v1/multimarca/getAbono/{dni}/{anio}/{mes}', [LogicController::class, 'getAbono'])->name('flyers.user.api');
     Route::get('/api/v1/multimarca/getHistoryVenta/{dni}/{anio}/{mes}', [LogicController::class, 'getHistoryVenta'])->name('history.user.api');
+    Route::get('/api/v1/multimarca/getPayment/{dni}/{anio}/{mes}', [MultimarcaAvanceDiarioController::class, 'getPayment'])->name('paymentMM.user.api');
 });
