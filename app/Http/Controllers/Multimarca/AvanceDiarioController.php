@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\VI_AVANCES_DIARIOS;
 use App\Models\VI_FLYERS;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -83,7 +84,7 @@ class AvanceDiarioController extends Controller
                                 "cantidadPortaPostOPre"=>0.00,
                                 "precioPortaPostOPre"=>0.00,
                                 "precioUniSchema"=>0.00,
-                                "levelUser"=>0.00,
+                                "precioUniRecarga"=>0.00,
                                 "cantidadRecarga"=>0.00,
         
                             ];
@@ -113,7 +114,7 @@ class AvanceDiarioController extends Controller
                                 $acumuladorPayment["cantidadPortaPostOPre"] =(float) $item->cantidadPortaPostOPre;
                                 $acumuladorPayment["precioPortaPostOPre"] =(float) $item->precioPortaPostOPre;
                                 $acumuladorPayment["precioUniSchema"] =(float) $item->precioUniSchema;
-                                // $acumuladorPayment["levelUser"] =(float) $item->levelUser;
+                                $acumuladorPayment["precioUniRecarga"] =(float) $item->precioUniRecarga;
                                 $acumuladorPayment["cantidadRecarga"] =(float) $item->cantidadRecarga;
                                 $acumuladorPayment["cantidadRecarga"] =(float) $item->cantidadRecarga;
                                 $acumuladorPayment["ventaTotal"] =(float) $item->bonoChips;
@@ -131,27 +132,29 @@ class AvanceDiarioController extends Controller
                 }
             }
 
-        // public function getAvanceDiario($dni){
-        //     // return response()->json(["status" => Response::HTTP_OK, "message" => "usuario creado"], Response::HTTP_OK);
-        //     try{
-
-        //         $avances = VI_AVANCES_DIARIOS::where('DNI_Responsable', $dni)->get();
-        //         $existeAvance = VI_AVANCES_DIARIOS::where('DNI_Responsable', $dni)->exists();
-        //         // return response()->json($avances);
-        //         if($existeAvance){
-        //         return response()->json(["status" => Response::HTTP_OK, "message" => "Avance Diario MM", "data"=>$avances], Response::HTTP_OK);
-        //     } else {
-        //         return response()->json(["status" => Response::HTTP_UNAUTHORIZED, "message" => "No hay avance diario para el usuario ".$dni], Response::HTTP_UNAUTHORIZED);
-        //     }
-
-        //     } catch (\Exception $ex) {
-        //         return response()->json(["status" => Response::HTTP_BAD_REQUEST,"message" => $ex->getMessage()], Response::HTTP_BAD_REQUEST);
-        //     }
-           
-                    
-        // }
-
-       
-
+            public function getAvanceDiario($dni, $anio, $mes)
+            {
+                try {
+                $existeAvance = DB::select( "EXEC spView_Avances_Diarios_MM ?, ?, ?", [$dni, $anio, $mes]);
+                    if ($existeAvance) {
+                        $avances=$existeAvance;
+                        $avances = array_map(function ($item) {
+                            return [
+                                "fecha" => Carbon::parse($item->FECHA)->format('m-d'),
+                                "altaPrepago" => (float) $item->ALTA_PREPAGO,
+                                "altaPostpago" => (float) $item->ALTA_POSTPAGO,
+                                "portaPre" => (float) $item->PORTA_PREPAGO,
+                                "porta_post_o_pre" => (float) $item->PORTA_POST_O_PRE,
+                                "porta_post_o_pos" => (float) $item->PORTA_POST_O_POS,
+                            ];
+                        }, $existeAvance);
+                        return response()->json(["status" => Response::HTTP_OK, "message" => "Avance Diario", "data" => $avances], Response::HTTP_OK);
+                    } else {
+                        return response()->json(["status" => Response::HTTP_OK, "message" => "No hay avance diario para el usuario " . $dni, "data" => []], Response::HTTP_OK);
+                    }
+                } catch (\Exception $ex) {
+                    return response()->json(["status" => Response::HTTP_BAD_REQUEST, "message" => $ex->getMessage()], Response::HTTP_BAD_REQUEST);
+                }
+            }
         
 }
