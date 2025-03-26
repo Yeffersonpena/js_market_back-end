@@ -71,8 +71,14 @@ class AvanceDiarioController extends Controller
                                 "precioUniRecarga"=>0.00,
                                 "cantidadRecarga"=>0.00,
                                 "recuerdaVentaPostCost"=>0.00,
-                                "bonoTotalRecargaPost"=>0.00,
                                 "cantidadVenta"=>0.00,
+                                
+                                
+                                "cantidadRecargaPost"=>0.00,
+                                "bonoUniRecargaPost"=>0.00,
+                                "bonoTotalRecargaPost"=>0.00,
+                                "cantidadChipDevolucion"=>0.00,
+
                             ];
                             // "tipoMultimarca"
                             foreach ($spPayment as $item) {
@@ -102,9 +108,15 @@ class AvanceDiarioController extends Controller
                                 $acumuladorPayment["cantidadRecarga"] =(float) $item->cantidadRecarga;
                                 $acumuladorPayment["cantidadRecarga"] =(float) $item->cantidadRecarga;
                                 $acumuladorPayment["ventaTotal"] =(float) $item->bonoChips;
-                                $acumuladorPayment["recuerdaVentaPostCost"] =(float) $item->recuerdaVentaPostCost;
-                                $acumuladorPayment["bonoTotalRecargaPost"] =(float) $item->bonoTotalRecargaPost;
+
                                 $acumuladorPayment["cantidadVenta"] =(float) $item->cantidadVenta;
+                                
+                                $acumuladorPayment["recuerdaVentaPostCost"] =(float) $item->recuerdaVentaPostCost;
+                                $acumuladorPayment["cantidadRecargaPost"] =(float) $item->cantidadRecargaPost;
+                                $acumuladorPayment["bonoUniRecargaPost"] =(float) $item->bonoUniRecargaPost;
+                                $acumuladorPayment["bonoTotalRecargaPost"] =(float) $item->bonoTotalRecargaPost;
+                                $acumuladorPayment["cantidadChipDevolucion"] =(float) $item->cantidadChipDevolucion;
+
                             }
                             $payment= $acumuladorPayment;
                         return response()->json(["status" => Response::HTTP_OK, "message" => "Hay pago para el vendedor Multimarca", "data" => $payment], Response::HTTP_OK);
