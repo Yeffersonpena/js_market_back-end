@@ -77,10 +77,10 @@ class AvanceDiarioController extends Controller
                                 "cantidadRecargaPost"=>0.00,
                                 "bonoUniRecargaPost"=>0.00,
                                 "bonoTotalRecargaPost"=>0.00,
+                                "cantidadPostSchemaPost"=>0.00,
+                                "precioUniPostSchema"=>0.00,
                                 "cantidadChipDevolucion"=>0.00,
-
                             ];
-                            // "tipoMultimarca"
                             foreach ($spPayment as $item) {
                                 // return $item;
                                 // return $spPayment;
@@ -115,6 +115,8 @@ class AvanceDiarioController extends Controller
                                 $acumuladorPayment["cantidadRecargaPost"] =(float) $item->cantidadRecargaPost;
                                 $acumuladorPayment["bonoUniRecargaPost"] =(float) $item->bonoUniRecargaPost;
                                 $acumuladorPayment["bonoTotalRecargaPost"] =(float) $item->bonoTotalRecargaPost;
+                                $acumuladorPayment["cantidadPostSchemaPost"] =(float) $item->cantidadPostSchemaPost;
+                                $acumuladorPayment["precioUniPostSchema"] =(float) $item->precioUniPostSchema;
                                 $acumuladorPayment["cantidadChipDevolucion"] =(float) $item->cantidadChipDevolucion;
 
                             }
