@@ -31,6 +31,7 @@ class AvanceDiarioController extends Controller
                             "avancePrepago"=>(float)$infoVendedor->{'AVANCE PREPAGO'},
                             "fecha_inicio" => $infoVendedor->FECHA_INICIO,
                             "fecha_cierre"=> $infoVendedor->ULTIMA_FECHA,
+                            "cantidadDayVentaPre"=> (float)$infoVendedor->cantidaDayConVentasPre,
                         ];
                 return response()->json(["status" => Response::HTTP_OK, "message" => "Información", "data"=>$infoVendedor ], Response::HTTP_OK);
                 } else {
@@ -58,7 +59,7 @@ class AvanceDiarioController extends Controller
                                 "ventaTotal"=>0.00,
                                 // "precioUni"=>0.00,
                                 // 
-                                "cantidadDayVentaPre"=>0.00,
+                                // "cantidadDayVentaPre"=>0.00,
                                 "faltaVenta"=>0.00,
                                 "cantidadPortaPre"=>0.00,
                                 "precioUniPortaPre"=>0.00,
@@ -96,7 +97,7 @@ class AvanceDiarioController extends Controller
                                 $acumuladorPayment["bonoTotalEfectivo"] += $item->bonoTotalEfectivo ? (float) $item->bonoTotalEfectivo : 0.0;
                                 $acumuladorPayment["bonoTotal"] += $item->bonoTotal ? (float) $item->bonoTotal : 0.0;
                                 // $acumuladorPayment["faltaVenta"] = (float) $item->faltaVenta;
-                                $acumuladorPayment["cantidadDayVentaPre"] = (float) $item->cantidaDayConVentasPre;
+                                // $acumuladorPayment["cantidadDayVentaPre"] = (float) $item->cantidaDayConVentasPre;
                                 $acumuladorPayment["cantidadPortaPre"] = (float) $item->cantidadPortaPre;
                                 $acumuladorPayment["precioUniPortaPre"] =(float) $item->precioUniPortaPre;
                                 $acumuladorPayment["cantidadAltaPost"] =(float) $item->cantidadAltaPost;
