@@ -134,6 +134,31 @@ class AvanceDiarioController extends Controller
                 }
             }
 
+            public function getAvanceQuinDiario($dni, $anio, $mes)
+            {
+                try {
+                $existeAvance = DB::select( "EXEC spView_Avances_Diarios_Quincenal_MM ?, ?, ?", [$dni, $anio, $mes]);
+                    if ($existeAvance) {
+                        $avances=$existeAvance;
+                        $avances = array_map(function ($item) {
+                            return [
+                                "fecha" => Carbon::parse($item->FECHA)->format('m-d'),
+                                "altaPrepago" => (float) $item->ALTA_PREPAGO,
+                                "altaPostpago" => (float) $item->ALTA_POSTPAGO,
+                                "portaPre" => (float) $item->PORTA_PREPAGO,
+                                "porta_post_o_pre" => (float) $item->PORTA_POST_O_PRE,
+                                "porta_post_o_pos" => (float) $item->PORTA_POST_O_POS,
+                            ];
+                        }, $existeAvance);
+                        return response()->json(["status" => Response::HTTP_OK, "message" => "Avance Diario", "data" => $avances], Response::HTTP_OK);
+                    } else {
+                        return response()->json(["status" => Response::HTTP_OK, "message" => "No hay avance diario para el usuario " . $dni, "data" => []], Response::HTTP_OK);
+                    }
+                } catch (\Exception $ex) {
+                    return response()->json(["status" => Response::HTTP_BAD_REQUEST, "message" => $ex->getMessage()], Response::HTTP_BAD_REQUEST);
+                }
+            }
+
             public function getAvanceDiario($dni, $anio, $mes)
             {
                 try {
