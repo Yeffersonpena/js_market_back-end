@@ -262,4 +262,27 @@ class LogicController extends Controller
             return response()->json(["status" => Response::HTTP_BAD_REQUEST, "message" => $ex->getMessage()], Response::HTTP_BAD_REQUEST);
         }
     }
+
+    function getIncidencia(){
+        try{
+            $existEcidencia=true;
+            if($existEcidencia){
+                $dataEncidencia=[
+                    "id"=> 1,
+                    "dniIncidencia"=> 342,
+                    "fechaReporte"=> '2025-03-28',
+                    "errorReportado"=> 'test --',
+                    "statusIncidencia"=> 'ok',
+                    "seSupero"=> 'si',
+                    "tipoDni"=> "enrolado",
+                    "dniResponsable"=> 0323
+                ];
+                return response()->json(["status" => Response::HTTP_OK, "message" => "Información de incidencia", "data" => $dataEncidencia], Response::HTTP_OK);
+            } else {
+            return response()->json(["status" => Response::HTTP_OK, "message" => "No hay información de incidencia", "data" => []], Response::HTTP_OK);
+            }
+        } catch (\Exception $ex) {
+            return response()->json(["status" => Response::HTTP_BAD_REQUEST, "message" => $ex->getMessage()], Response::HTTP_BAD_REQUEST);
+        }
+    }
 }
