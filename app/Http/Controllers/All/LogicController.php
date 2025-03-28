@@ -268,6 +268,7 @@ class LogicController extends Controller
             $existEcidencia=true;
             if($existEcidencia){
                 $dataEncidencia=[
+                  [
                     "id"=> 1,
                     "dniIncidencia"=> 342,
                     "fechaReporte"=> '2025-03-28',
@@ -276,6 +277,17 @@ class LogicController extends Controller
                     "seSupero"=> 'si',
                     "tipoDni"=> "enrolado",
                     "dniResponsable"=> 0323
+                  ],
+                  [
+                    "id"=> 2,
+                    "dniIncidencia"=> 54545,
+                    "fechaReporte"=> '2025-03-28',
+                    "errorReportado"=> 'test --',
+                    "statusIncidencia"=> 'No se pudo',
+                    "seSupero"=> 'no',
+                    "tipoDni"=> "enrolado",
+                    "dniResponsable"=> 45683
+                  ]
                 ];
                 return response()->json(["status" => Response::HTTP_OK, "message" => "Información de incidencia", "data" => $dataEncidencia], Response::HTTP_OK);
             } else {
