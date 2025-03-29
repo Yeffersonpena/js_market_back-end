@@ -82,7 +82,9 @@ class AvanceDiarioController extends Controller
                                 "cantidadPostSchemaPost"=>0.00,
                                 "precioUniPostSchema"=>0.00,
                                 "cantidadChipDevolucion"=>0.00,
-                                "financiamiento"=>0.00,
+                                "financiamientoSaldo"=>0.00,
+                                "financiamientoChip"=>0.00,
+                                "financiamientoTotal"=>0.00,
                             ];
                             foreach ($spPayment as $item) {
                                 // return $item;
@@ -122,7 +124,9 @@ class AvanceDiarioController extends Controller
                                 $acumuladorPayment["cantidadPostSchemaPost"] =(float) $item->cantidadPostSchemaPost;
                                 $acumuladorPayment["precioUniPostSchema"] =(float) $item->precioUniPostSchema;
                                 $acumuladorPayment["cantidadChipDevolucion"] =(float) $item->cantidadChipDevolucion;
-                                $acumuladorPayment["financiamiento"] =(float) $item->financiamiento;
+                                $acumuladorPayment["financiamientoSaldo"] =(float) $item->financiamientoSaldo;
+                                $acumuladorPayment["financiamientoChip"] =(float) $item->financiamientoChip;
+                                $acumuladorPayment["financiamientoTotal"] =(float) $item->financiamiento;
                             }
                             $payment= $acumuladorPayment;
                         return response()->json(["status" => Response::HTTP_OK, "message" => "Hay pago para el vendedor Multimarca", "data" => $payment], Response::HTTP_OK);
