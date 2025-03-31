@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\All;
 
 use App\Http\Controllers\Controller;
+use App\Models\Incidencia;
 use App\Models\PDV_ABONOS;
 use App\Models\PDV_AVANCES_DIARIOS_MM;
 use App\Models\VI_AVANCES_DIARIOS;
@@ -263,33 +264,29 @@ class LogicController extends Controller
         }
     }
 
-    function getIncidencia(){
+    function getIncidencia($dni, $anio, $mes){
         try{
-            $existEcidencia=true;
-            if($existEcidencia){
-                $dataEncidencia=[
-                  [
-                    "id"=> 1,
-                    "dniIncidencia"=> 342,
-                    "fechaReporte"=> '2025-03-28',
-                    "errorReportado"=> 'test --',
-                    "statusIncidencia"=> 'ok',
-                    "seSupero"=> 'si',
-                    "tipoDni"=> "enrolado",
-                    "dniResponsable"=> 0323
-                  ],
-                  [
-                    "id"=> 2,
-                    "dniIncidencia"=> 54545,
-                    "fechaReporte"=> '2025-03-28',
-                    "errorReportado"=> 'test --',
-                    "statusIncidencia"=> 'No se pudo',
-                    "seSupero"=> 'no',
-                    "tipoDni"=> "enrolado",
-                    "dniResponsable"=> 45683
-                  ]
-                ];
-                return response()->json(["status" => Response::HTTP_OK, "message" => "Información de incidencia", "data" => $dataEncidencia], Response::HTTP_OK);
+            $existIncidencia=Incidencia::exists();
+            if($existIncidencia){
+                $incidencia=Incidencia::where('dniIncidencia','=',$dni)->exists();
+                    if($incidencia){
+                        $getIncidencia=Incidencia::where('dniIncidencia','=',$dni)->get();
+                        $dataIncidencia=$getIncidencia->map(function ($item){
+                            return [
+                            "id"=> $item->id,
+                            "dniIncidencia"=> $item->dniIncidencia,
+                            "fechaReporte"=> $item->{'FECHA ENVIO JEFE'},
+                            "errorReportado"=> $item->{'ERROR'},
+                            "statusIncidencia"=> $item->{'Status de Incidencia'},
+                            "seSupero"=> $item->{'SE SUPERO SI/NO'},
+                            "tipoDni"=> 0,
+                            "dniResponsable"=>0,
+                        ];
+                    });
+                    return response()->json(["status" => Response::HTTP_OK, "message" => "Información de incidencia", "data" => $dataIncidencia], Response::HTTP_OK);
+                }else{
+                    return response()->json(["status" => Response::HTTP_OK, "message" => "No se encontro la Información de la incidencia para el usuario ".$dni, "data" => []], Response::HTTP_OK);
+                }
             } else {
             return response()->json(["status" => Response::HTTP_OK, "message" => "No hay información de incidencia", "data" => []], Response::HTTP_OK);
             }
