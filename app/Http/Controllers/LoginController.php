@@ -28,7 +28,7 @@ class LoginController extends Controller
                 'password.max' => 'La contraseña no puede tener más de 10 caracteres.',
                 'user.max' => 'El usuario no puede tener más de 10 caracteres.',
             ]);
-
+           
             $userData = DB::selectOne("EXEC sp_LoginUser ?, ?", [$request->user, $request->password]);
 
             if (!$userData) {
@@ -75,11 +75,13 @@ class LoginController extends Controller
         try {
             $tokenData = $request->bearerToken();
             $token = JWTAuth::parseToken()->authenticate();
+            $dateNow=DB::select('select valor from dbo.parametros where tipo= ?',[1]);
             $user = [
                 // "id"=>$token->id,
                 "user" => $token->user,
                 "perfil" => $token->idPerfil,
                 "zonal" => $token->zonal,
+                "dateNow"=>$dateNow[0]->valor ?? null,
             ];
             return response()->json(["status" => Response::HTTP_OK, "message" => "token valido", "user" => $user], Response::HTTP_OK);
         } catch (\Throwable $th) {
