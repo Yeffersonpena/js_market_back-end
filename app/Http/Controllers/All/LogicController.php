@@ -277,8 +277,8 @@ class LogicController extends Controller
                             "errorReportado"=> $item->{'ERROR'},
                             "statusIncidencia"=> $item->{'Status de Incidencia'},
                             "seSupero"=> $item->{'SE SUPERO SI/NO'},
-                            "tipoDni"=> 0,
-                            "dniEnrolado"=>$item->{'dni_enrolado'},
+                            "tipoDni"=> $item->{'dni_enrolado'},
+                            "dniResponsable"=>0,
                         ];
                     });
                     return response()->json(["status" => Response::HTTP_OK, "message" => "Información de incidencia", "data" => $dataIncidencia], Response::HTTP_OK);
