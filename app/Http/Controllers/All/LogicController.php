@@ -266,19 +266,19 @@ class LogicController extends Controller
         try{
             $existIncidencia=Incidencia::exists();
             if($existIncidencia){
-                $incidencia=Incidencia::where('dniIncidencia','=',$dni)->exists();
+                $incidencia=Incidencia::where('dni_incidencia','=',$dni)->exists();
                     if($incidencia){
-                        $getIncidencia=Incidencia::where('dniIncidencia','=',$dni)->get();
+                        $getIncidencia=Incidencia::where('dni_incidencia','=',$dni)->get();
                         $dataIncidencia=$getIncidencia->map(function ($item){
                             return [
                             "id"=> $item->id,
-                            "dniIncidencia"=> $item->dniIncidencia,
+                            "dni_incidencia"=> $item->dni_incidencia,
                             "fechaReporte"=> $item->{'FECHA ENVIO JEFE'},
                             "errorReportado"=> $item->{'ERROR'},
                             "statusIncidencia"=> $item->{'Status de Incidencia'},
                             "seSupero"=> $item->{'SE SUPERO SI/NO'},
                             "tipoDni"=> 0,
-                            "dniResponsable"=>0,
+                            "dniEnrolado"=>$item->{'dni_enrolado'},
                         ];
                     });
                     return response()->json(["status" => Response::HTTP_OK, "message" => "Información de incidencia", "data" => $dataIncidencia], Response::HTTP_OK);
