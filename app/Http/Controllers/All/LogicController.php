@@ -192,10 +192,10 @@ class LogicController extends Controller
     function getPayment($dni, $anio, $mes){
         try{
             // $existePayment = VI_PDV_PAYMENT::where('DNI', $dni)->where('año', '=', $anio)->where('mes', '=', $mes)->exists();
-            $spPayment=DB::select("exec spCalculoPayment ?,?,?", [$dni, $anio, $mes]);
+            // $spPayment=DB::select("exec spCalculoPayment ?,?,?", [$dni, $anio, $mes]);
+            $spPayment=DB::select("exec spCalculoPaymentAll ?,?,?,?", [$dni, $anio, $mes, 2]);
             if ($spPayment) {
                     $acumuladorPayment = [
-                        // "unitarioRec" => 0.0,
                         "bonoPre" => 0.0,
                         "bonoRecargaPre" => 0.0,
                         "bonoPortaPre" => 0.0,
@@ -206,7 +206,6 @@ class LogicController extends Controller
                         "bonoTotalEfectivo"=>0.00,
                         "bonoTotal"=>0.00,
                         "ventaTotal"=>0.00,
-                        // "precioUni"=>0.00,
                         // 
                         "faltaVenta"=>0.00,
                         "cantidadPortaPre"=>0.00,
@@ -255,7 +254,7 @@ class LogicController extends Controller
                     }
                     // $payment= $spPayment;
                     $payment= $acumuladorPayment;
-                return response()->json(["status" => Response::HTTP_OK, "message" => "Hay pago para el vendedor Pdv", "data" => $payment], Response::HTTP_OK);
+                return response()->json(["status" => Response::HTTP_OK, "message" => "Hay pago para el vendedor Pdv del mes de ".$mes, "data" => $payment], Response::HTTP_OK);
             } else {
                 return response()->json(["status" => Response::HTTP_OK, "message" => "No hay pagos ", "data" => []], Response::HTTP_OK);
             }
@@ -263,7 +262,6 @@ class LogicController extends Controller
             return response()->json(["status" => Response::HTTP_BAD_REQUEST, "message" => $ex->getMessage()], Response::HTTP_BAD_REQUEST);
         }
     }
-
     function getIncidencia($dni, $anio, $mes){
         try{
             $existIncidencia=Incidencia::exists();

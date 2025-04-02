@@ -43,7 +43,8 @@ class AvanceDiarioController extends Controller
         }
         function getPayment($dni, $anio, $mes){
                 try{
-                    $spPayment=DB::select("exec spCalculoPaymentMM ?,?,?", [$dni, $anio, $mes]);
+                    // $spPayment=DB::select("exec spCalculoPaymentMM ?,?,?", [$dni, $anio, $mes]);
+                    $spPayment=DB::select("exec spCalculoPaymentAll ?,?,?,?", [$dni, $anio, $mes, 3]);
                     // return $spPayment;
                     if ($spPayment) {
                             $acumuladorPayment = [
@@ -74,7 +75,6 @@ class AvanceDiarioController extends Controller
                                 "cantidadRecarga"=>0.00,
                                 "recuerdaVentaPostCost"=>0.00,
                                 "cantidadVenta"=>0.00,
-                                
                                 
                                 "cantidadRecargaPost"=>0.00,
                                 "bonoUniRecargaPost"=>0.00,
