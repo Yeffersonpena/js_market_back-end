@@ -193,7 +193,7 @@ class LogicController extends Controller
         try{
             // $existePayment = VI_PDV_PAYMENT::where('DNI', $dni)->where('año', '=', $anio)->where('mes', '=', $mes)->exists();
             // $spPayment=DB::select("exec spCalculoPayment ?,?,?", [$dni, $anio, $mes]);
-            $spPayment=DB::select("exec spCalculoPaymentAll ?,?,?,?", [$dni, $anio, $mes, 2]);
+            $spPayment=DB::select("exec spCalculoPaymentAll ?,?,?,?,?", [$dni, $anio, $mes, 0, 2]);
             if ($spPayment) {
                     $acumuladorPayment = [
                         "bonoPre" => 0.0,

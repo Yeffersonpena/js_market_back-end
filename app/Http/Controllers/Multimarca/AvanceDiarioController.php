@@ -44,7 +44,7 @@ class AvanceDiarioController extends Controller
         function getPayment($dni, $anio, $mes, $typeQuincena){
                 try{
                     // $spPayment=DB::select("exec spCalculoPaymentMM ?,?,?", [$dni, $anio, $mes]);
-                    $spPayment=DB::select("exec spCalculoPaymentAll ?,?,?,?", [$dni, $anio, $mes, 3]);
+                    $spPayment=DB::select("exec spCalculoPaymentAll ?,?,?,?,?", [$dni, $anio, $mes, $typeQuincena, 3]);
                     // return $spPayment;
                     if ($spPayment) {
                             $acumuladorPayment = [

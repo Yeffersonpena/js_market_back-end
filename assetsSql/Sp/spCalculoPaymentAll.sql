@@ -2,6 +2,7 @@ CREATE PROCEDURE [dbo].[spCalculoPaymentAll]
     @dni INT,
     @año INT,
     @mes INT,
+    @tipoQuincena INT,
     @tipoUser INT
 AS
 BEGIN
@@ -21,7 +22,7 @@ BEGIN
         END
         
         SET @sql = N'EXEC ' + @procName + N' @dni, @año, @mes;';
-        EXEC sp_executesql @sql, N'@dni INT, @año INT, @mes INT', @dni, @año, @mes;
+        EXEC sp_executesql @sql, N'@dni INT, @año INT, @mes INT, @tipoQuincena INT', @dni, @año, @mes, @tipoQuincena;
     END
     ELSE
     BEGIN
