@@ -41,7 +41,7 @@ class AvanceDiarioController extends Controller
                 return response()->json(["status" => Response::HTTP_BAD_REQUEST, "message" => $ex->getMessage()], Response::HTTP_BAD_REQUEST);
         }
         }
-        function getPayment($dni, $anio, $mes){
+        function getPayment($dni, $anio, $mes, $typeQuincena){
                 try{
                     // $spPayment=DB::select("exec spCalculoPaymentMM ?,?,?", [$dni, $anio, $mes]);
                     $spPayment=DB::select("exec spCalculoPaymentAll ?,?,?,?", [$dni, $anio, $mes, 3]);
