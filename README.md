@@ -156,3 +156,18 @@ pdv :
     "message": "SQLSTATE[42S22]: [Microsoft][ODBC Driver 17 for SQL Server][SQL Server]Invalid column name 'Nombre Vendedor_1'. (Connection: sqlsrv, SQL: EXEC spLoadFileEntregable)"
 }
 ```
+## Cálculos
+#### Pdv
+#### Multimarca
+```sh
+# DEVOLUCIÓN DE RECARGA PORTA POST
+cantidadChipDevolucion * bonoUniRecargaPost = bonoTotalRecargaPost;
+"cantidadChipDevolucion": 0, "bonoUniRecargaPost": 2,   =   "bonoTotalRecargaPost": 0,
+
+
+# -- DEVOLUCIÓN DE RECARGA PORTA POST [sin cambios back]
+# cantidadChipDevolucion * bonoUniRecargaPost=bonoTotalRecargaPost
+# -- DEVOLUCIÓN DE CHIPS POST [sin cambio de propieda back]
+# cantidadChipDevolucion *precioUniPostSchema= cantidadChipDevolucion
+
+```

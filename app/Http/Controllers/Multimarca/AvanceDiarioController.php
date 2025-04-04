@@ -89,6 +89,8 @@ class AvanceDiarioController extends Controller
                                 "nivelRatio" =>0.00,
                                 "minRatio" => 0.00,
                                 "maxRatio" => 0.00,
+                                "diaMinVenta" => 0.00,
+
                             ];
                             foreach ($spPayment as $item) {
                                 // return $item;
@@ -134,6 +136,7 @@ class AvanceDiarioController extends Controller
                                 $acumuladorPayment["nivelRatio"] =(float) $item->nivelRatio;
                                 $acumuladorPayment["minRatio"] =(float) $item->minRatio;
                                 $acumuladorPayment["maxRatio"] =(float) $item->maxRatio;
+                                $acumuladorPayment["diaMinVenta"] =(float) $item->diaMinVenta;
                             }
                             $payment= $acumuladorPayment;
                         return response()->json(["status" => Response::HTTP_OK, "message" => "Hay pago para el vendedor Multimarca", "data" => $payment], Response::HTTP_OK);
