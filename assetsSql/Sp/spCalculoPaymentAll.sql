@@ -21,7 +21,7 @@ BEGIN
             SET @procName = 'dbo.spCalculoPaymentMM_' + CAST(@mes AS NVARCHAR(2));
         END
         
-        SET @sql = N'EXEC ' + @procName + N' @dni, @año, @mes;';
+        SET @sql = N'EXEC ' + @procName + N' @dni, @año, @mes, @tipoQuincena;';
         EXEC sp_executesql @sql, N'@dni INT, @año INT, @mes INT, @tipoQuincena INT', @dni, @año, @mes, @tipoQuincena;
     END
     ELSE
