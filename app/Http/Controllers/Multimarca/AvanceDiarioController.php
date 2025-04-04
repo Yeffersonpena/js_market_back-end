@@ -145,10 +145,10 @@ class AvanceDiarioController extends Controller
                 }
             }
 
-            public function getAvanceQuinDiario($dni, $anio, $mes)
+            public function getAvanceQuinDiario($dni, $anio, $mes, $typeQuincena)
             {
                 try {
-                $existeAvance = DB::select( "EXEC spView_Avances_Diarios_Quincenal_MM ?, ?, ?", [$dni, $anio, $mes]);
+                $existeAvance = DB::select( "EXEC spView_Avances_Diarios_Quincenal_MM ?, ?, ?, ?", [$dni, $anio, $mes, $typeQuincena]);
                     if ($existeAvance) {
                         $avances=$existeAvance;
                         $avances = array_map(function ($item) {
