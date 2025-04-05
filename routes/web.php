@@ -13,6 +13,10 @@ use App\Http\Controllers\Admin\ImportacionController;
 use App\Models\PDV_ABONOS;
 use Illuminate\Support\Facades\Route;
 
+Route::get('/loadImagenPicture', function () {
+    return view('view');
+});
+Route::post('/api/v1/imagenes/allImg', [ImagenController::class, 'updateImg'])->name('updateImg.imagen.api');
 
 Route::get('/api/v1/test/server', function () {
     return response()->json(["status" => 200, "message" => "server start"]);
@@ -52,6 +56,8 @@ Route::middleware(['jwt.apiRest.jsMarket', 'jwt.user.admin'])->group(function ()
     Route::post('/api/v1/imagenes', [ImagenController::class, 'upload'])->name('upload.imagen.api');
     Route::post('/api/v1/imagenes/actualiza/{id}', [ImagenController::class, 'update'])->name('update.imagen.api');
     Route::delete('/api/v1/imagenes/{id}', [ImagenController::class, 'delete'])->name('delete.imagen.api');
+    // Route::post('/api/v1/imagenes/allImg', [ImagenController::class, 'updateImg'])->name('updateImg.imagen.api');
+    
 
     Route::post('/api/v1/admin/updateFileSp', [GestorController::class, 'loadFileSp'])->name('fileSp.carga.api');
     Route::get('/api/v1/admin/validateFileLoad/{typeFile}', [GestorController::class, 'validateLoadFile'])->name('validateLoadFile.carga.api');

@@ -72,6 +72,26 @@ class ImagenController extends Controller
             'url' => $imageUrl,
         ]);
     }
+    public function updateImg(Request $request)
+    {
+        try{
+            $request->validate([
+                'images' => 'required|array',
+                'images.*' => 'image|mimes:jpeg,png,jpg,gif,svg|max:2048',
+            ]);
+            
+            $imageUrls = [];
+            foreach ($request->file('images') as $image) {
+                $filename = $image->getClientOriginalName();
+                $image->storeAs('img', $filename, 'public');
+                $imageUrl = env('APP_DOMAIN') . '/storage/img/' . $filename;
+                $imageUrls[] = $imageUrl;
+            }
+            return response()->json(['message' => 'Imagen subida exitosamente','url' => $imageUrls]);
+        } catch (\Exception $ex) {
+            return response()->json(["status" => Response::HTTP_BAD_REQUEST, "message" => $ex->getMessage()], Response::HTTP_BAD_REQUEST);
+        }
+    }
 
     public function delete($id): JsonResponse
     {
