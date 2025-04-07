@@ -32,6 +32,8 @@ class AvanceDiarioController extends Controller
                             "fecha_inicio" => $infoVendedor->FECHA_INICIO,
                             "fecha_cierre"=> $infoVendedor->ULTIMA_FECHA,
                             "cantidadDayVentaPre"=> (float)$infoVendedor->cantidaDayConVentasPre,
+                            "minRatio"=> (float)$infoVendedor->minRatio,
+                            "maxRatio"=> (float)$infoVendedor->maxRatio,
                         ];
                 return response()->json(["status" => Response::HTTP_OK, "message" => "Información", "data"=>$infoVendedor ], Response::HTTP_OK);
                 } else {
