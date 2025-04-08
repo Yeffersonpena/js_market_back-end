@@ -17,11 +17,13 @@ class AvanceDiarioController extends Controller
         try {
                 $existeAvance = DB::select( "EXEC spViewInfoVendedorMM ?, ?, ?", [$dni, $anio, $mes]);
                 if($existeAvance){
-                $infoVendedor=$existeAvance[0];
+                    $infoVendedor=$existeAvance[0];
+                    // return $infoVendedor;
                     $infoVendedor=[
                             "zonal" => $infoVendedor->ZONAL,
                             "dni_responsable" => $infoVendedor->{'DNI_RESPONSABLE'},
                             "dni_vendedor" => $infoVendedor->{'DNI_VENDEDOR'},
+                            "dni_supervisor" => $infoVendedor->{'DNI SUPERVISOR'},
                             "nombre_vendedor" => $infoVendedor->{'NOMBRE_VENDEDOR'},
                             "supervisor" => $infoVendedor->{'NOMBRE_SUPERVISOR'},
                             // "celularVendedor"=> $infoVendedor->CELULAR_VENDEDOR !=0 ? $infoVendedor->CELULAR_VENDEDOR: "" ,
@@ -37,6 +39,9 @@ class AvanceDiarioController extends Controller
                             "cantidadDayVentaPre"=> (float)$infoVendedor->cantidaDayConVentasPre,
                             "minRatio"=> (float)$infoVendedor->minRatio,
                             "maxRatio"=> (float)$infoVendedor->maxRatio,
+                            "entidadBancaria" => $infoVendedor->{'ENTIDAD BANCARIA MM'},
+                            "cctaBancario" => $infoVendedor->{'CCTA BANCARIA MM'},
+
                         ];
                 return response()->json(["status" => Response::HTTP_OK, "message" => "Información", "data"=>$infoVendedor ], Response::HTTP_OK);
                 } else {
