@@ -10,14 +10,17 @@ use App\Http\Controllers\Admin\PerfilController;
 use App\Http\Controllers\Admin\ImagenController;
 use App\Http\Controllers\Admin\MenuPerfilController;
 use App\Http\Controllers\Admin\ImportacionController;
+use App\Http\Controllers\Admin\ReporteController;
 use App\Http\Controllers\Multimarca\MultimarcaControlller;
 use App\Models\PDV_ABONOS;
 use Illuminate\Support\Facades\Route;
 
-Route::get('/loadImagenPicture', function () {
+Route::get('/view/loadImagenPicture', function () {
     return view('view');
 });
 Route::post('/api/v1/imagenes/allImg', [ImagenController::class, 'updateImg'])->name('updateImg.imagen.api');
+Route::get('/view/reporte/viewReporte', function(){ return view('reporte');});
+Route::get('/api/v1/reporte/all', [ReporteController::class, 'reporteAll'])->name('reporteAll.reporte.api');
 
 Route::get('/api/v1/test/server', function () {
     return response()->json(["status" => 200, "message" => "server start"]);
