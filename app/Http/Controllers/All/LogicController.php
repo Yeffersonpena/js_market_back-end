@@ -267,22 +267,40 @@ class LogicController extends Controller
             $existIncidencia=Incidencia::exists();
             if($existIncidencia){
                 // $incidencia=Incidencia::where('dni_incidencia','=',$dni)->exists();
-                $incidencia=Incidencia::where('dni_enrolado','=',$dni)->exists();
+                // exec [dbo].[spViewInfoIncidencia] @dni=21463317, @año=2025,@mes=4;
+                // $incidencia=Incidencia::se('dni_enrolado','=',$dni)->exists();
+                // $incidencia=Incidencia::where('dni_enrolado','=',$dni)->exists();
+                    $incidencia=DB::select('exec dbo.spViewInfoIncidencia ?,?,?',[$dni, $anio, $mes]);
+                    // return $incidencia;
+                    $dataIncidencia = [];
                     if($incidencia){
-                        $getIncidencia=Incidencia::where('dni_enrolado','=',$dni)->get();
-                        // $getIncidencia=Incidencia::where('dni_incidencia','=',$dni)->get();
-                        $dataIncidencia=$getIncidencia->map(function ($item){
-                            return [
-                            "id"=> $item->id,
-                            "dni_incidencia"=> $item->dni_incidencia,
-                            "fechaReporte"=> $item->{'FECHA ENVIO JEFE'},
-                            "errorReportado"=> $item->{'ERROR'},
-                            "statusIncidencia"=> $item->{'Status de Incidencia'},
-                            "seSupero"=> $item->{'SE SUPERO SI/NO'} ?? "",
-                            "tipoDni"=> $item->{'dni_enrolado'},
-                            "dniResponsable"=>0,
+                    //     // $getIncidencia=Incidencia::where('dni_enrolado','=',$dni)->get();
+                    //     // $getIncidencia=Incidencia::where('dni_incidencia','=',$dni)->get();
+                    //     $dataIncidencia=$getIncidencia->map(function ($item){
+                    //         return [
+                    //         "id"=> $item->id,
+                    //         "dni_incidencia"=> $item->dni_incidencia,
+                    //         "fechaReporte"=> $item->{'FECHA ENVIO JEFE'},
+                    //         "errorReportado"=> $item->{'ERROR'},
+                    //         "statusIncidencia"=> $item->{'Status de Incidencia'},
+                    //         "seSupero"=> $item->{'SE SUPERO SI/NO'} ?? "",
+                    //         "tipoDni"=> $item->{'dni_enrolado'},
+                    //         "dniResponsable"=>0,
+                    //     ];
+                    // });
+
+                    foreach ($incidencia as $item) {
+                        $dataIncidencia[] = [
+                            "id" => $item->id,
+                            "dni_incidencia" => $item->dni_incidencia,
+                            "fechaReporte" => $item->{'FECHA ENVIO JEFE'},
+                            "errorReportado" => $item->{'ERROR'},
+                            "statusIncidencia" => $item->{'Status de Incidencia'},
+                            "seSupero" => $item->{'SE SUPERO SI/NO'} ?? "",
+                            "tipoDni" => $item->dni_enrolado,
+                            "dniResponsable" => 0,
                         ];
-                    });
+                    }
                     return response()->json(["status" => Response::HTTP_OK, "message" => "Información de incidencia", "data" => $dataIncidencia], Response::HTTP_OK);
                 }else{
                     return response()->json(["status" => Response::HTTP_OK, "message" => "No se encontro la Información de la incidencia para el usuario ".$dni, "data" => []], Response::HTTP_OK);
