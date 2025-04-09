@@ -16,10 +16,7 @@ class ReporteController extends Controller
      *
      * @return \Symfony\Component\HttpFoundation\StreamedResponse
      */
-    public function exportUsuarios()
-    {
-        return Excel::download(new ReporteExport, 'reporte.xlsx');
-    }
+   
 
     public function reporteAll(){
         try{
