@@ -266,11 +266,11 @@ class LogicController extends Controller
         try{
             $existIncidencia=Incidencia::exists();
             if($existIncidencia){
-                $incidencia=Incidencia::where('dni_incidencia','=',$dni)->exists();
-                // $incidencia=Incidencia::where('dni_enrolado','=',$dni)->exists();
+                // $incidencia=Incidencia::where('dni_incidencia','=',$dni)->exists();
+                $incidencia=Incidencia::where('dni_enrolado','=',$dni)->exists();
                     if($incidencia){
-                        // $getIncidencia=Incidencia::where('dni_enrolado','=',$dni)->get();
-                        $getIncidencia=Incidencia::where('dni_incidencia','=',$dni)->get();
+                        $getIncidencia=Incidencia::where('dni_enrolado','=',$dni)->get();
+                        // $getIncidencia=Incidencia::where('dni_incidencia','=',$dni)->get();
                         $dataIncidencia=$getIncidencia->map(function ($item){
                             return [
                             "id"=> $item->id,
@@ -278,7 +278,7 @@ class LogicController extends Controller
                             "fechaReporte"=> $item->{'FECHA ENVIO JEFE'},
                             "errorReportado"=> $item->{'ERROR'},
                             "statusIncidencia"=> $item->{'Status de Incidencia'},
-                            "seSupero"=> $item->{'SE SUPERO SI/NO'},
+                            "seSupero"=> $item->{'SE SUPERO SI/NO'} ?? "",
                             "tipoDni"=> $item->{'dni_enrolado'},
                             "dniResponsable"=>0,
                         ];

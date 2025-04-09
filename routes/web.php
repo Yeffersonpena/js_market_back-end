@@ -10,6 +10,7 @@ use App\Http\Controllers\Admin\PerfilController;
 use App\Http\Controllers\Admin\ImagenController;
 use App\Http\Controllers\Admin\MenuPerfilController;
 use App\Http\Controllers\Admin\ImportacionController;
+use App\Http\Controllers\Multimarca\MultimarcaControlller;
 use App\Models\PDV_ABONOS;
 use Illuminate\Support\Facades\Route;
 
@@ -92,5 +93,5 @@ Route::middleware(['jwt.apiRest.jsMarket', 'jwt.user.multimarca'])->group(functi
     Route::get('/api/v1/multimarca/getAbono/{dni}/{anio}/{mes}', [LogicController::class, 'getAbono'])->name('flyers.user.api');
     Route::get('/api/v1/multimarca/getHistoryVenta/{dni}/{anio}/{mes}', [LogicController::class, 'getHistoryVenta'])->name('history.user.api');
     Route::get('/api/v1/multimarca/getPayment/{dni}/{anio}/{mes}/{typeQuincena}', [MultimarcaAvanceDiarioController::class, 'getPayment'])->name('paymentMM.user.api');
-    Route::get('/api/v1/multimarca/getIncidencia/{dni}/{anio}/{mes}', [LogicController::class, 'getIncidencia'])->name('incidencia.user.api');
+    Route::get('/api/v1/multimarca/getIncidencia/{dni}/{anio}/{mes}', [MultimarcaControlller::class, 'getIncidencia'])->name('incidencia.user.api');
 });
