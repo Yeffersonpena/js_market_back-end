@@ -27,7 +27,7 @@ class AvanceDiarioController extends Controller
                             "nombre_vendedor" => $infoVendedor->{'NOMBRE_VENDEDOR'},
                             "supervisor" => $infoVendedor->{'NOMBRE_SUPERVISOR'},
                             // "celularVendedor"=> $infoVendedor->CELULAR_VENDEDOR !=0 ? $infoVendedor->CELULAR_VENDEDOR: "" ,
-                            "celularSupervisor"=> $infoVendedor->CELULAR_VENDEDOR !=0 ? $infoVendedor->CELULAR_VENDEDOR: "" ,
+                            "celularSupervisor"=> $infoVendedor->{'NUM SUPERVISOR'} !=0 ? $infoVendedor->{'NUM SUPERVISOR'}: "" ,
                             "celularRecargador"=> $infoVendedor->NUMERO_RECARGADOR !=0 ? $infoVendedor->NUMERO_RECARGADOR: "" ,
                             // "celular"=> $infoVendedor->CELULAR_VENDEDOR !=0 ? $infoVendedor->CELULAR_VENDEDOR: "" ,
                             "proyecto" => $infoVendedor->{'ACCION_2'},
