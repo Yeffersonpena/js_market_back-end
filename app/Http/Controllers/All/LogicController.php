@@ -265,57 +265,22 @@ class LogicController extends Controller
     function getIncidencia($dni, $anio, $mes){
         try{
             $existIncidencia=Incidencia::exists();
-            // return $existIncidencia;
             if($existIncidencia){
-                // $incidencia=Incidencia::where('dni_incidencia','=',$dni)->exists();
-                // exec [dbo].[spViewInfoIncidencia] @dni=21463317, @año=2025,@mes=4;
-                // $incidencia=Incidencia::se('dni_enrolado','=',$dni)->exists();
-                // $incidencia=Incidencia::where('dni_enrolado','=',$dni)->exists();
                 $incidencia=DB::select('exec dbo.spViewInfoIncidencia ?,?,?',[$dni, $anio, $mes]);
-                // if (empty($incidencia)) {
-                //     // No hay datos, el procedimiento no devolvió ningún resultado
-                //     return response()->json([
-                //         'status' => 204, // No Content
-                //         'message' => 'No hay datos de incidencia.'
-                //     ]);
-                // } else {
-                //     // Hay datos
-                //     return response()->json([
-                //         'status' => 200,
-                //         'data' => $incidencia
-                //     ]);
-                // }
-                return $incidencia;
-                return 2;
                     $dataIncidencia = [];
                     if($incidencia){
-                    //     // $getIncidencia=Incidencia::where('dni_enrolado','=',$dni)->get();
-                    //     // $getIncidencia=Incidencia::where('dni_incidencia','=',$dni)->get();
-                    //     $dataIncidencia=$getIncidencia->map(function ($item){
-                    //         return [
-                    //         "id"=> $item->id,
-                    //         "dni_incidencia"=> $item->dni_incidencia,
-                    //         "fechaReporte"=> $item->{'FECHA ENVIO JEFE'},
-                    //         "errorReportado"=> $item->{'ERROR'},
-                    //         "statusIncidencia"=> $item->{'Status de Incidencia'},
-                    //         "seSupero"=> $item->{'SE SUPERO SI/NO'} ?? "",
-                    //         "tipoDni"=> $item->{'dni_enrolado'},
-                    //         "dniResponsable"=>0,
-                    //     ];
-                    // });
-
-                    foreach ($incidencia as $item) {
-                        $dataIncidencia[] = [
-                            "id" => $item->id,
-                            "dni_incidencia" => $item->dni_incidencia,
-                            "fechaReporte" => $item->{'FECHA ENVIO JEFE'},
-                            "errorReportado" => $item->{'ERROR'},
-                            "statusIncidencia" => $item->{'Status de Incidencia'},
-                            "seSupero" => $item->{'SE SUPERO SI/NO'} ?? "",
-                            "tipoDni" => $item->dni_enrolado,
-                            "dniResponsable" => 0,
-                        ];
-                    }
+                        foreach ($incidencia as $item) {
+                            $dataIncidencia[] = [
+                                "id" => $item->id,
+                                "dni_incidencia" => $item->dni_incidencia,
+                                "fechaReporte" => $item->{'FECHA ENVIO JEFE'},
+                                "errorReportado" => $item->{'ERROR'},
+                                "statusIncidencia" => $item->{'Status de Incidencia'},
+                                "seSupero" => $item->{'SE SUPERO SI/NO'} ?? "",
+                                "tipoDni" => $item->dni_enrolado,
+                                "dniResponsable" => 0,
+                            ];
+                        }
                     return response()->json(["status" => Response::HTTP_OK, "message" => "Información de incidencia", "data" => $dataIncidencia], Response::HTTP_OK);
                 }else{
                     return response()->json(["status" => Response::HTTP_OK, "message" => "No se encontro la Información de la incidencia para el usuario ".$dni, "data" => []], Response::HTTP_OK);
