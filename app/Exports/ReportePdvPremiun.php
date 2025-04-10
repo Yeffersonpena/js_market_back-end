@@ -12,6 +12,6 @@ class ReportePdvPremiun implements FromCollection
     */
     public function collection()
     {
-        return Reporte::all();
+        return Reporte::where('PROYECTO','like','%PDV PREMIUM%')->get();
     }
 }

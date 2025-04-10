@@ -10,13 +10,19 @@ use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 
 class ReporteExport implements FromCollection, WithHeadings, WithStyles 
 {
+    protected $tipoReporte;
+    public function __construct($tipoReporte=1)
+    {
+        $this->tipoReporte=$tipoReporte;
+    }
     /**
     * @return \Illuminate\Support\Collection
     */
     public function collection()
     {
         // return Reporte::all();
-        return \App\Models\Reporte::select([
+        // return \App\Models\Reporte::select([
+        $query = Reporte::select([
             'idPlantilla',
             'AÑO',
             'MES',
@@ -39,7 +45,15 @@ class ReporteExport implements FromCollection, WithHeadings, WithStyles
             'BONO_PORTA_POST_ORIGEN_POST',
             'BONO_PORTA_POST_ORIGEN_PRE',
             'EFECTIVO_A_PAGAR'
-        ])->get();
+        // ])->get();
+        ]);
+        
+        if ($this->tipoReporte == 2) {
+            $query->where('PROYECTO', 'PDV REGULAR');
+        } elseif ($this->tipoReporte == 3) {
+            $query->where('PROYECTO', 'like', '%PDV PREMIUM%');
+        }
+        return $query->get();
     }
 
     /**

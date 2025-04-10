@@ -12,6 +12,6 @@ class ReportePdvRegular implements FromCollection
     */
     public function collection()
     {
-        return Reporte::all();
+        return Reporte::where('PROYECTO','=','PDV REGULAR')->get();
     }
 }

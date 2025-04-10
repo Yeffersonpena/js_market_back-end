@@ -24,7 +24,12 @@ class ReporteController extends Controller
         try{
             // $reporte=Reporte::all();
             // return $reporte;
-            return Excel::download(new ReporteExport, 'reporte.xlsx');
+            // $nombreArchivo = match ($tipo) {
+            //     2 => 'reportePdvRegular.xlsx',
+            //     3 => 'reportePdvPremium.xlsx',
+            //     default => 'reporteCompleto.xlsx',
+            // };
+            return Excel::download(new ReporteExport(1), 'reporte.xlsx');
         }catch(\Exception $ex){
             return response()->json(["status" => Response::HTTP_BAD_REQUEST, "message" => $ex->getMessage()], Response::HTTP_BAD_REQUEST);
         }
@@ -34,7 +39,7 @@ class ReporteController extends Controller
         try{
             // $reporte=Reporte::all();
             // return $reporte;
-            return Excel::download(new ReportePdvRegular, 'reportePdvRegular.xlsx');
+            return Excel::download(new ReporteExport(2), 'reportePdvRegular.xlsx');
         }catch(\Exception $ex){
             return response()->json(["status" => Response::HTTP_BAD_REQUEST, "message" => $ex->getMessage()], Response::HTTP_BAD_REQUEST);
         }
@@ -44,7 +49,7 @@ class ReporteController extends Controller
         try{
             // $reporte=Reporte::all();
             // return $reporte;
-            return Excel::download(new ReportePdvPremiun, 'reportePremiun.xlsx');
+            return Excel::download(new ReporteExport(3), 'reportePremiun.xlsx');
         }catch(\Exception $ex){
             return response()->json(["status" => Response::HTTP_BAD_REQUEST, "message" => $ex->getMessage()], Response::HTTP_BAD_REQUEST);
         }
