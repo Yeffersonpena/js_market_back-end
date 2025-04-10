@@ -3,6 +3,8 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Exports\ReporteExport;
+use App\Exports\ReportePdvPremiun;
+use App\Exports\ReportePdvRegular;
 use App\Http\Controllers\Controller;
 use App\Models\Reporte;
 use Illuminate\Http\Request;
@@ -23,6 +25,26 @@ class ReporteController extends Controller
             // $reporte=Reporte::all();
             // return $reporte;
             return Excel::download(new ReporteExport, 'reporte.xlsx');
+        }catch(\Exception $ex){
+            return response()->json(["status" => Response::HTTP_BAD_REQUEST, "message" => $ex->getMessage()], Response::HTTP_BAD_REQUEST);
+        }
+    }
+    
+    public function reportePdvRegular(){
+        try{
+            // $reporte=Reporte::all();
+            // return $reporte;
+            return Excel::download(new ReportePdvRegular, 'reportePdvRegular.xlsx');
+        }catch(\Exception $ex){
+            return response()->json(["status" => Response::HTTP_BAD_REQUEST, "message" => $ex->getMessage()], Response::HTTP_BAD_REQUEST);
+        }
+    }
+
+    public function reportePremiun(){
+        try{
+            // $reporte=Reporte::all();
+            // return $reporte;
+            return Excel::download(new ReportePdvPremiun, 'reportePremiun.xlsx');
         }catch(\Exception $ex){
             return response()->json(["status" => Response::HTTP_BAD_REQUEST, "message" => $ex->getMessage()], Response::HTTP_BAD_REQUEST);
         }

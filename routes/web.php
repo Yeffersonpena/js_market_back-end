@@ -21,6 +21,9 @@ Route::get('/view/loadImagenPicture', function () {
 Route::post('/api/v1/imagenes/allImg', [ImagenController::class, 'updateImg'])->name('updateImg.imagen.api');
 Route::get('/view/reporte/viewReporte', function(){ return view('reporte');});
 Route::get('/api/v1/reporte/all', [ReporteController::class, 'reporteAll'])->name('reporteAll.reporte.api');
+Route::get('/api/v1/reporte/pdv-regular', [ReporteController::class, 'reportePdvRegular'])->name('reportePdvRegular.reporte.api');
+Route::get('/api/v1/reporte/pdv-premiun', [ReporteController::class, 'reportePremiun'])->name('reportePremiun.reporte.api');
+// Route::get('/api/v1/reporte/pdv-premiun', [ReporteController::class, 'reporteMultimarca'])->name('reporteMultimarca.reporte.api');
 
 Route::get('/api/v1/test/server', function () {
     return response()->json(["status" => 200, "message" => "server start"]);

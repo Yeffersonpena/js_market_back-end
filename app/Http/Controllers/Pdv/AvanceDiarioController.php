@@ -101,7 +101,9 @@ class AvanceDiarioController extends Controller
                     "avancePrepago"=>(float)$infoVendedor->{'AVANCE PREPAGO'},
                     "recargasTotales"=>(float)$infoVendedor->RECARGA_TOTAL,
                     "levelPdv"=> $infoVendedor->ACCION_2, 
-                    "textLevelPdv"=> Str::contains($infoVendedor->ACCION_2, 'PDV PREMIUM')? 'PDV PREMIUM':$infoVendedor->ACCION_2 
+                    "textLevelPdv"=> Str::contains($infoVendedor->ACCION_2, 'PDV PREMIUM')? 'PDV PREMIUM':$infoVendedor->ACCION_2,
+                    "entidadBancaria" => $infoVendedor->{'ENTIDAD BANCARIA MM'},
+                    "cctaBancario" => $infoVendedor->{'CCTA BANCARIA MM'}, 
                 ];
             return response()->json(["status" => Response::HTTP_OK, "message" => "Información", "data"=>$infoVendedor ], Response::HTTP_OK);
         } else {
