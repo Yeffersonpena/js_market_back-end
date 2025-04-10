@@ -265,13 +265,28 @@ class LogicController extends Controller
     function getIncidencia($dni, $anio, $mes){
         try{
             $existIncidencia=Incidencia::exists();
+            // return $existIncidencia;
             if($existIncidencia){
                 // $incidencia=Incidencia::where('dni_incidencia','=',$dni)->exists();
                 // exec [dbo].[spViewInfoIncidencia] @dni=21463317, @año=2025,@mes=4;
                 // $incidencia=Incidencia::se('dni_enrolado','=',$dni)->exists();
                 // $incidencia=Incidencia::where('dni_enrolado','=',$dni)->exists();
-                    $incidencia=DB::select('exec dbo.spViewInfoIncidencia ?,?,?',[$dni, $anio, $mes]);
-                    // return $incidencia;
+                $incidencia=DB::select('exec dbo.spViewInfoIncidencia ?,?,?',[$dni, $anio, $mes]);
+                // if (empty($incidencia)) {
+                //     // No hay datos, el procedimiento no devolvió ningún resultado
+                //     return response()->json([
+                //         'status' => 204, // No Content
+                //         'message' => 'No hay datos de incidencia.'
+                //     ]);
+                // } else {
+                //     // Hay datos
+                //     return response()->json([
+                //         'status' => 200,
+                //         'data' => $incidencia
+                //     ]);
+                // }
+                return $incidencia;
+                return 2;
                     $dataIncidencia = [];
                     if($incidencia){
                     //     // $getIncidencia=Incidencia::where('dni_enrolado','=',$dni)->get();
