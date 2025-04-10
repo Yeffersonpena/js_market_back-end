@@ -32,7 +32,7 @@ class LoginController extends Controller
             $userData = DB::selectOne("EXEC sp_LoginUser ?, ?", [$request->user, $request->password]);
             if (!$userData) {
                 $userConsulta = User::where('user', $request->user)->exists();
-                $messageUser=$userConsulta?'La contraseña es incorrecta, porfavor vuelve a ingresar la contraseña correcta':'Usuario no encontrado';
+                $messageUser=$userConsulta?'La contraseña es incorrecta, por favor vuelve a ingresar la contraseña correcta':'Usuario no encontrado';
                 return response()->json(["status" => Response::HTTP_OK, "message" => $messageUser], Response::HTTP_OK);
             }
 
