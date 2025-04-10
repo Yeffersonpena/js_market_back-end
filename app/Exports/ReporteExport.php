@@ -23,7 +23,7 @@ class ReporteExport implements FromCollection, WithHeadings, WithStyles
         // return Reporte::all();
         // return \App\Models\Reporte::select([
         $query = Reporte::select([
-            'idPlantilla',
+            // 'idPlantilla',
             'AÑO',
             'MES',
             'ZONAL',
@@ -64,7 +64,7 @@ class ReporteExport implements FromCollection, WithHeadings, WithStyles
     public function headings(): array
     {
         return [
-            'idPlantilla',
+            // 'idPlantilla',
             'AÑO',
             'MES',
             'ZONAL',
