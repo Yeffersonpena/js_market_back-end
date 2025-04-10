@@ -37,8 +37,6 @@ class ReporteController extends Controller
     
     public function reportePdvRegular(){
         try{
-            // $reporte=Reporte::all();
-            // return $reporte;
             return Excel::download(new ReporteExport(2), 'reportePdvRegular.xlsx');
         }catch(\Exception $ex){
             return response()->json(["status" => Response::HTTP_BAD_REQUEST, "message" => $ex->getMessage()], Response::HTTP_BAD_REQUEST);
@@ -47,8 +45,6 @@ class ReporteController extends Controller
 
     public function reportePremiun(){
         try{
-            // $reporte=Reporte::all();
-            // return $reporte;
             return Excel::download(new ReporteExport(3), 'reportePremiun.xlsx');
         }catch(\Exception $ex){
             return response()->json(["status" => Response::HTTP_BAD_REQUEST, "message" => $ex->getMessage()], Response::HTTP_BAD_REQUEST);
