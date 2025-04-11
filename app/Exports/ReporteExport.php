@@ -34,6 +34,7 @@ class ReporteExport implements FromCollection, WithHeadings, WithStyles
             'AVANCE_PREPAGO',
             'RECARGAS',
             'RATIO',
+            // 'RATIO as % RATIO',
             'PORTA_PRE',
             'ALTA_POST',
             'PORTA_POST_ORIGEN_POST',
@@ -54,6 +55,7 @@ class ReporteExport implements FromCollection, WithHeadings, WithStyles
             $query->where('PROYECTO', 'like', '%PDV PREMIUM%');
         }
         return $query->get();
+        
     }
 
     /**
@@ -74,18 +76,18 @@ class ReporteExport implements FromCollection, WithHeadings, WithStyles
             'ESTADO',
             'AVANCE_PREPAGO',
             'RECARGAS',
-            'RATIO',
+            '% RATIO',
             'PORTA_PRE',
             'ALTA_POST',
             'PORTA_POST_ORIGEN_POST',
             'PORTA_POST_ORIGEN_PRE',
-            'BONO_PRE',
-            'BONO_RC',
-            'BONO_PORTA_PRE',
-            'BONO_ALTA_POST',
-            'BONO_PORTA_POST_ORIGEN_POST',
-            'BONO_PORTA_POST_ORIGEN_PRE',
-            'EFECTIVO_A_PAGAR'
+            'S/. BONO_PRE',
+            'S/. BONO_RC',
+            'S/. BONO_PORTA_PRE',
+            'S/. BONO_ALTA_POST',
+            'S/. BONO_PORTA_POST_ORIGEN_POST',
+            'S/. BONO_PORTA_POST_ORIGEN_PRE',
+            'S/. EFECTIVO_A_PAGAR'
         ];
     }
 
@@ -103,7 +105,8 @@ class ReporteExport implements FromCollection, WithHeadings, WithStyles
             ->getAlignment()
             ->setWrapText(true);
 
-        return [
+        // return [
+        $headerStyle = [
             1 => [
                 'font' => [
                     'bold' => true,
@@ -111,7 +114,8 @@ class ReporteExport implements FromCollection, WithHeadings, WithStyles
                 ],
                 'fill' => [
                     'fillType' => \PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID,
-                    'startColor' => ['rgb' => '16d52e'], 
+                    'startColor' => ['rgb' => '538DD5'], 
+                    // 'startColor' => ['rgb' => '538DD5'], 
                 ],
                 'borders' => [
                 'allBorders' => [
@@ -124,6 +128,28 @@ class ReporteExport implements FromCollection, WithHeadings, WithStyles
                 ],  
             ],
         ];
+        
+        $customHeaderColors = [
+            'O' => '16d52e',
+            'P' => '16d52e',
+            'Q' => '16d52e',
+            'R' => '16d52e',
+            'S' => '16d52e',
+            'T' => '16d52e',
+            'U' => '16d52e',
+        ];
+
+        foreach ($customHeaderColors as $column => $color) {
+            $sheet->getStyle($column . '1')
+                ->applyFromArray([
+                    'fill' => [
+                        'fillType' => \PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID,
+                        'startColor' => ['rgb' => $color],
+                    ],
+                ]);
+        }
+    
+        return $headerStyle;
     }
     
 }
