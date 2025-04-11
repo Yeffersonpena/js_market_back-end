@@ -34,7 +34,6 @@ class ReporteExport implements FromCollection, WithHeadings, WithStyles
             'AVANCE_PREPAGO',
             'RECARGAS',
             'RATIO',
-            // 'RATIO as % RATIO',
             'PORTA_PRE',
             'ALTA_POST',
             'PORTA_POST_ORIGEN_POST',
@@ -105,8 +104,7 @@ class ReporteExport implements FromCollection, WithHeadings, WithStyles
             ->getAlignment()
             ->setWrapText(true);
 
-        // return [
-        $headerStyle = [
+            $headerStyle = [
             1 => [
                 'font' => [
                     'bold' => true,
@@ -114,7 +112,7 @@ class ReporteExport implements FromCollection, WithHeadings, WithStyles
                 ],
                 'fill' => [
                     'fillType' => \PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID,
-                    'startColor' => ['rgb' => '538DD5'], 
+                    // 'startColor' => ['rgb' => '538DD5'], 
                     // 'startColor' => ['rgb' => '538DD5'], 
                 ],
                 'borders' => [
@@ -130,6 +128,21 @@ class ReporteExport implements FromCollection, WithHeadings, WithStyles
         ];
         
         $customHeaderColors = [
+            'A' => '538DD5',
+            'B' => '538DD5',
+            'C' => '538DD5',
+            'D' => '538DD5',
+            'E' => '538DD5',
+            'F' => '538DD5',
+            'G' => '538DD5',
+            'H' => '538DD5',
+            'I' => '538DD5',
+            'J' => '538DD5',
+            'K' => '538DD5',
+            'L' => '538DD5',
+            'M' => '538DD5',
+            'N' => '538DD5',
+            // 
             'O' => '16d52e',
             'P' => '16d52e',
             'Q' => '16d52e',
@@ -140,15 +153,14 @@ class ReporteExport implements FromCollection, WithHeadings, WithStyles
         ];
 
         foreach ($customHeaderColors as $column => $color) {
-            $sheet->getStyle($column . '1')
-                ->applyFromArray([
+            $sheet->getStyle($column . '1')->applyFromArray([
                     'fill' => [
                         'fillType' => \PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID,
                         'startColor' => ['rgb' => $color],
                     ],
                 ]);
         }
-    
+       
         return $headerStyle;
     }
     
