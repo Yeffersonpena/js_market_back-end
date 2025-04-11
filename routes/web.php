@@ -22,7 +22,7 @@ Route::post('/api/v1/imagenes/allImg', [ImagenController::class, 'updateImg'])->
 Route::get('/view/reporte/viewReporte', function(){ return view('reporte');});
 Route::get('/api/v1/reporte/all', [ReporteController::class, 'reporteAll'])->name('reporteAll.reporte.api');
 Route::get('/api/v1/reporte/pdv-regular', [ReporteController::class, 'reportePdvRegular'])->name('reportePdvRegular.reporte.api');
-Route::get('/api/v1/reporte/pdv-premiun', [ReporteController::class, 'reportePremiun'])->name('reportePremiun.reporte.api');
+Route::get('/api/v1/reporte/pdv-premium', [ReporteController::class, 'reportePremiun'])->name('reportePremium.reporte.api');
 // Route::get('/api/v1/reporte/pdv-premiun', [ReporteController::class, 'reporteMultimarca'])->name('reporteMultimarca.reporte.api');
 
 Route::get('/api/v1/test/server', function () {
