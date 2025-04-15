@@ -7,8 +7,12 @@ use Maatwebsite\Excel\Concerns\FromCollection;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithStyles;
 use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
+// 
+use Maatwebsite\Excel\Concerns\WithColumnFormatting;
+use PhpOffice\PhpSpreadsheet\Style\NumberFormat;
 
-class ReporteExport implements FromCollection, WithHeadings, WithStyles 
+
+class ReporteExport implements FromCollection, WithHeadings, WithStyles, WithColumnFormatting
 {
     protected $tipoReporte;
     public function __construct($tipoReporte=1)
@@ -53,8 +57,11 @@ class ReporteExport implements FromCollection, WithHeadings, WithStyles
         } elseif ($this->tipoReporte == 3) {
             $query->where('PROYECTO', 'like', '%PDV PREMIUM%');
         }
-        return $query->get();
-        
+        // return $query->get();
+        return $query->get()->map(function ($item) {
+            $item->RATIO = $item->RATIO / 100;
+            return $item;
+        });
     }
 
     /**
@@ -163,5 +170,23 @@ class ReporteExport implements FromCollection, WithHeadings, WithStyles
        
         return $headerStyle;
     }
+    
+    public function columnFormats(): array
+    {
+        return [
+            // 'J' => '0.00%',
+            'J' => '0%',
+            // 'J' => '.00%',
+            // 'J' => NumberFormat::FORMAT_PERCENTAGE, //FORMAT_PERCENTAGE_0 FORMAT_PERCENTAGE_00
+            'O' => '"S/" #,##0.00',
+            'P' => '"S/" #,##0.00',
+            'Q' => '"S/" #,##0.00',
+            'R' => '"S/" #,##0.00',
+            'S' => '"S/" #,##0.00',
+            'T' => '"S/" #,##0.00',
+            'U' => '"S/" #,##0.00',
+        ];
+    }
+
     
 }
