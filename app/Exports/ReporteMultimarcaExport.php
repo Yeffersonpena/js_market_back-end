@@ -12,8 +12,8 @@ use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 use Maatwebsite\Excel\Concerns\WithColumnFormatting;
 use PhpOffice\PhpSpreadsheet\Style\NumberFormat;
 
-// class ReporteMultimarcaExport implements FromCollection, WithHeadings, WithStyles, WithColumnFormatting
-class ReporteMultimarcaExport implements FromCollection, WithHeadings
+class ReporteMultimarcaExport implements FromCollection, WithHeadings, WithStyles, WithColumnFormatting
+// class ReporteMultimarcaExport implements FromCollection, WithHeadings,WithColumnFormatting
 // class ReporteMultimarcaExport implements FromCollection
 {
     protected $tipoReporte;
@@ -26,30 +26,7 @@ class ReporteMultimarcaExport implements FromCollection, WithHeadings
     */
     public function collection()
     {
-        // return ReporteMultimarca::all();
-        // return \App\Models\Reporte::select([
         $query = ReporteMultimarca::select([
-            // 'AÑO',
-            // 'MES',
-            // 'ZONAL',
-            // 'DNI_RESPONSABLE',
-            // 'NOMBRE_RESPONSABLE',
-            // 'PROYECTO',
-            // 'ESTADO',
-            // 'AVANCE_PREPAGO',
-            // 'RECARGAS',
-            // 'RATIO',
-            // 'PORTA_PRE',
-            // 'ALTA_POST',
-            // 'PORTA_POST_ORIGEN_POST',
-            // 'PORTA_POST_ORIGEN_PRE',
-            // 'BONO_PRE',
-            // 'BONO_RC',
-            // 'BONO_PORTA_PRE',
-            // 'BONO_ALTA_POST',
-            // 'BONO_PORTA_POST_ORIGEN_POST',
-            // 'BONO_PORTA_POST_ORIGEN_PRE',
-            // 'EFECTIVO_A_PAGAR'
             "año",
             "mes",
             "zonal",
@@ -91,7 +68,6 @@ class ReporteMultimarcaExport implements FromCollection, WithHeadings
             "efectivo_post",
             "chips_post",
             "total_post"
-        // ])->get();
         ]);
         
         // if ($this->tipoReporte == 2) {
@@ -155,120 +131,83 @@ class ReporteMultimarcaExport implements FromCollection, WithHeadings
             "efectivo_post",
             "chips_post",
             "total_post"
-
-            // 'AÑO',
-            // 'MES',
-            // 'ZONAL',
-            // 'DNI_RESPONSABLE',
-            // 'NOMBRE_RESPONSABLE',
-            // 'PROYECTO',
-            // 'ESTADO',
-            // 'AVANCE_PREPAGO',
-            // 'RECARGAS',
-            // '% RATIO',
-            // 'PORTA_PRE',
-            // 'ALTA_POST',
-            // 'PORTA_POST_ORIGEN_POST',
-            // 'PORTA_POST_ORIGEN_PRE',
-            // 'S/. BONO_PRE',
-            // 'S/. BONO_RC',
-            // 'S/. BONO_PORTA_PRE',
-            // 'S/. BONO_ALTA_POST',
-            // 'S/. BONO_PORTA_POST_ORIGEN_POST',
-            // 'S/. BONO_PORTA_POST_ORIGEN_PRE',
-            // 'S/. EFECTIVO_A_PAGAR'
         ];
     }
 
      /**
      * style excel
      */
-    // public function styles(Worksheet $sheet)
-    // {
-    //     $sheet->getRowDimension(1)->setRowHeight(30); 
-    //     foreach (range('A', $sheet->getHighestColumn()) as $col) {
-    //         $sheet->getColumnDimension($col)->setAutoSize(true);
-    //     }
+    public function styles(Worksheet $sheet)
+    {
+        $sheet->getRowDimension(1)->setRowHeight(30); 
+        $highestColumn = $sheet->getHighestColumn();
+        $highestColumnIndex = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::columnIndexFromString($highestColumn);
+        for ($col = 1; $col <= $highestColumnIndex; $col++) {
+            $column = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($col);
+            $sheet->getColumnDimension($column)->setAutoSize(true);
+        }
+        $sheet->getStyle('A1:' . $highestColumn . '1')
+            ->getAlignment()
+            ->setWrapText(true);
+        $headerStyle = [
+            1 => [
+                'font' => [
+                    'bold' => true,
+                    'color' => ['rgb' => 'FFFFFF'],
+                ],
+                'fill' => [
+                    'fillType' => \PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID,
+                    'startColor' => ['rgb' => '538DD5'],
+                ],
+                'borders' => [
+                    'allBorders' => [
+                        'borderStyle' => \PhpOffice\PhpSpreadsheet\Style\Border::BORDER_THIN,
+                        'color' => ['rgb' => '000000'],
+                    ],
+                ],
+                'alignment' => [
+                    'vertical' => \PhpOffice\PhpSpreadsheet\Style\Alignment::VERTICAL_CENTER,
+                ],
+            ],
+        ];
+        $sheet->getStyle('A1:' . $highestColumn . '1')->applyFromArray($headerStyle[1]);
 
-    //     $sheet->getStyle('A1:' . $sheet->getHighestColumn() . $sheet->getHighestRow())
-    //         ->getAlignment()
-    //         ->setWrapText(true);
-
-    //         $headerStyle = [
-    //         1 => [
-    //             'font' => [
-    //                 'bold' => true,
-    //                 'color' => ['rgb' => 'FFFFFF'],
-    //             ],
-    //             'fill' => [
-    //                 'fillType' => \PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID,
-    //                 // 'startColor' => ['rgb' => '538DD5'], 
-    //                 // 'startColor' => ['rgb' => '538DD5'], 
-    //             ],
-    //             'borders' => [
-    //             'allBorders' => [
-    //                 'borderStyle' => \PhpOffice\PhpSpreadsheet\Style\Border::BORDER_THIN,
-    //                 'color' => ['rgb' => '000000'],
-    //                 ],
-    //             ],
-    //             'alignment' => [
-    //             'vertical' => \PhpOffice\PhpSpreadsheet\Style\Alignment::VERTICAL_CENTER,
-    //             ],  
-    //         ],
-    //     ];
-        
-    //     // $customHeaderColors = [
-    //     //     'A' => '538DD5',
-    //     //     'B' => '538DD5',
-    //     //     'C' => '538DD5',
-    //     //     'D' => '538DD5',
-    //     //     'E' => '538DD5',
-    //     //     'F' => '538DD5',
-    //     //     'G' => '538DD5',
-    //     //     'H' => '538DD5',
-    //     //     'I' => '538DD5',
-    //     //     'J' => '538DD5',
-    //     //     'K' => '538DD5',
-    //     //     'L' => '538DD5',
-    //     //     'M' => '538DD5',
-    //     //     'N' => '538DD5',
-    //     //     // 
-    //     //     'O' => '16d52e',
-    //     //     'P' => '16d52e',
-    //     //     'Q' => '16d52e',
-    //     //     'R' => '16d52e',
-    //     //     'S' => '16d52e',
-    //     //     'T' => '16d52e',
-    //     //     'U' => '16d52e',
-    //     // ];
-
-    //     // foreach ($customHeaderColors as $column => $color) {
-    //     //     $sheet->getStyle($column . '1')->applyFromArray([
-    //     //             'fill' => [
-    //     //                 'fillType' => \PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID,
-    //     //                 'startColor' => ['rgb' => $color],
-    //     //             ],
-    //     //         ]);
-    //     // }
-       
-    //     return $headerStyle;
-    // }
+        return $headerStyle;
+    }
     
-    // public function columnFormats(): array
-    // {
-    //     return [
-    //         // 'J' => '0.00%',
-    //         // 'J' => '0%',
-    //         // 'J' => '.00%',
-    //         // 'J' => NumberFormat::FORMAT_PERCENTAGE, //FORMAT_PERCENTAGE_0 FORMAT_PERCENTAGE_00
-    //         // 'O' => '"S/" #,##0.00',
-    //         // 'P' => '"S/" #,##0.00',
-    //         // 'Q' => '"S/" #,##0.00',
-    //         // 'R' => '"S/" #,##0.00',
-    //         // 'S' => '"S/" #,##0.00',
-    //         // 'T' => '"S/" #,##0.00',
-    //         // 'U' => '"S/" #,##0.00',
-    //     ];
-    // }
+    public function columnFormats(): array
+    {
+        return [
+            // 'J' => '0.00%',
+            // 'J' => '0%',
+            // 'J' => '.00%',
+            // 'J' => NumberFormat::FORMAT_PERCENTAGE, //FORMAT_PERCENTAGE_0 FORMAT_PERCENTAGE_00
+            'N' => '0%',
+            // 'O' => '"S/" #,##0.00',
+            // 'P' => '"S/" #,##0.00',
+            // 'Q' => '"S/" #,##0.00',
+            // 'R' => '"S/" #,##0.00',
+            // 'S' => '"S/" #,##0.00',
+            // 'T' => '"S/" #,##0.00',
+            // 'U' => '"S/" #,##0.00',
+            
+            'Y' => '"S/" #,##0.00',
+            // '' => '"S/" #,##0.00',
+            // '' => '"S/" #,##0.00',
+            'AB' => '"S/" #,##0.00',
+            'AC' => '"S/" #,##0.00',
+            'AD' => '"S/" #,##0.00',
+            'AE' => '"S/" #,##0.00',
+            'AF' => '"S/" #,##0.00',
+            // '' => '"S/" #,##0.00',
+            // '' => '"S/" #,##0.00',
+            // '' => '"S/" #,##0.00',
+            'AJ' => '"S/" #,##0.00',
+            'AK' => '"S/" #,##0.00',
+            'AL' => '"S/" #,##0.00',
+            'AM' => '"S/" #,##0.00',
+
+        ];
+    }
 
 }
