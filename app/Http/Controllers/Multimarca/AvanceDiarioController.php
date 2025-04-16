@@ -161,6 +161,9 @@ class AvanceDiarioController extends Controller
             public function getAvanceQuinDiario($dni, $anio, $mes, $typeQuincena)
             {
                 try {
+                    $getDay = Carbon::now()->day;
+                    // return $getDay;
+                    $getDay== 16?$typeQuincena=1:2;
                 $existeAvance = DB::select( "EXEC spView_Avances_Diarios_Quincenal_MM ?, ?, ?, ?", [$dni, $anio, $mes, $typeQuincena]);
                     if ($existeAvance) {
                         $avances=$existeAvance;

@@ -3,10 +3,12 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Exports\ReporteExport;
+use App\Exports\ReporteMultimarcaExport;
 use App\Exports\ReportePdvPremiun;
 use App\Exports\ReportePdvRegular;
 use App\Http\Controllers\Controller;
 use App\Models\Reporte;
+use App\Models\ReporteMultimarca;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Maatwebsite\Excel\Facades\Excel;
@@ -46,6 +48,22 @@ class ReporteController extends Controller
     public function reportePremiun(){
         try{
             return Excel::download(new ReporteExport(3), 'reportePremiun.xlsx');
+        }catch(\Exception $ex){
+            return response()->json(["status" => Response::HTTP_BAD_REQUEST, "message" => $ex->getMessage()], Response::HTTP_BAD_REQUEST);
+        }
+    }
+    
+    public function getReporte($typeReporte){
+        try{
+            // $reporte=ReporteMultimarca::all();
+            // return $reporte;
+            $nameFile = match ($typeReporte) {
+                2 => 'reporteMmPre.xlsx',
+                3 => 'reporteMmPost.xlsx',
+                default => 'reporteCompletoMm.xlsx',
+            };
+            // return $nameFile;
+            return Excel::download(new ReporteMultimarcaExport($typeReporte), ''.$nameFile);
         }catch(\Exception $ex){
             return response()->json(["status" => Response::HTTP_BAD_REQUEST, "message" => $ex->getMessage()], Response::HTTP_BAD_REQUEST);
         }

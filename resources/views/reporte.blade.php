@@ -9,5 +9,11 @@
     <form action="{{ route('reporteAll.reporte.api') }}" method="GET">
         <button type="submit">📥 Descargar Reporte Excel</button>
     </form>
+
+    <br>
+    <br>
+    <form action="{{ route('getReporteMM.reporte.api', ['typeReporte'=>1]) }}" method="GET">
+        <button type="submit">📥 Descargar Reporte multimarca Excel</button>
+    </form>
 </body>
 </html>
