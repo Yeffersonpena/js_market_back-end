@@ -89,7 +89,7 @@ class LogicController extends Controller
         try {
             $existeAvance = VI_FLYERS::where('DNI_Responsable', $dni)->exists();
             if ($existeAvance) {
-                $avances = VI_FLYERS::where('DNI_Responsable', $dni)->whereRaw('? BETWEEN MONTH(fecha_inicio) AND MONTH(fecha_fin)', [$mes])->get();
+                $avances = VI_FLYERS::where('DNI_Responsable', $dni)->whereRaw('? BETWEEN MONTH(fecha_inicio) AND MONTH(fecha_fin)', [$mes])->orderBy('fecha_fin','asc')->get();
                     $agrupados = $avances->groupBy('tipoImg');
                     $agrupados->each(function ($items) {
                         foreach ($items as $item) {
