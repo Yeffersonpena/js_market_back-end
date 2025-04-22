@@ -1,0 +1,14 @@
+CREATE procedure [dbo].[spGetListGroup] as
+WITH UltimoPeriodo AS (
+  SELECT TOP 1 año, mes
+  FROM PORTAL_COMERCIAL.dbo.PDV_OUT_ENTREGABLE
+  WHERE año IS NOT NULL AND mes IS NOT NULL
+  ORDER BY año DESC, mes DESC
+)
+SELECT DISTINCT e.GRUPO
+FROM PORTAL_COMERCIAL.dbo.PDV_OUT_ENTREGABLE e
+JOIN UltimoPeriodo u
+  ON e.año = u.año AND e.mes = u.mes
+WHERE e.GRUPO IS NOT NULL ORDER BY e.GRUPO;
+
+GO

@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Admin\AdminController;
 use App\Http\Controllers\Admin\GestorController;
 use App\Http\Controllers\All\LogicController;
 use App\Http\Controllers\Controller;
@@ -12,6 +13,7 @@ use App\Http\Controllers\Admin\MenuPerfilController;
 use App\Http\Controllers\Admin\ImportacionController;
 use App\Http\Controllers\Admin\ReporteController;
 use App\Http\Controllers\Multimarca\MultimarcaControlller;
+use App\Http\Controllers\SupervisorController;
 use App\Models\PDV_ABONOS;
 use Illuminate\Support\Facades\Route;
 
@@ -82,7 +84,10 @@ Route::middleware(['jwt.apiRest.jsMarket', 'jwt.user.admin'])->group(function ()
     Route::get('/api/v1/importaciones/hoy', [ImportacionController::class, 'getLogActual']);
     Route::get('/api/v1/admin/historyIngreso/{user}/{fecha}/{zonal}', [GestorController::class, 'historyIngreso'])->name('historyIngreso.admin.api');
     Route::get('/api/v1/admin/getListZonal', [GestorController::class, 'getZonal'])->name('zonal.admin.api');
-
+    // supervisor 
+    // Route::get('/api/v1/supervisor/getListUser', [SupervisorController::class, 'getListUser'])->name('getListUser.supervisor.api');
+    Route::get('/api/v1/admin/getListGroup', [AdminController::class, 'getListGroup'])->name('getListGroup.supervisor.api');
+    
 });
 Route::middleware(['jwt.apiRest.jsMarket', 'jwt.user.pdv'])->group(function () {
     Route::get('/api/v1/pdv/getDataPdv/{dni}/{anio}/{mes}', [AvanceDiarioController::class, 'getDataPdv'])->name('getDataPdv.user.api');
