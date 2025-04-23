@@ -15,5 +15,10 @@
     <form action="{{ route('getReporteMM.reporte.api', ['typeReporte'=>1]) }}" method="GET">
         <button type="submit">📥 Descargar Reporte multimarca Excel</button>
     </form>
+    <br>
+    <br>
+    <form action="{{ route('getReportePdv.reporte.api', ['typeReporte'=>1]) }}" method="GET">
+        <button type="submit">📥 Descargar Reporte Pdv Excel</button>
+    </form>
 </body>
 </html>

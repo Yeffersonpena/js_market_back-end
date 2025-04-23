@@ -15,13 +15,13 @@ use PhpOffice\PhpSpreadsheet\Style\NumberFormat;
 class ReporteExport implements FromCollection, WithHeadings, WithStyles, WithColumnFormatting
 {
     protected $tipoReporte;
-    public function __construct($tipoReporte=1)
+    public function __construct($tipoReporte = 1)
     {
-        $this->tipoReporte=$tipoReporte;
+        $this->tipoReporte = $tipoReporte;
     }
     /**
-    * @return \Illuminate\Support\Collection
-    */
+     * @return \Illuminate\Support\Collection
+     */
     public function collection()
     {
         // return Reporte::all();
@@ -49,9 +49,9 @@ class ReporteExport implements FromCollection, WithHeadings, WithStyles, WithCol
             'BONO_PORTA_POST_ORIGEN_POST',
             'BONO_PORTA_POST_ORIGEN_PRE',
             'EFECTIVO_A_PAGAR'
-        // ])->get();
+            // ])->get();
         ]);
-        
+
         if ($this->tipoReporte == 2) {
             $query->where('PROYECTO', 'PDV REGULAR');
         } elseif ($this->tipoReporte == 3) {
@@ -97,12 +97,12 @@ class ReporteExport implements FromCollection, WithHeadings, WithStyles, WithCol
         ];
     }
 
-     /**
+    /**
      * style excel
      */
     public function styles(Worksheet $sheet)
     {
-        $sheet->getRowDimension(1)->setRowHeight(30); 
+        $sheet->getRowDimension(1)->setRowHeight(30);
         foreach (range('A', $sheet->getHighestColumn()) as $col) {
             $sheet->getColumnDimension($col)->setAutoSize(true);
         }
@@ -111,7 +111,7 @@ class ReporteExport implements FromCollection, WithHeadings, WithStyles, WithCol
             ->getAlignment()
             ->setWrapText(true);
 
-            $headerStyle = [
+        $headerStyle = [
             1 => [
                 'font' => [
                     'bold' => true,
@@ -123,17 +123,17 @@ class ReporteExport implements FromCollection, WithHeadings, WithStyles, WithCol
                     // 'startColor' => ['rgb' => '538DD5'], 
                 ],
                 'borders' => [
-                'allBorders' => [
-                    'borderStyle' => \PhpOffice\PhpSpreadsheet\Style\Border::BORDER_THIN,
-                    'color' => ['rgb' => '000000'],
+                    'allBorders' => [
+                        'borderStyle' => \PhpOffice\PhpSpreadsheet\Style\Border::BORDER_THIN,
+                        'color' => ['rgb' => '000000'],
                     ],
                 ],
                 'alignment' => [
-                'vertical' => \PhpOffice\PhpSpreadsheet\Style\Alignment::VERTICAL_CENTER,
-                ],  
+                    'vertical' => \PhpOffice\PhpSpreadsheet\Style\Alignment::VERTICAL_CENTER,
+                ],
             ],
         ];
-        
+
         $customHeaderColors = [
             'A' => '538DD5',
             'B' => '538DD5',
@@ -161,16 +161,16 @@ class ReporteExport implements FromCollection, WithHeadings, WithStyles, WithCol
 
         foreach ($customHeaderColors as $column => $color) {
             $sheet->getStyle($column . '1')->applyFromArray([
-                    'fill' => [
-                        'fillType' => \PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID,
-                        'startColor' => ['rgb' => $color],
-                    ],
-                ]);
+                'fill' => [
+                    'fillType' => \PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID,
+                    'startColor' => ['rgb' => $color],
+                ],
+            ]);
         }
-       
+
         return $headerStyle;
     }
-    
+
     public function columnFormats(): array
     {
         return [
@@ -187,6 +187,4 @@ class ReporteExport implements FromCollection, WithHeadings, WithStyles, WithCol
             'U' => '"S/" #,##0.00',
         ];
     }
-
-    
 }

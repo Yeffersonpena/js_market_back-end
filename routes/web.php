@@ -28,6 +28,7 @@ Route::get('/api/v1/reporte/pdv-regular', [ReporteController::class, 'reportePdv
 Route::get('/api/v1/reporte/pdv-premium', [ReporteController::class, 'reportePremiun'])->name('reportePremium.reporte.api');
 // Route::get('/api/v1/reporte/pdv-premiun', [ReporteController::class, 'reporteMultimarca'])->name('reporteMultimarca.reporte.api');
 Route::get('/api/v1/reporte/mm/getReporte/{typeReporte}', [ReporteController::class, 'getReporte'])->name('getReporteMM.reporte.api');
+Route::get('/api/v1/reporte/pdv/getReporte/{typeReporte}', [ReporteController::class, 'getReportePdv'])->name('getReportePdv.reporte.api');
 
 
 Route::get('/api/v1/test/server', function () {

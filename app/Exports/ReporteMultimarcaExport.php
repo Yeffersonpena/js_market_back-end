@@ -4,28 +4,24 @@ namespace App\Exports;
 
 use App\Models\ReporteMultimarca;
 use Maatwebsite\Excel\Concerns\FromCollection;
-// 
 use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithStyles;
 use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
-// 
 use Maatwebsite\Excel\Concerns\WithColumnFormatting;
 use PhpOffice\PhpSpreadsheet\Style\NumberFormat;
 use Maatwebsite\Excel\Concerns\WithMultipleSheets;
 use Maatwebsite\Excel\Concerns\WithTitle;
 
 class ReporteMultimarcaExport implements FromCollection, WithHeadings, WithStyles, WithColumnFormatting, WithMultipleSheets
-// class ReporteMultimarcaExport implements FromCollection, WithHeadings,WithColumnFormatting
-// class ReporteMultimarcaExport implements FromCollection
 {
     protected $tipoReporte;
-    public function __construct($tipoReporte=1)
+    public function __construct($tipoReporte = 1)
     {
-        $this->tipoReporte=$tipoReporte;
+        $this->tipoReporte = $tipoReporte;
     }
     /**
-    * @return \Illuminate\Support\Collection
-    */
+     * @return \Illuminate\Support\Collection
+     */
     public function collection()
     {
         $query = ReporteMultimarca::select([
@@ -71,7 +67,7 @@ class ReporteMultimarcaExport implements FromCollection, WithHeadings, WithStyle
             "chips_post",
             "total_post"
         ]);
-        
+
         // if ($this->tipoReporte == 2) {
         //     $query->where('PROYECTO', 'PDV REGULAR');
         // } elseif ($this->tipoReporte == 3) {
@@ -136,12 +132,12 @@ class ReporteMultimarcaExport implements FromCollection, WithHeadings, WithStyle
         ];
     }
 
-     /**
+    /**
      * style excel
      */
     public function styles(Worksheet $sheet)
     {
-        $sheet->getRowDimension(1)->setRowHeight(30); 
+        $sheet->getRowDimension(1)->setRowHeight(30);
         $highestColumn = $sheet->getHighestColumn();
         $highestColumnIndex = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::columnIndexFromString($highestColumn);
         for ($col = 1; $col <= $highestColumnIndex; $col++) {
@@ -176,7 +172,7 @@ class ReporteMultimarcaExport implements FromCollection, WithHeadings, WithStyle
 
         return $headerStyle;
     }
-    
+
     public function columnFormats(): array
     {
         return [
@@ -192,7 +188,7 @@ class ReporteMultimarcaExport implements FromCollection, WithHeadings, WithStyle
             // 'S' => '"S/" #,##0.00',
             // 'T' => '"S/" #,##0.00',
             // 'U' => '"S/" #,##0.00',
-            
+
             'Y' => '"S/" #,##0.00',
             // '' => '"S/" #,##0.00',
             // '' => '"S/" #,##0.00',
@@ -211,121 +207,107 @@ class ReporteMultimarcaExport implements FromCollection, WithHeadings, WithStyle
 
         ];
     }
-    // 
-     // Crear múltiples hojas
-     public function sheets(): array
-     {
-        //  Filtrar datos para cada pestaña
-        //  $detallePre = ReporteMultimarca::where('porta_post_o_pre', 'pre')->get();
-        //  $detallePost = ReporteMultimarca::where('porta_post_o_pre', 'post')->get();
-        // Obtener los datos completos
-    $data = ReporteMultimarca::all();
+    // Crear múltiples hojas
+    public function sheets(): array
+    {
+        $data = ReporteMultimarca::all();
+        $detallePreColumns = $data->map(function ($item) {
+            return [
+                "año" => $item->año,
+                "mes" => $item->mes,
+                "zonal" => $item->zonal,
+                "dni_vendedor" => $item->dni_vendedor,
+                "nombre_vendedor" => $item->nombre_vendedor,
+                "fecha_inicio" => $item->fecha_inicio,
+                "dni_responsable" => $item->dni_responsable,
+                "supervisor" => $item->supervisor,
+                "proyecto" => $item->proyecto,
+                // 
+                "alta_pre" => $item->alta_pre,
+                "porta_pre" => $item->porta_pre,
+                "prepago_total" => $item->prepago_total,
+                "recargas_total" => $item->recargas_total,
+                // "porcentaje_recargas" => $item->porcentaje_recargas, //
+                "porcentaje_recargas" => $item->porcentaje_recargas / 100, //
 
-    // Seleccionar las columnas que irán en la hoja "Detalle Pre"
-    $detallePreColumns = $data->map(function($item) {
-        return [
-            "año" => $item->año,
-            "mes" => $item->mes,
-            "zonal" => $item->zonal,
-            "dni_vendedor" => $item->dni_vendedor,
-            "nombre_vendedor" => $item->nombre_vendedor,
-            "fecha_inicio" => $item->fecha_inicio,
-            "dni_responsable" => $item->dni_responsable,
-            "supervisor" => $item->supervisor,
-            "proyecto" => $item->proyecto,
-            // 
-            "alta_pre" => $item->alta_pre,
-            "porta_pre" => $item->porta_pre,
-            "prepago_total" => $item->prepago_total,
-            "recargas_total" => $item->recargas_total,
-            // "porcentaje_recargas" => $item->porcentaje_recargas, //
-            "porcentaje_recargas" => $item->porcentaje_recargas /100, //
+                "regularidad" => $item->regularidad,
+                "q_recargas_n0_mayor" => $item->q_recargas_n0_mayor,
+                "q_ventas_marzo" => $item->q_ventas_marzo,
+                "q_recargas_n1" => $item->q_recargas_n1,
+                "porcentaje_recargas_n1" => $item->porcentaje_recargas_n1,
+                "q_recargas_n1_mayor" => $item->q_recargas_n1_mayor,
 
-            "regularidad" => $item->regularidad,
-            "q_recargas_n0_mayor" => $item->q_recargas_n0_mayor,
-            "q_ventas_marzo" => $item->q_ventas_marzo,
-            "q_recargas_n1" => $item->q_recargas_n1,
-            "porcentaje_recargas_n1" => $item->porcentaje_recargas_n1,
-            "q_recargas_n1_mayor" => $item->q_recargas_n1_mayor,
-            
-            "rango_pre_total" => $item->rango_pre_total,
-            "rango_porta_pre" => $item->rango_porta_pre,
+                "rango_pre_total" => $item->rango_pre_total,
+                "rango_porta_pre" => $item->rango_porta_pre,
 
-            "rango_final" => $item->rango_final,
-            // 
-            "unitario" => $item->unitario,
-            "bono" => $item->bono,
-            "chips_r1" => $item->chips_r1,
-            "chips_x_regularidad" => $item->chips_x_regularidad,
-            "bono_x_venta_recargada" => $item->bono_x_venta_recargada,
+                "rango_final" => $item->rango_final,
+                // 
+                "unitario" => $item->unitario,
+                "bono" => $item->bono,
+                "chips_r1" => $item->chips_r1,
+                "chips_x_regularidad" => $item->chips_x_regularidad,
+                "bono_x_venta_recargada" => $item->bono_x_venta_recargada,
 
-            "bono_total" => $item->bono_total,
-            "recarga_financiada" => $item->recarga_financiada,
-            "chips_financiado" => $item->chips_financiado,
-            "total_financiado" => $item->total_financiado,
-            "bono_total_a_pagar" => $item->bono_total_a_pagar,
+                "bono_total" => $item->bono_total,
+                "recarga_financiada" => $item->recarga_financiada,
+                "chips_financiado" => $item->chips_financiado,
+                "total_financiado" => $item->total_financiado,
+                "bono_total_a_pagar" => $item->bono_total_a_pagar,
 
-            // 
-            // ALTA PRE	PORTA PRE	PREPAGO TOTAL	RECARGAS TOTAL	%RECARGAS	
-            // REGULARIDAD	Q RECARGAS N0 CON MONTO ACUM >= S/ 10	
-            // Q VENTAS MARZO	Q RECARGAS N1
-            	// %RECARGAS N1	Q RECARGAS N1 CON MONTO ACUM >= S/ 15	
+                // 
+                // ALTA PRE	PORTA PRE	PREPAGO TOTAL	RECARGAS TOTAL	%RECARGAS	
+                // REGULARIDAD	Q RECARGAS N0 CON MONTO ACUM >= S/ 10	
+                // Q VENTAS MARZO	Q RECARGAS N1
+                // %RECARGAS N1	Q RECARGAS N1 CON MONTO ACUM >= S/ 15	
                 // "RANGO FINAL"
-            // UNITARIO	BONO	CHIPS R1	CHIPS X REGULARIDAD	BONO X VENTA RECARGADA	
-            // BONO TOTAL	RECARGA FINANCIADA	CHIPS FINANCIADO	TOTAL FINANCIADO	
-            // BONO TOTAL A PAGAR
+                // UNITARIO	BONO	CHIPS R1	CHIPS X REGULARIDAD	BONO X VENTA RECARGADA	
+                // BONO TOTAL	RECARGA FINANCIADA	CHIPS FINANCIADO	TOTAL FINANCIADO	
+                // BONO TOTAL A PAGAR
 
-        ];
-    });
+            ];
+        });
 
-    // Seleccionar las columnas que irán en la hoja "Detalle Post"
-    $detallePostColumns = $data->map(function($item) {
+        $detallePostColumns = $data->map(function ($item) {
+            return [
+                "año" => $item->año,
+                "mes" => $item->mes,
+                "zonal" => $item->zonal,
+                "dni_vendedor" => $item->dni_vendedor,
+                "nombre_vendedor" => $item->nombre_vendedor,
+                "fecha_inicio" => $item->fecha_inicio,
+                "dni_responsable" => $item->dni_responsable,
+                "supervisor" => $item->supervisor,
+                "proyecto" => $item->proyecto,
+                // 
+                "porta_post_o_pre" => $item->porta_post_o_pre,
+                "porta_post_o_post" => $item->porta_post_o_post,
+                "total_porta_post" => $item->total_porta_post,
+                // 
+                "bono_porta_post_o_pre" => $item->bono_porta_post_o_pre,
+                "bono_porta_post_o_post" => $item->bono_porta_post_o_post,
+                "efectivo_post" => $item->efectivo_post,
+                "chips_post" => $item->chips_post,
+                "total_post" => $item->total_post,
+
+                // ZONAL	DNI VENDEDOR	NOMBRE VENDEDOR	FECHA INICIO	DNI RESPONSABLE	SUPERVISOR	PROYECTO
+                // --------------
+                // PORTA POST ORIGEN PRE	
+                // PORTA POST ORIGEN POST
+                // TOTAL PORTA POST 
+                // RANGO	---
+                // BONO PORTA POST ORIGEN PRE	
+                // BONO PORTA POST ORIGEN POST	
+                // INGRESOS EFECTIVO
+                // INGRESOS CHIPS
+                // 	INGRESO TOTAL
+            ];
+        });
+
         return [
-            "año" => $item->año,
-            "mes" => $item->mes,
-            "zonal" => $item->zonal,
-            "dni_vendedor" => $item->dni_vendedor,
-            "nombre_vendedor" => $item->nombre_vendedor,
-            "fecha_inicio" => $item->fecha_inicio,
-            "dni_responsable" => $item->dni_responsable,
-            "supervisor" => $item->supervisor,
-            "proyecto" => $item->proyecto,
-            // 
-            "porta_post_o_pre" => $item->porta_post_o_pre,
-            "porta_post_o_post" => $item->porta_post_o_post,
-            "total_porta_post" => $item->total_porta_post,
-            // 
-            "bono_porta_post_o_pre" => $item->bono_porta_post_o_pre,
-            "bono_porta_post_o_post" => $item->bono_porta_post_o_post,
-            "efectivo_post" => $item->efectivo_post,
-            "chips_post" => $item->chips_post,
-            "total_post" => $item->total_post,
-
-
-// ZONAL	DNI VENDEDOR	NOMBRE VENDEDOR	FECHA INICIO	DNI RESPONSABLE	SUPERVISOR	PROYECTO
-
-
-            // --------------
-            // PORTA POST ORIGEN PRE	
-        // PORTA POST ORIGEN POST
-	// TOTAL PORTA POST 
-    	// RANGO	---
-        // BONO PORTA POST ORIGEN PRE	
-        // BONO PORTA POST ORIGEN POST	
-        // INGRESOS EFECTIVO
-        // INGRESOS CHIPS
-        // 	INGRESO TOTAL
-
-
-           
+            new ReportePreSheet($detallePreColumns),
+            new ReportePostSheet($detallePostColumns),
         ];
-    });
-         
-         return [
-             new ReportePreSheet($detallePreColumns),
-             new ReportePostSheet($detallePostColumns),
-         ];
-     }
+    }
 }
 // class ReportePreSheet implements FromCollection, WithHeadings, WithStyles, WithColumnFormatting, WithMultipleSheets, WithTitle
 class ReportePreSheet implements FromCollection, WithHeadings, WithStyles, WithColumnFormatting, WithTitle
@@ -367,12 +349,12 @@ class ReportePreSheet implements FromCollection, WithHeadings, WithStyles, WithC
             // "q_recargas_n1",
             // "porcentaje_recargas_n1",
             // "q_recargas_n1_mayor",
-            
+
             // "rango_pre_total",
             // "rango_porta_pre",
 
             // "rango_final",
-            
+
             // "unitario",
             // "bono",
             // "chips_r1",
@@ -414,7 +396,7 @@ class ReportePreSheet implements FromCollection, WithHeadings, WithStyles, WithC
             "Q RECARGAS N1",
             "%RECARGAS N1",
             "Q RECARGAS N1 CON MONTO ACUM >= S/ 15",
-            
+
             "rango_pre_total",
             "rango_porta_pre",
 
@@ -438,7 +420,7 @@ class ReportePreSheet implements FromCollection, WithHeadings, WithStyles, WithC
     // 
     public function styles(Worksheet $sheet)
     {
-        $sheet->getRowDimension(1)->setRowHeight(30); 
+        $sheet->getRowDimension(1)->setRowHeight(30);
         $highestColumn = $sheet->getHighestColumn();
         $highestColumnIndex = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::columnIndexFromString($highestColumn);
         for ($col = 1; $col <= $highestColumnIndex; $col++) {
@@ -486,7 +468,7 @@ class ReportePreSheet implements FromCollection, WithHeadings, WithStyles, WithC
             'M' => '538DD5',
             'N' => '538DD5',
             'O' => '538DD5',
-            
+
             'P' => 'eebe23',
             'Q' => 'eebe23',
             'R' => 'eebe23',
@@ -503,26 +485,26 @@ class ReportePreSheet implements FromCollection, WithHeadings, WithStyles, WithC
             'AA' => '16d52e',
             'AB' => '16d52e',
             'AC' => '16d52e',
-            
+
             'AD' => 'f7603a',
             'AE' => 'f7603a',
             'AF' => 'f7603a',
-            
+
             'AG' => '16d52e',
 
         ];
 
         foreach ($customHeaderColors as $column => $color) {
             $sheet->getStyle($column . '1')->applyFromArray([
-                    'fill' => [
-                        'fillType' => \PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID,
-                        'startColor' => ['rgb' => $color],
-                    ],
-                ]);
+                'fill' => [
+                    'fillType' => \PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID,
+                    'startColor' => ['rgb' => $color],
+                ],
+            ]);
         }
         return $headerStyle;
     }
-    
+
     public function columnFormats(): array
     {
         return [
@@ -575,29 +557,29 @@ class ReportePostSheet implements FromCollection, WithHeadings, WithStyles, With
             // "efectivo_post",
             // "chips_post",
             // "total_post",
-        // ----
-        "AÑO",
-        "MES",
-        "ZONAL",
-        "DNI VENDEDOR",
-        "NOMBRE VENDEDOR",
-        "FECHA INICIO",
-        "DNI RESPONSABLE",
-        "SUPERVISOR",
-        "PROYECTO",
-        // 
-        "PORTA POST ORIGEN PRE",
-        "PORTA POST ORIGEN POST",
-        "TOTAL PORTA POST",
+            // ----
+            "AÑO",
+            "MES",
+            "ZONAL",
+            "DNI VENDEDOR",
+            "NOMBRE VENDEDOR",
+            "FECHA INICIO",
+            "DNI RESPONSABLE",
+            "SUPERVISOR",
+            "PROYECTO",
+            // 
+            "PORTA POST ORIGEN PRE",
+            "PORTA POST ORIGEN POST",
+            "TOTAL PORTA POST",
 
-        "BONO PORTA POST ORIGEN PRE",
-        "BONO PORTA POST ORIGEN POST",
-        "INGRESOS EFECTIVO",
-        "INGRESOS CHIPS",
-        "INGRESO TOTAL",
+            "BONO PORTA POST ORIGEN PRE",
+            "BONO PORTA POST ORIGEN POST",
+            "INGRESOS EFECTIVO",
+            "INGRESOS CHIPS",
+            "INGRESO TOTAL",
         ];
     }
-    
+
     public function title(): string
     {
         return "DETALLE POST";
@@ -605,7 +587,7 @@ class ReportePostSheet implements FromCollection, WithHeadings, WithStyles, With
     // 
     public function styles(Worksheet $sheet)
     {
-        $sheet->getRowDimension(1)->setRowHeight(30); 
+        $sheet->getRowDimension(1)->setRowHeight(30);
         $highestColumn = $sheet->getHighestColumn();
         $highestColumnIndex = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::columnIndexFromString($highestColumn);
         for ($col = 1; $col <= $highestColumnIndex; $col++) {
@@ -658,16 +640,16 @@ class ReportePostSheet implements FromCollection, WithHeadings, WithStyles, With
         ];
         foreach ($customHeaderColors as $column => $color) {
             $sheet->getStyle($column . '1')->applyFromArray([
-                    'fill' => [
-                        'fillType' => \PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID,
-                        'startColor' => ['rgb' => $color],
-                    ],
-                ]);
+                'fill' => [
+                    'fillType' => \PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID,
+                    'startColor' => ['rgb' => $color],
+                ],
+            ]);
         }
 
         return $headerStyle;
     }
-    
+
     public function columnFormats(): array
     {
         return [

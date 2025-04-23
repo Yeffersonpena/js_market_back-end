@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Exports\ReporteExport;
 use App\Exports\ReporteMultimarcaExport;
+use App\Exports\ReportePdvExport;
 use App\Exports\ReportePdvPremiun;
 use App\Exports\ReportePdvRegular;
 use App\Http\Controllers\Controller;
@@ -68,4 +69,17 @@ class ReporteController extends Controller
             return response()->json(["status" => Response::HTTP_BAD_REQUEST, "message" => $ex->getMessage()], Response::HTTP_BAD_REQUEST);
         }
     }
+    public function getReportePdv($typeReporte){
+        try{
+            $nameFile = match ($typeReporte) {
+                2 => 'reportePdvRegular.xlsx',
+                3 => 'reportePdvPremium.xlsx',
+                default => 'reporteCompletoPdv.xlsx',
+            };
+            return Excel::download(new ReportePdvExport($typeReporte), ''.$nameFile);
+        }catch(\Exception $ex){
+            return response()->json(["status" => Response::HTTP_BAD_REQUEST, "message" => $ex->getMessage()], Response::HTTP_BAD_REQUEST);
+        }
+    }
+    
 }
