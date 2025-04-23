@@ -231,11 +231,11 @@ class ReporteMultimarcaExport implements FromCollection, WithHeadings, WithStyle
                 "porcentaje_recargas" => $item->porcentaje_recargas / 100, //
 
                 "regularidad" => $item->regularidad,
-                "q_recargas_n0_mayor" => $item->q_recargas_n0_mayor,
-                "q_ventas_marzo" => $item->q_ventas_marzo,
-                "q_recargas_n1" => $item->q_recargas_n1,
-                "porcentaje_recargas_n1" => $item->porcentaje_recargas_n1,
-                "q_recargas_n1_mayor" => $item->q_recargas_n1_mayor,
+                // "q_recargas_n0_mayor" => $item->q_recargas_n0_mayor,
+                // "q_ventas_marzo" => $item->q_ventas_marzo,
+                // "q_recargas_n1" => $item->q_recargas_n1,
+                // "porcentaje_recargas_n1" => $item->porcentaje_recargas_n1,
+                // "q_recargas_n1_mayor" => $item->q_recargas_n1_mayor,
 
                 "rango_pre_total" => $item->rango_pre_total,
                 "rango_porta_pre" => $item->rango_porta_pre,
@@ -391,11 +391,11 @@ class ReportePreSheet implements FromCollection, WithHeadings, WithStyles, WithC
             "RECARGAS TOTAL",
             "%RECARGAS",
             "REGULARIDAD",
-            "Q RECARGAS N0 CON MONTO ACUM >= S/ 10",
-            "Q VENTAS MARZO",
-            "Q RECARGAS N1",
-            "%RECARGAS N1",
-            "Q RECARGAS N1 CON MONTO ACUM >= S/ 15",
+            // "Q RECARGAS N0 CON MONTO ACUM >= S/ 10",
+            // "Q VENTAS MARZO",
+            // "Q RECARGAS N1",
+            // "%RECARGAS N1",
+            // "Q RECARGAS N1 CON MONTO ACUM >= S/ 15",
 
             "rango_pre_total",
             "rango_porta_pre",
@@ -469,28 +469,28 @@ class ReportePreSheet implements FromCollection, WithHeadings, WithStyles, WithC
             'N' => '538DD5',
             'O' => '538DD5',
 
+            // 'P' => 'eebe23',
+            // 'Q' => 'eebe23',
+            // 'R' => 'eebe23',
+            // 'S' => 'eebe23',
+            // 'T' => 'eebe23',
             'P' => 'eebe23',
             'Q' => 'eebe23',
-            'R' => 'eebe23',
-            'S' => 'eebe23',
-            'T' => 'eebe23',
-            'U' => 'eebe23',
-            'V' => 'eebe23',
 
-            'W' => '538DD5',
-            'X' => '538DD5',
+            'R' => '538DD5',
+            'S' => '538DD5',
             // 
-            'Y' => '16d52e',
-            'Z' => '16d52e',
-            'AA' => '16d52e',
+            'T' => '16d52e',
+            'U' => '16d52e',
+            'V' => '16d52e',
+            'W' => '16d52e',
+            'X' => '16d52e',
+
+            'Y' => 'f7603a',
+            'Z' => 'f7603a',
+            'AA' => 'f7603a',
+
             'AB' => '16d52e',
-            'AC' => '16d52e',
-
-            'AD' => 'f7603a',
-            'AE' => 'f7603a',
-            'AF' => 'f7603a',
-
-            'AG' => '16d52e',
 
         ];
 
@@ -509,15 +509,21 @@ class ReportePreSheet implements FromCollection, WithHeadings, WithStyles, WithC
     {
         return [
             'N' => '0%',
-            'S' => '0%',
+            // 'S' => '0%',
+            // 'Y' => '"S/" #,##0.00',
+            // 'AB' => '"S/" #,##0.00',
+            // 'AC' => '"S/" #,##0.00',
+            // 'AD' => '"S/" #,##0.00',
+            // 'AE' => '"S/" #,##0.00',
+            // 'AF' => '"S/" #,##0.00',
+            // 'AG' => '"S/" #,##0.00',
+            'T' => '"S/" #,##0.00',
+            'W' => '"S/" #,##0.00',
+            'X' => '"S/" #,##0.00',
             'Y' => '"S/" #,##0.00',
+            'Z' => '"S/" #,##0.00',
+            'AA' => '"S/" #,##0.00',
             'AB' => '"S/" #,##0.00',
-            'AC' => '"S/" #,##0.00',
-            'AD' => '"S/" #,##0.00',
-            'AE' => '"S/" #,##0.00',
-            'AF' => '"S/" #,##0.00',
-            'AG' => '"S/" #,##0.00',
-
         ];
     }
 }
