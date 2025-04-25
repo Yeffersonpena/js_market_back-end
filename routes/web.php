@@ -30,7 +30,6 @@ Route::get('/api/v1/reporte/pdv-premium', [ReporteController::class, 'reportePre
 Route::get('/api/v1/reporte/mm/getReporte/{typeReporte}', [ReporteController::class, 'getReporte'])->name('getReporteMM.reporte.api');
 Route::get('/api/v1/reporte/pdv/getReporte/{typeReporte}', [ReporteController::class, 'getReportePdv'])->name('getReportePdv.reporte.api');
 
-
 Route::get('/api/v1/test/server', function () {
     return response()->json(["status" => 200, "message" => "server start"]);
 });
