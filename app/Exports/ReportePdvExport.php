@@ -301,7 +301,7 @@ class ReportePdvExport implements FromCollection, WithHeadings, WithStyles, With
                 "DNI_VENDEDOR" => $item->DNI_VENDEDOR,
                 "NOMBRE_VENDEDOR" => $item->NOMBRE_VENDEDOR,
                 "PROYECTO" => $item->PROYECTO,
-                "ESTADO" => $item->ESTADO,
+                // "ESTADO" => $item->ESTADO,
                 "AVANCE_PREPAGO" => $item->AVANCE_PREPAGO,
                 "RECARGAS" => $item->RECARGAS,
                 "RATIO" => $item->RATIO/100,
@@ -953,7 +953,7 @@ class ReportePdvPremiumPdvpSheet implements FromCollection, WithHeadings, WithSt
             "DNI_VENDEDOR",
             "NOMBRE_VENDEDOR",
             "PROYECTO",
-            "ESTADO",
+            // "ESTADO",
             "AVANCE_PREPAGO",
             "RECARGAS",
             "RATIO",
@@ -1026,8 +1026,8 @@ class ReportePdvPremiumPdvpSheet implements FromCollection, WithHeadings, WithSt
             'M' => '538DD5',
             'N' => '538DD5',
             'O' => '538DD5',
-            'P' => '538DD5',
-
+            
+            'P' => '16d52e',
             'Q' => '16d52e',
             'R' => '16d52e',
             'S' => '16d52e',
@@ -1035,7 +1035,7 @@ class ReportePdvPremiumPdvpSheet implements FromCollection, WithHeadings, WithSt
             'U' => '16d52e',
             'V' => '16d52e',
             'W' => '16d52e',
-            'X' => '16d52e',
+            // 'X' => '16d52e',
         ];
         foreach ($customHeaderColors as $column => $color) {
             $sheet->getStyle($column . '1')->applyFromArray([
@@ -1054,7 +1054,7 @@ class ReportePdvPremiumPdvpSheet implements FromCollection, WithHeadings, WithSt
         return [
             'L' => '0%',
             // 'O' => '"S/" #,##0.00',
-            // 'P' => '"S/" #,##0.00',
+            'P' => '"S/" #,##0.00',
             'Q' => '"S/" #,##0.00',
             'R' => '"S/" #,##0.00',
             'S' => '"S/" #,##0.00',
@@ -1062,8 +1062,7 @@ class ReportePdvPremiumPdvpSheet implements FromCollection, WithHeadings, WithSt
             'U' => '"S/" #,##0.00',
             'V' => '"S/" #,##0.00',
             'W' => '"S/" #,##0.00',
-            'X' => '"S/" #,##0.00',
-
+            // 'X' => '"S/" #,##0.00',
         ];
     }
 }
