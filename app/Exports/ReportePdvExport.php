@@ -1052,7 +1052,7 @@ class ReportePdvPremiumPdvpSheet implements FromCollection, WithHeadings, WithSt
     public function columnFormats(): array
     {
         return [
-            'L' => '0%',
+            'K' => '0%',
             // 'O' => '"S/" #,##0.00',
             'P' => '"S/" #,##0.00',
             'Q' => '"S/" #,##0.00',
