@@ -174,9 +174,9 @@ class ReportePdvExport implements FromCollection, WithHeadings, WithStyles, With
     // Crear múltiples hojas
     public function sheets(): array
     {
-        // $dataPdvRegular = Reporte::where('PROYECTO', 'PDV PREMIUM SIN VVDD MM')->get();
         $dataPdvRegular = Reporte::where('PROYECTO', 'PDV REGULAR')->get();
         // $dataPdvPremium = Reporte::where('PROYECTO', 'like', '%PDV PREMIUM%')->get();
+        $dataPdvPremium = Reporte::where('PROYECTO', 'PDV PREMIUM SIN VVDD MM')->get();
         $dataPdvPremiumResp = PlantillaVvddPdv::where('tipo', '=', '1')->get();
         $dataPdvPremiumVvdd = PlantillaVvddPdv::where('tipo', '=', '2')->get();
         $dataPdvPremiumPdv = VI_AVANCE_MM_PDV::get();
@@ -207,32 +207,32 @@ class ReportePdvExport implements FromCollection, WithHeadings, WithStyles, With
             ];
         });
 
-        // $detallePdvPremiumColumns = $dataPdvPremium->map(function ($item) {
-        //     return [
-        //         "AÑO" => $item->AÑO,
-        //         "MES" => $item->MES,
-        //         "ZONAL" => $item->ZONAL,
-        //         "DNI_RESPONSABLE" => $item->DNI_RESPONSABLE,
-        //         "NOMBRE_RESPONSABLE" => $item->NOMBRE_RESPONSABLE,
-        //         "PROYECTO" => $item->PROYECTO,
-        //         "ESTADO" => $item->ESTADO,
-        //         "AVANCE_PREPAGO" => $item->AVANCE_PREPAGO,
-        //         "RECARGAS" => $item->RECARGAS,
-        //         "RATIO" => $item->RATIO / 100,
-        //         "PORTA_PRE" => $item->PORTA_PRE,
-        //         "ALTA_POST" => $item->ALTA_POST,
-        //         "PORTA_POST_ORIGEN_POST" => $item->PORTA_POST_ORIGEN_POST,
-        //         "PORTA_POST_ORIGEN_PRE" => $item->PORTA_POST_ORIGEN_PRE,
-        //         "BONO_PRE" => $item->BONO_PRE,
-        //         "BONO_RC" => $item->BONO_RC,
-        //         "BONO_PORTA_PRE" => $item->BONO_PORTA_PRE,
-        //         "BONO_ALTA_POST" => $item->BONO_ALTA_POST,
-        //         "BONO_PORTA_POST_ORIGEN_POST" => $item->BONO_PORTA_POST_ORIGEN_POST,
-        //         "BONO_PORTA_POST_ORIGEN_PRE" => $item->BONO_PORTA_POST_ORIGEN_PRE,
-        //         "EFECTIVO_A_PAGAR" => $item->EFECTIVO_A_PAGAR,
-        //     ];
-        // });
-        // 
+        $detallePdvPremiumColumns = $dataPdvPremium->map(function ($item) {
+            return [
+                "AÑO" => $item->AÑO,
+                "MES" => $item->MES,
+                "ZONAL" => $item->ZONAL,
+                "DNI_RESPONSABLE" => $item->DNI_RESPONSABLE,
+                "NOMBRE_RESPONSABLE" => $item->NOMBRE_RESPONSABLE,
+                "PROYECTO" => $item->PROYECTO,
+                "ESTADO" => $item->ESTADO,
+                "AVANCE_PREPAGO" => $item->AVANCE_PREPAGO,
+                "RECARGAS" => $item->RECARGAS,
+                "RATIO" => $item->RATIO / 100,
+                "PORTA_PRE" => $item->PORTA_PRE,
+                "ALTA_POST" => $item->ALTA_POST,
+                "PORTA_POST_ORIGEN_POST" => $item->PORTA_POST_ORIGEN_POST,
+                "PORTA_POST_ORIGEN_PRE" => $item->PORTA_POST_ORIGEN_PRE,
+                "BONO_PRE" => $item->BONO_PRE,
+                "BONO_RC" => $item->BONO_RC,
+                "BONO_PORTA_PRE" => $item->BONO_PORTA_PRE,
+                "BONO_ALTA_POST" => $item->BONO_ALTA_POST,
+                "BONO_PORTA_POST_ORIGEN_POST" => $item->BONO_PORTA_POST_ORIGEN_POST,
+                "BONO_PORTA_POST_ORIGEN_PRE" => $item->BONO_PORTA_POST_ORIGEN_PRE,
+                "EFECTIVO_A_PAGAR" => $item->EFECTIVO_A_PAGAR,
+            ];
+        });
+        
         $detallePdvPremiumRespColumns = $dataPdvPremiumResp->map(function ($item) {
             return [
                 "AÑO" => $item->AÑO,
@@ -322,7 +322,7 @@ class ReportePdvExport implements FromCollection, WithHeadings, WithStyles, With
 
         return [
             new ReportePdvRegularSheet($detallePdvRegularColumns),
-            // new ReportePdvPremiumSheet($detallePdvPremiumColumns),
+            new ReportePdvPremiumSheet($detallePdvPremiumColumns),
             new ReportePdvPremiumRespSheet($detallePdvPremiumRespColumns),
             new ReportePdvPremiumVvddSheet($detallePdvPremiumVvddColumns),
             new ReportePdvPremiumPdvpSheet($detallePdvPremiumPdvColumns),
