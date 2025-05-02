@@ -32,6 +32,7 @@ class ReportePdvExport implements FromCollection, WithHeadings, WithStyles, With
             'ZONAL',
             'DNI_RESPONSABLE',
             'NOMBRE_RESPONSABLE',
+            'VENDEDOR_ZONIFICADO',
             'PROYECTO',
             'ESTADO',
             'AVANCE_PREPAGO',
@@ -188,6 +189,7 @@ class ReportePdvExport implements FromCollection, WithHeadings, WithStyles, With
                 "ZONAL" => $item->ZONAL,
                 "DNI_RESPONSABLE" => $item->DNI_RESPONSABLE,
                 "NOMBRE_RESPONSABLE" => $item->NOMBRE_RESPONSABLE,
+                "VENDEDOR_ZONIFICADO" => $item->VENDEDOR_ZONIFICADO,
                 "PROYECTO" => $item->PROYECTO,
                 "ESTADO" => $item->ESTADO,
                 "AVANCE_PREPAGO" => $item->AVANCE_PREPAGO,
@@ -214,6 +216,7 @@ class ReportePdvExport implements FromCollection, WithHeadings, WithStyles, With
                 "ZONAL" => $item->ZONAL,
                 "DNI_RESPONSABLE" => $item->DNI_RESPONSABLE,
                 "NOMBRE_RESPONSABLE" => $item->NOMBRE_RESPONSABLE,
+                "VENDEDOR_ZONIFICADO" => $item->VENDEDOR_ZONIFICADO,
                 "PROYECTO" => $item->PROYECTO,
                 "ESTADO" => $item->ESTADO,
                 "AVANCE_PREPAGO" => $item->AVANCE_PREPAGO,
@@ -242,6 +245,7 @@ class ReportePdvExport implements FromCollection, WithHeadings, WithStyles, With
                 "NOMBRE_RESPONSABLE" => $item->NOMBRE_RESPONSABLE,
                 "DNI_VENDEDOR" => $item->DNI_VENDEDOR,
                 "NOMBRE_VENDEDOR" => $item->NOMBRE_VENDEDOR,
+                "VENDEDOR_ZONIFICADO" => $item->VENDEDOR_ZONIFICADO,
                 "PROYECTO" => $item->PROYECTO,
                 "ESTADO" => $item->ESTADO,
                 "AVANCE_PREPAGO" => $item->AVANCE_PREPAGO,
@@ -271,6 +275,7 @@ class ReportePdvExport implements FromCollection, WithHeadings, WithStyles, With
                 "NOMBRE_RESPONSABLE" => $item->NOMBRE_RESPONSABLE,
                 "DNI_VENDEDOR" => $item->DNI_VENDEDOR,
                 "NOMBRE_VENDEDOR" => $item->NOMBRE_VENDEDOR,
+                "VENDEDOR_ZONIFICADO" => $item->VENDEDOR_ZONIFICADO, //
                 "PROYECTO" => $item->PROYECTO,
                 "ESTADO" => $item->ESTADO,
                 "AVANCE_PREPAGO" => $item->AVANCE_PREPAGO,
@@ -300,6 +305,7 @@ class ReportePdvExport implements FromCollection, WithHeadings, WithStyles, With
                 "NOMBRE_RESPONSABLE" => $item->NOMBRE_RESPONSABLE,
                 "DNI_VENDEDOR" => $item->DNI_VENDEDOR,
                 "NOMBRE_VENDEDOR" => $item->NOMBRE_VENDEDOR,
+                "VENDEDOR_ZONIFICADO" => $item->VENDEDOR_ZONIFICADO, //
                 "PROYECTO" => $item->PROYECTO,
                 // "ESTADO" => $item->ESTADO,
                 "AVANCE_PREPAGO" => $item->AVANCE_PREPAGO,
@@ -382,6 +388,7 @@ class ReportePdvRegularSheet implements FromCollection, WithHeadings, WithStyles
             'ZONAL',
             'DNI_RESPONSABLE',
             'NOMBRE_RESPONSABLE',
+            'VENDEDOR_ZONIFICADO',
             'PROYECTO',
             'ESTADO',
             'AVANCE_PREPAGO',
@@ -454,14 +461,15 @@ class ReportePdvRegularSheet implements FromCollection, WithHeadings, WithStyles
             'L' => '538DD5',
             'M' => '538DD5',
             'N' => '538DD5',
+            'O' => '538DD5',
 
-            'O' => '16d52e',
             'P' => '16d52e',
             'Q' => '16d52e',
             'R' => '16d52e',
             'S' => '16d52e',
             'T' => '16d52e',
             'U' => '16d52e',
+            'V' => '16d52e',
         ];
 
         foreach ($customHeaderColors as $column => $color) {
@@ -479,13 +487,13 @@ class ReportePdvRegularSheet implements FromCollection, WithHeadings, WithStyles
     {
         return [
             'J' => '0%',
-            'O' => '"S/" #,##0.00',
             'P' => '"S/" #,##0.00',
             'Q' => '"S/" #,##0.00',
             'R' => '"S/" #,##0.00',
             'S' => '"S/" #,##0.00',
             'T' => '"S/" #,##0.00',
             'U' => '"S/" #,##0.00',
+            'V' => '"S/" #,##0.00',
         ];
     }
 }
@@ -539,6 +547,7 @@ class ReportePdvPremiumSheet implements FromCollection, WithHeadings, WithStyles
             'ZONAL',
             'DNI_RESPONSABLE',
             'NOMBRE_RESPONSABLE',
+            'VENDEDOR_ZONIFICADO',
             'PROYECTO',
             'ESTADO',
             'AVANCE_PREPAGO',
@@ -611,14 +620,15 @@ class ReportePdvPremiumSheet implements FromCollection, WithHeadings, WithStyles
             'L' => '538DD5',
             'M' => '538DD5',
             'N' => '538DD5',
+            'O' => '538DD5',
 
-            'O' => '16d52e',
             'P' => '16d52e',
             'Q' => '16d52e',
             'R' => '16d52e',
             'S' => '16d52e',
             'T' => '16d52e',
             'U' => '16d52e',
+            'V' => '16d52e',
         ];
         foreach ($customHeaderColors as $column => $color) {
             $sheet->getStyle($column . '1')->applyFromArray([
@@ -636,13 +646,13 @@ class ReportePdvPremiumSheet implements FromCollection, WithHeadings, WithStyles
     {
         return [
             'J' => '0%',
-            'O' => '"S/" #,##0.00',
             'P' => '"S/" #,##0.00',
             'Q' => '"S/" #,##0.00',
             'R' => '"S/" #,##0.00',
             'S' => '"S/" #,##0.00',
             'T' => '"S/" #,##0.00',
             'U' => '"S/" #,##0.00',
+            'V' => '"S/" #,##0.00',
         ];
     }
 }
@@ -672,6 +682,7 @@ class ReportePdvPremiumRespSheet implements FromCollection, WithHeadings, WithSt
             "NOMBRE_RESPONSABLE",
             "DNI_VENDEDOR",
             "NOMBRE_VENDEDOR",
+            'VENDEDOR_ZONIFICADO',
             "PROYECTO",
             "ESTADO",
             "AVANCE_PREPAGO",
@@ -747,8 +758,8 @@ class ReportePdvPremiumRespSheet implements FromCollection, WithHeadings, WithSt
             'N' => '538DD5',
             'O' => '538DD5',
             'P' => '538DD5',
+            'Q' => '538DD5',
 
-            'Q' => '16d52e',
             'R' => '16d52e',
             'S' => '16d52e',
             'T' => '16d52e',
@@ -756,6 +767,7 @@ class ReportePdvPremiumRespSheet implements FromCollection, WithHeadings, WithSt
             'V' => '16d52e',
             'W' => '16d52e',
             'X' => '16d52e',
+            'Y' => '16d52e',
         ];
         foreach ($customHeaderColors as $column => $color) {
             $sheet->getStyle($column . '1')->applyFromArray([
@@ -775,7 +787,6 @@ class ReportePdvPremiumRespSheet implements FromCollection, WithHeadings, WithSt
             'L' => '0%',
             // 'O' => '"S/" #,##0.00',
             // 'P' => '"S/" #,##0.00',
-            'Q' => '"S/" #,##0.00',
             'R' => '"S/" #,##0.00',
             'S' => '"S/" #,##0.00',
             'T' => '"S/" #,##0.00',
@@ -783,6 +794,7 @@ class ReportePdvPremiumRespSheet implements FromCollection, WithHeadings, WithSt
             'V' => '"S/" #,##0.00',
             'W' => '"S/" #,##0.00',
             'X' => '"S/" #,##0.00',
+            'Y' => '"S/" #,##0.00',
 
         ];
     }
@@ -812,6 +824,7 @@ class ReportePdvPremiumVvddSheet implements FromCollection, WithHeadings, WithSt
             "NOMBRE_RESPONSABLE",
             "DNI_VENDEDOR",
             "NOMBRE_VENDEDOR",
+            'VENDEDOR_ZONIFICADO',
             "PROYECTO",
             "ESTADO",
             "AVANCE_PREPAGO",
@@ -887,8 +900,8 @@ class ReportePdvPremiumVvddSheet implements FromCollection, WithHeadings, WithSt
             'N' => '538DD5',
             'O' => '538DD5',
             'P' => '538DD5',
+            'Q' => '538DD5',
 
-            'Q' => '16d52e',
             'R' => '16d52e',
             'S' => '16d52e',
             'T' => '16d52e',
@@ -896,6 +909,7 @@ class ReportePdvPremiumVvddSheet implements FromCollection, WithHeadings, WithSt
             'V' => '16d52e',
             'W' => '16d52e',
             'X' => '16d52e',
+            'Y' => '16d52e',
         ];
         foreach ($customHeaderColors as $column => $color) {
             $sheet->getStyle($column . '1')->applyFromArray([
@@ -915,7 +929,6 @@ class ReportePdvPremiumVvddSheet implements FromCollection, WithHeadings, WithSt
             'L' => '0%',
             // 'O' => '"S/" #,##0.00',
             // 'P' => '"S/" #,##0.00',
-            'Q' => '"S/" #,##0.00',
             'R' => '"S/" #,##0.00',
             'S' => '"S/" #,##0.00',
             'T' => '"S/" #,##0.00',
@@ -923,6 +936,7 @@ class ReportePdvPremiumVvddSheet implements FromCollection, WithHeadings, WithSt
             'V' => '"S/" #,##0.00',
             'W' => '"S/" #,##0.00',
             'X' => '"S/" #,##0.00',
+            'Y' => '"S/" #,##0.00',
 
         ];
     }
@@ -952,6 +966,7 @@ class ReportePdvPremiumPdvpSheet implements FromCollection, WithHeadings, WithSt
             "NOMBRE_RESPONSABLE",
             "DNI_VENDEDOR",
             "NOMBRE_VENDEDOR",
+            'VENDEDOR_ZONIFICADO',
             "PROYECTO",
             // "ESTADO",
             "AVANCE_PREPAGO",
@@ -1026,8 +1041,8 @@ class ReportePdvPremiumPdvpSheet implements FromCollection, WithHeadings, WithSt
             'M' => '538DD5',
             'N' => '538DD5',
             'O' => '538DD5',
+            'P' => '538DD5',
             
-            'P' => '16d52e',
             'Q' => '16d52e',
             'R' => '16d52e',
             'S' => '16d52e',
@@ -1035,7 +1050,7 @@ class ReportePdvPremiumPdvpSheet implements FromCollection, WithHeadings, WithSt
             'U' => '16d52e',
             'V' => '16d52e',
             'W' => '16d52e',
-            // 'X' => '16d52e',
+            'X' => '16d52e',
         ];
         foreach ($customHeaderColors as $column => $color) {
             $sheet->getStyle($column . '1')->applyFromArray([
@@ -1054,7 +1069,7 @@ class ReportePdvPremiumPdvpSheet implements FromCollection, WithHeadings, WithSt
         return [
             'K' => '0%',
             // 'O' => '"S/" #,##0.00',
-            'P' => '"S/" #,##0.00',
+            // 'P' => '"S/" #,##0.00',
             'Q' => '"S/" #,##0.00',
             'R' => '"S/" #,##0.00',
             'S' => '"S/" #,##0.00',
@@ -1062,7 +1077,7 @@ class ReportePdvPremiumPdvpSheet implements FromCollection, WithHeadings, WithSt
             'U' => '"S/" #,##0.00',
             'V' => '"S/" #,##0.00',
             'W' => '"S/" #,##0.00',
-            // 'X' => '"S/" #,##0.00',
+            'X' => '"S/" #,##0.00',
         ];
     }
 }
