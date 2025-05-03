@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Http\JsonResponse;
 use App\Models\PDVOutImagen;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\DB;
 use Symfony\Component\HttpFoundation\Response;
 
 class ImagenController extends Controller
@@ -65,6 +66,7 @@ class ImagenController extends Controller
             'nombre_imagen' => $filename,
             'fecha_modificacion' => Carbon::now(),
         ]);
+        
 
         $imageUrl = env('APP_DOMAIN') . '/storage/img/' . $filename;
         return response()->json([
@@ -72,6 +74,7 @@ class ImagenController extends Controller
             'url' => $imageUrl,
         ]);
     }
+
     public function updateImg(Request $request)
     {
         try{
@@ -136,5 +139,42 @@ class ImagenController extends Controller
             'message' => 'Imagen actualizada exitosamente',
             'url' => $imageUrl,
         ]);
+    }
+    
+    public function load(Request $request)
+    {
+        try{
+            $request->validate([
+                    'image' => 'required|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
+                ]);
+                $pictureAnio=$request->año;
+                $pictureMes=$request->mes;
+                $pictureDateStar=$request->dateStar;
+                $pictureEnd=$request->dateEnd;
+                $pictureType=$request->type;
+                $pictureModo=$request->modo;
+                $pictureGroup=$request->group;
+                $pictureFile=$request->file('image');
+                $pictureName=$request->namePicture;
+                $extenPicture=$pictureFile->getClientOriginalExtension();
+                $nameFilePicture=$pictureDateStar.'_'.$pictureEnd.'_'.$pictureName.'_'.$pictureType.'_'.$pictureModo.'_'.$pictureGroup.'.'.$extenPicture;
+                $request->file('image')->storeAs('img', $nameFilePicture, 'public');
+                
+                PDVOutImagen::create([
+                        'nombre_imagen' => $nameFilePicture,
+                        'fecha_modificacion' => Carbon::now(),
+                    ]);
+
+                $loadPicture=DB::statement('exec dbo.spInsertFlyerDinamico ?,?,?,?,?,?,?,?', [$pictureAnio, $pictureMes, $nameFilePicture, $pictureDateStar, $pictureEnd, $pictureType, $pictureModo, $pictureGroup]);
+                if($loadPicture){
+                    $imgUrl = env('APP_DOMAIN') . '/storage/img/' . $nameFilePicture;
+                    return response()->json(["status" => Response::HTTP_OK, "message" => "Imagen subida exitosamente", "urlPicture" => $imgUrl], Response::HTTP_OK);
+                }else{
+                    return response()->json(["status" => Response::HTTP_OK, "message" => "Error al subir la imagen"], Response::HTTP_OK);
+                }
+
+            } catch (\Exception $ex) {
+                return response()->json(["status" => Response::HTTP_BAD_REQUEST, "message" => $ex->getMessage()], Response::HTTP_BAD_REQUEST);
+            }
     }
 }

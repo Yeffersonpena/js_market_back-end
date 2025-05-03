@@ -69,6 +69,7 @@ Route::middleware(['jwt.apiRest.jsMarket', 'jwt.user.admin'])->group(function ()
     Route::post('/api/v1/imagenes/actualiza/{id}', [ImagenController::class, 'update'])->name('update.imagen.api');
     Route::delete('/api/v1/imagenes/{id}', [ImagenController::class, 'delete'])->name('delete.imagen.api');
     // Route::post('/api/v1/imagenes/allImg', [ImagenController::class, 'updateImg'])->name('updateImg.imagen.api');
+    Route::post('/api/v1/imagenes/load', [ImagenController::class, 'load'])->name('load.imagen.api');
     
 
     Route::post('/api/v1/admin/updateFileSp', [GestorController::class, 'loadFileSp'])->name('fileSp.carga.api');
