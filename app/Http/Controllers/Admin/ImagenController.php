@@ -146,6 +146,14 @@ class ImagenController extends Controller
         try{
             $request->validate([
                     'image' => 'required|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
+                    'año'=>'required',
+                    'mes'=>'required',
+                    'dateStar'=>'required',
+                    'dateEnd'=>'required',
+                    'type'=>'required',
+                    'modo'=>'required',
+                    // 'group'=>'required',
+                    'namePicture'=>'required',
                 ]);
                 $pictureAnio=$request->año;
                 $pictureMes=$request->mes;
@@ -153,18 +161,16 @@ class ImagenController extends Controller
                 $pictureEnd=$request->dateEnd;
                 $pictureType=$request->type;
                 $pictureModo=$request->modo;
-                $pictureGroup=$request->group;
+                $pictureGroup=$request->group ?? '';
                 $pictureFile=$request->file('image');
                 $pictureName=$request->namePicture;
                 $extenPicture=$pictureFile->getClientOriginalExtension();
                 $nameFilePicture=$pictureDateStar.'_'.$pictureEnd.'_'.$pictureName.'_'.$pictureType.'_'.$pictureModo.'_'.$pictureGroup.'.'.$extenPicture;
                 $request->file('image')->storeAs('img', $nameFilePicture, 'public');
-                
                 PDVOutImagen::create([
                         'nombre_imagen' => $nameFilePicture,
                         'fecha_modificacion' => Carbon::now(),
                     ]);
-
                 $loadPicture=DB::statement('exec dbo.spInsertFlyerDinamico ?,?,?,?,?,?,?,?', [$pictureAnio, $pictureMes, $nameFilePicture, $pictureDateStar, $pictureEnd, $pictureType, $pictureModo, $pictureGroup]);
                 if($loadPicture){
                     $imgUrl = env('APP_DOMAIN') . '/storage/img/' . $nameFilePicture;
