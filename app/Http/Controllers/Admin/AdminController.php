@@ -42,4 +42,29 @@ class AdminController extends Controller
             return response()->json(["status" => Response::HTTP_BAD_REQUEST, "message" => $ex->getMessage()], Response::HTTP_BAD_REQUEST);
         }
     }
+    
+    public function getListEntregable($dni, $anio, $mes){
+        try{
+            $getListEntregable=DB::connection('twoDb')->select('select * from dbo.PDV_OUT_ENTREGABLE where AÑO=? and mes=? and DNI_RESPONSABLE=?', [$anio, $mes, $dni]);
+            
+            if(!$getListEntregable){
+                return response()->json(["status"=>200, "message"=>"No se encontro la lista de usuario", "data"=>[]], Response::HTTP_OK);
+            }
+            return response()->json(["status"=>200, "message"=>"Se encontro la lista de usuario", "data"=>$getListEntregable], Response::HTTP_OK);
+        }catch(\Exception $ex){
+            return response()->json(["status" => Response::HTTP_BAD_REQUEST, "message" => $ex->getMessage()], Response::HTTP_BAD_REQUEST);
+        }
+    }
+    
+    public function getListFunnel($dni, $anio, $mes){
+        try{
+            $getListEntregable=DB::connection('twoDb')->select('select * from dbo.PP2025_FUNNEL where AÑO=? and mes=? and DNI_RESPONSABLE=?', [$anio, $mes, $dni]);
+            if(!$getListEntregable){
+                return response()->json(["status"=>200, "message"=>"No se encontro la lista de usuario", "data"=>[]], Response::HTTP_OK);
+            }
+            return response()->json(["status"=>200, "message"=>"Se encontro la lista de usuario", "data"=>$getListEntregable], Response::HTTP_OK);
+        }catch(\Exception $ex){
+            return response()->json(["status" => Response::HTTP_BAD_REQUEST, "message" => $ex->getMessage()], Response::HTTP_BAD_REQUEST);
+        }
+    }
 }

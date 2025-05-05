@@ -89,6 +89,10 @@ Route::middleware(['jwt.apiRest.jsMarket', 'jwt.user.admin'])->group(function ()
     // Route::get('/api/v1/supervisor/getListUser', [SupervisorController::class, 'getListUser'])->name('getListUser.supervisor.api');
     Route::get('/api/v1/admin/getListGroup', [AdminController::class, 'getListGroup'])->name('getListGroup.supervisor.api');
     Route::get('/api/v1/admin/getListFlyers/{dateStart}', [AdminController::class, 'getListFlyers'])->name('getListFlyers.admin.api');
+    // get list two db
+    Route::get('/api/v1/admin/twoDb/getListEntregable/{dni}/{anio}/{mes}', [AdminController::class, 'getListEntregable'])->name('getListEntregable.admin.api');
+    Route::get('/api/v1/admin/twoDb/getListFunnel/{dni}/{anio}/{mes}', [AdminController::class, 'getListFunnel'])->name('getListFunnel.admin.api');
+    
     
 });
 Route::middleware(['jwt.apiRest.jsMarket', 'jwt.user.pdv'])->group(function () {
