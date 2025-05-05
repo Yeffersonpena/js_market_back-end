@@ -8,6 +8,7 @@ use App\Models\PDV_ENTREGABLE;
 use App\Models\VI_AVANCES_DIARIOS;
 use App\Models\VI_AVANCES_INFO_VENDEDOR;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Symfony\Component\HttpFoundation\Response;
 class AvanceDiarioController extends Controller
@@ -87,6 +88,7 @@ class AvanceDiarioController extends Controller
         $existeAvance = DB::select( "EXEC spViewInfoVendedor ?, ?, ?", [$dni, $anio, $mes]);
         if($existeAvance){
             $infoVendedor=$existeAvance[0];
+            $dateUpdateCalidad = Carbon::now()->subDays(4)->toDateString();
             // $existeAvance = DB::statement( "EXEC spViewInfoVendedor ?, ?, ?");
                 // $infoVendedor = VI_AVANCES_INFO_VENDEDOR::where('DNI_RESPONSABLE', $dni)->firstOrFail();
                 $infoVendedor=[
@@ -105,7 +107,7 @@ class AvanceDiarioController extends Controller
                     "entidadBancaria" => $infoVendedor->{'ENTIDAD BANCARIA MM'},
                     "cctaBancario" => $infoVendedor->{'CCTA BANCARIA MM'},
                     "levelCalidad" =>(float)$infoVendedor->{'CALIDAD_CLUSTER'} ?? 0, 
-                    // "levelCalidad_2" => $infoVendedor->{'CALIDAD_CLUSTER_2'}, 
+                    "infoUpdateCalidad" => $dateUpdateCalidad, 
                 ];
             return response()->json(["status" => Response::HTTP_OK, "message" => "Información", "data"=>$infoVendedor ], Response::HTTP_OK);
         } else {
