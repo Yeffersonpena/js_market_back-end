@@ -41,7 +41,7 @@ class AvanceDiarioController extends Controller
                             "maxRatio"=> (float)$infoVendedor->maxRatio,
                             "entidadBancaria" => $infoVendedor->{'ENTIDAD BANCARIA MM'},
                             "cctaBancario" => $infoVendedor->{'CCTA BANCARIA MM'},
-
+                            "levelCalidad" =>(float)$infoVendedor->{'CALIDAD_CLUSTER'} ?? 0, 
                         ];
                 return response()->json(["status" => Response::HTTP_OK, "message" => "Información", "data"=>$infoVendedor ], Response::HTTP_OK);
                 } else {

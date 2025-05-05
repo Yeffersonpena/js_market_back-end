@@ -103,7 +103,9 @@ class AvanceDiarioController extends Controller
                     "levelPdv"=> $infoVendedor->ACCION_2, 
                     "textLevelPdv"=> Str::contains($infoVendedor->ACCION_2, 'PDV PREMIUM')? 'PDV PREMIUM':$infoVendedor->ACCION_2,
                     "entidadBancaria" => $infoVendedor->{'ENTIDAD BANCARIA MM'},
-                    "cctaBancario" => $infoVendedor->{'CCTA BANCARIA MM'}, 
+                    "cctaBancario" => $infoVendedor->{'CCTA BANCARIA MM'},
+                    "levelCalidad" =>(float)$infoVendedor->{'CALIDAD_CLUSTER'} ?? 0, 
+                    // "levelCalidad_2" => $infoVendedor->{'CALIDAD_CLUSTER_2'}, 
                 ];
             return response()->json(["status" => Response::HTTP_OK, "message" => "Información", "data"=>$infoVendedor ], Response::HTTP_OK);
         } else {
