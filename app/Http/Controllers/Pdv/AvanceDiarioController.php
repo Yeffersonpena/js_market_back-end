@@ -88,7 +88,7 @@ class AvanceDiarioController extends Controller
         $existeAvance = DB::select( "EXEC spViewInfoVendedor ?, ?, ?", [$dni, $anio, $mes]);
         if($existeAvance){
             $infoVendedor=$existeAvance[0];
-            $dateUpdateCalidad = Carbon::now()->subDays(4)->toDateString();
+            // $dateUpdateCalidad = Carbon::now()->subDays(4)->toDateString();
             // $existeAvance = DB::statement( "EXEC spViewInfoVendedor ?, ?, ?");
                 // $infoVendedor = VI_AVANCES_INFO_VENDEDOR::where('DNI_RESPONSABLE', $dni)->firstOrFail();
                 $infoVendedor=[
@@ -107,7 +107,7 @@ class AvanceDiarioController extends Controller
                     "entidadBancaria" => $infoVendedor->{'ENTIDAD BANCARIA MM'},
                     "cctaBancario" => $infoVendedor->{'CCTA BANCARIA MM'},
                     "levelCalidad" =>(float)$infoVendedor->{'CALIDAD_CLUSTER'} ?? 0, 
-                    "infoUpdateCalidad" => $dateUpdateCalidad, 
+                    "infoUpdateCalidad" => $infoVendedor->{'DATE_UPDATE_CALIDAD'} ?? 0, 
                 ];
             return response()->json(["status" => Response::HTTP_OK, "message" => "Información", "data"=>$infoVendedor ], Response::HTTP_OK);
         } else {

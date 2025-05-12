@@ -19,7 +19,7 @@ class AvanceDiarioController extends Controller
                 if($existeAvance){
                     $infoVendedor=$existeAvance[0];
                     // return $infoVendedor;
-                    $dateUpdateCalidad = Carbon::now()->subDays(4)->toDateString();
+                    // $dateUpdateCalidad = Carbon::now()->subDays(4)->toDateString();
                     $infoVendedor=[
                             "zonal" => $infoVendedor->ZONAL,
                             "dni_responsable" => $infoVendedor->{'DNI_RESPONSABLE'},
@@ -43,7 +43,7 @@ class AvanceDiarioController extends Controller
                             "entidadBancaria" => $infoVendedor->{'ENTIDAD BANCARIA MM'},
                             "cctaBancario" => $infoVendedor->{'CCTA BANCARIA MM'},
                             "levelCalidad" =>(float)$infoVendedor->{'CALIDAD_CLUSTER'} ?? 0, 
-                            "infoUpdateCalidad" => $dateUpdateCalidad, 
+                            "infoUpdateCalidad" => $infoVendedor->{'DATE_UPDATE_CALIDAD'} ?? 0, 
                         ];
                 return response()->json(["status" => Response::HTTP_OK, "message" => "Información", "data"=>$infoVendedor ], Response::HTTP_OK);
                 } else {
