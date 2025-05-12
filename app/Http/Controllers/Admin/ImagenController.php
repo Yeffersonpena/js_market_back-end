@@ -165,7 +165,7 @@ class ImagenController extends Controller
                 $pictureFile=$request->file('image');
                 $pictureName=$request->namePicture;
                 $extenPicture=$pictureFile->getClientOriginalExtension();
-                $nameFilePicture=$pictureDateStar.'_'.$pictureEnd.'_'.$pictureName.'_'.$pictureType.'_'.$pictureModo.'_'.$pictureGroup.'.'.$extenPicture;
+                $nameFilePicture=$pictureName.'_'.$pictureDateStar.'_'.$pictureEnd.'_'.$pictureType.'_'.$pictureModo.'_'.$pictureGroup.'.'.$extenPicture;
                 $request->file('image')->storeAs('img', $nameFilePicture, 'public');
                 PDVOutImagen::create([
                         'nombre_imagen' => $nameFilePicture,

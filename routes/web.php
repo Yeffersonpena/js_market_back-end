@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Admin\AdminController;
+use App\Http\Controllers\Admin\Config\ConfigController;
 use App\Http\Controllers\Admin\GestorController;
 use App\Http\Controllers\All\LogicController;
 use App\Http\Controllers\Controller;
@@ -92,6 +93,9 @@ Route::middleware(['jwt.apiRest.jsMarket', 'jwt.user.admin'])->group(function ()
     // get list two db
     Route::get('/api/v1/admin/twoDb/getListEntregable/{dni}/{anio}/{mes}', [AdminController::class, 'getListEntregable'])->name('getListEntregable.admin.api');
     Route::get('/api/v1/admin/twoDb/getListFunnel/{dni}/{anio}/{mes}', [AdminController::class, 'getListFunnel'])->name('getListFunnel.admin.api');
+    // manager config de mm
+    Route::get('/api/v1/admin/config/getList', [ConfigController::class, 'getListConfig'])->name('getListConfig.admin.api');
+    //Route::get('/api/v1/admin/twoDb/getListFunnel/{dni}/{anio}/{mes}', [AdminController::class, 'getListFunnel'])->name('getListFunnel.admin.api');
     
     
 });
