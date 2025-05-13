@@ -167,16 +167,10 @@ class ImagenController extends Controller
                 $extenPicture=$pictureFile->getClientOriginalExtension();
                 $nameFilePicture=$pictureName.'_'.$pictureDateStar.'_'.$pictureEnd.'_'.$pictureType.'_'.$pictureModo.'_'.$pictureGroup.'.'.$extenPicture;
                 $request->file('image')->storeAs('img', $nameFilePicture, 'public');
-                // PDVOutImagen::create([
-                //         'nombre_imagen' => $nameFilePicture,
-                //         'fecha_modificacion' => Carbon::now(),
-                //     ]);
-                // $historyFlyer=new PDVOutImagen();
-                // $historyFlyer->nombre_imagen=$nameFilePicture;
-                // // $historyFlyer->fecha_modificacion=Carbon::now();
-                // // $historyFlyer->fecha_modificacion = Carbon::now()->format('Y-m-d H:i:s.u');
-                // // $historyFlyer->fecha_modificacion = Carbon::now()->format('Y-m-d H:i:s') . '.' . Carbon::now()->format('u')->substr(0, 3);
-                // $historyFlyer->save();
+                $historyFlyer=new PDVOutImagen();
+                $historyFlyer->nombre_imagen=$nameFilePicture;
+                $historyFlyer->fecha_modificacion=Carbon::now();
+                $historyFlyer->save();
                 $loadPicture=DB::statement('exec dbo.spInsertFlyerDinamico ?,?,?,?,?,?,?,?', [$pictureAnio, $pictureMes, $nameFilePicture, $pictureDateStar, $pictureEnd, $pictureType, $pictureModo, $pictureGroup]);
                 if($loadPicture){
                     $imgUrl = env('APP_DOMAIN') . '/storage/img/' . $nameFilePicture;
