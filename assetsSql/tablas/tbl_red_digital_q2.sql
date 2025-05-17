@@ -1,0 +1,20 @@
+CREATE TABLE tbl_red_digital_q2 (
+    Fecha DATE,
+    Hora TIME,
+    ID_Movto INT,
+    ID_Zonal VARCHAR(150),
+    UsuarioId VARCHAR(150),
+    Monto DECIMAL(10,2),
+    Comentario VARCHAR(255),
+    Tipo VARCHAR(150),
+    x_Activador VARCHAR(150),
+    Telefono VARCHAR(120),
+    Telefono2 VARCHAR(120),
+    Valida_Dni VARCHAR(120),
+    Nombre VARCHAR(200),
+    DNI int,
+    ERP_ID_PDV VARCHAR(150),
+    CONDICION VARCHAR(150),
+    CONDICION1 VARCHAR(150),
+    Columna1 VARCHAR(150)
+);

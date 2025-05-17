@@ -175,4 +175,33 @@ class LoginController extends Controller
             return response()->json(["status" => Response::HTTP_BAD_REQUEST, "message" => $ex->getMessage()], Response::HTTP_BAD_REQUEST);
         }
     }
+
+    function testRep(){
+               try {
+            $año=2025;
+            $mes=5;
+            $listGroup = DB::select('
+            select chip.*,e.DNI_VENDEDOR as DNI_FINAL, e.ACCION_1 as PROYECTO, e.ZONAL, e.ESTADO as E_ESTADO from dbo.tbl_chip_q2 chip 
+            inner join
+            dbo.PDV_OUT_ENTREGABLE e on chip.dni=e.DNI_VENDEDOR
+            WHERE e.AÑO =? AND e.MES =?;',[$año, $mes]);
+
+            $dni=41917771;
+            //  $listGroup = DB::select('
+            // select redDig.*, \'\' as MOVIMIENTO, e.DNI_VENDEDOR as DNI_FINAL, e.ACCION_1 as PROYECTO, e.ZONAL, e.ESTADO from dbo.tbl_red_digital_q2 redDig
+            // inner join
+            // dbo.PDV_OUT_ENTREGABLE e on redDig.dni=e.DNI_VENDEDOR
+            // WHERE e.AÑO = ? AND e.MES = ? and redDig.CONDICION=? and redDig.CONDICION1=? and Columna1 <> ?  and e.DNI_VENDEDOR=?
+            // ;',[$año, $mes, 'CREDITO', 'CREDITO', 'CHIP', $dni]);
+
+                // WHERE e.AÑO =? AND e.MES =? and e.DNI_VENDEDOR=?;',[$año, $mes, $dni]);
+            if ($listGroup) {
+                return response()->json(["status" => Response::HTTP_OK, "message" => "Fyers", "data" => $listGroup], Response::HTTP_OK);
+            } else {
+                return response()->json(["status" => Response::HTTP_OK, "message" => "No hay fyers para la fecha ", "data" => []], Response::HTTP_OK);
+            }
+        } catch (\Exception $ex) {
+            return response()->json(["status" => Response::HTTP_BAD_REQUEST, "message" => $ex->getMessage()], Response::HTTP_BAD_REQUEST);
+        }
+    }
 }

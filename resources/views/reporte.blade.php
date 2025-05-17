@@ -20,5 +20,10 @@
     <form action="{{ route('getReportePdv.reporte.api', ['typeReporte'=>1]) }}" method="GET">
         <button type="submit">📥 Descargar Reporte Pdv Excel</button>
     </form>
+    <br>
+    <form action="{{ route('getFinanza.reporte.api', ['typeReporte'=>1]) }}" method="GET">
+        <button type="submit">📥 Descargar Reporte de Finanza Excel</button>
+    </form>
+    <br>
 </body>
 </html>
