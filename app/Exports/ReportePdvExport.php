@@ -55,7 +55,7 @@ class ReportePdvExport implements FromCollection, WithHeadings, WithStyles, With
         $dataPdvPremium = Reporte::where('PROYECTO', 'PDV PREMIUM SIN VVDD MM')->where('mes','>', $mes)->get();
         $dataPdvPremiumResp = PlantillaVvddPdv::where('tipo', '=', '1')->where('mes','>', $mes)->get();
         $dataPdvPremiumVvdd = PlantillaVvddPdv::where('tipo', '=', '2')->where('mes','>', $mes)->get();
-        $dataPdvPremiumPdv = VI_AVANCE_MM_PDV::get();
+        $dataPdvPremiumPdv = VI_AVANCE_MM_PDV::where('mes','>', $mes)->get();
 
         $detallePdvRegularColumns = $dataPdvRegular->map(function ($item) {
             return [
@@ -127,7 +127,7 @@ class ReportePdvExport implements FromCollection, WithHeadings, WithStyles, With
                 "RECARGAS" => $item->RECARGAS,
                 "RATIO" => $item->RATIO/100,
                 "PORTA_PRE" => $item->PORTA_PRE,
-                "ALTA_POST" => $item->ALTA_POST,
+                "ALTA_POST" => 0, //$item->ALTA_POST,
                 "PORTA_POST_ORIGEN_POST" => $item->PORTA_POST_ORIGEN_POST,
                 "PORTA_POST_ORIGEN_PRE" => $item->PORTA_POST_ORIGEN_PRE,
                 "BONO_PRE" => $item->BONO_PRE,
@@ -187,7 +187,7 @@ class ReportePdvExport implements FromCollection, WithHeadings, WithStyles, With
                 "RECARGAS" => $item->RECARGAS,
                 "RATIO" => $item->RATIO/100,
                 "PORTA_PRE" => $item->PORTA_PRE,
-                "ALTA_POST" => $item->ALTA_POST,
+                "ALTA_POST" => 0, //$item->ALTA_POST,
                 "PORTA_POST_ORIGEN_POST" => $item->PORTA_POST_ORIGEN_POST,
                 "PORTA_POST_ORIGEN_PRE" => $item->PORTA_POST_ORIGEN_PRE,
                 "BONO_PRE" => $item->BONO_PRE,
