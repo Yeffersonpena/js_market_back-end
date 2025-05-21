@@ -49,11 +49,12 @@ class ReportePdvExport implements FromCollection, WithHeadings, WithStyles, With
     }
     public function sheets(): array
     {
-        $dataPdvRegular = Reporte::where('PROYECTO', 'PDV REGULAR')->get();
+        $mes=4;
+        $dataPdvRegular = Reporte::where('PROYECTO', 'PDV REGULAR')->where('mes','>', $mes)->get();
         // $dataPdvPremium = Reporte::where('PROYECTO', 'like', '%PDV PREMIUM%')->get();
-        $dataPdvPremium = Reporte::where('PROYECTO', 'PDV PREMIUM SIN VVDD MM')->get();
-        $dataPdvPremiumResp = PlantillaVvddPdv::where('tipo', '=', '1')->get();
-        $dataPdvPremiumVvdd = PlantillaVvddPdv::where('tipo', '=', '2')->get();
+        $dataPdvPremium = Reporte::where('PROYECTO', 'PDV PREMIUM SIN VVDD MM')->where('mes','>', $mes)->get();
+        $dataPdvPremiumResp = PlantillaVvddPdv::where('tipo', '=', '1')->where('mes','>', $mes)->get();
+        $dataPdvPremiumVvdd = PlantillaVvddPdv::where('tipo', '=', '2')->where('mes','>', $mes)->get();
         $dataPdvPremiumPdv = VI_AVANCE_MM_PDV::get();
 
         $detallePdvRegularColumns = $dataPdvRegular->map(function ($item) {
