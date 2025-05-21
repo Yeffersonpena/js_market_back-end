@@ -570,7 +570,7 @@ class ReportePdvPremiumSheet implements FromCollection, WithHeadings, WithStyles
 
     public function title(): string
     {
-        return "Pdv_Premium";
+        return "Pdv_Premium_Sin_VVDD";
     }
     // 
     public function styles(Worksheet $sheet)
