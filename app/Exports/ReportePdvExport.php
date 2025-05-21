@@ -27,31 +27,6 @@ class ReportePdvExport implements FromCollection, WithHeadings, WithStyles, With
      */
     public function collection()
     {
-        // $query = Reporte::select([
-        //     'AÑO',
-        //     'MES',
-        //     'ZONAL',
-        //     'DNI_RESPONSABLE',
-        //     'NOMBRE_RESPONSABLE',
-        //     'VENDEDOR_ZONIFICADO',
-        //     'PROYECTO',
-        //     'ESTADO',
-        //     'AVANCE_PREPAGO',
-        //     'RECARGAS',
-        //     'RATIO',
-        //     'PORTA_PRE',
-        //     'ALTA_POST',
-        //     'PORTA_POST_ORIGEN_POST',
-        //     'PORTA_POST_ORIGEN_PRE',
-        //     'BONO_PRE',
-        //     'BONO_RC',
-        //     'BONO_PORTA_PRE',
-        //     'BONO_ALTA_POST',
-        //     'BONO_PORTA_POST_ORIGEN_POST',
-        //     'BONO_PORTA_POST_ORIGEN_PRE',
-        //     'EFECTIVO_A_PAGAR'
-        // ]);
-        // return $query->get();
     }
 
     /**
@@ -62,127 +37,15 @@ class ReportePdvExport implements FromCollection, WithHeadings, WithStyles, With
     public function headings(): array
     {
          return [];
-        // return [
-        //     'AÑO',
-        //     'MES',
-        //     'ZONAL',
-        //     'DNI_RESPONSABLE',
-        //     'NOMBRE_RESPONSABLE',
-        //     'PROYECTO',
-        //     'ESTADO',
-        //     'AVANCE_PREPAGO',
-        //     'RECARGAS',
-        //     '% RATIO',
-        //     'PORTA_PRE',
-        //     'ALTA_POST',
-        //     'PORTA_POST_ORIGEN_POST',
-        //     'PORTA_POST_ORIGEN_PRE',
-        //     'S/. BONO_PRE',
-        //     'S/. BONO_RC',
-        //     'S/. BONO_PORTA_PRE',
-        //     'S/. BONO_ALTA_POST',
-        //     'S/. BONO_PORTA_POST_ORIGEN_POST',
-        //     'S/. BONO_PORTA_POST_ORIGEN_PRE',
-        //     'S/. EFECTIVO_A_PAGAR'
-        // ];
     }
 
-    /**
-     * style excel
-     */
-    // public function styles(Worksheet $sheet)
-    // {
-    //     $sheet->getRowDimension(1)->setRowHeight(30);
-    //     foreach (range('A', $sheet->getHighestColumn()) as $col) {
-    //         $sheet->getColumnDimension($col)->setAutoSize(true);
-    //     }
-
-    //     $sheet->getStyle('A1:' . $sheet->getHighestColumn() . $sheet->getHighestRow())
-    //         ->getAlignment()
-    //         ->setWrapText(true);
-
-    //     $headerStyle = [
-    //         1 => [
-    //             'font' => [
-    //                 'bold' => true,
-    //                 'color' => ['rgb' => 'FFFFFF'],
-    //             ],
-    //             'fill' => [
-    //                 'fillType' => \PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID,
-    //                 // 'startColor' => ['rgb' => '538DD5'], 
-    //                 // 'startColor' => ['rgb' => '538DD5'], 
-    //             ],
-    //             'borders' => [
-    //                 'allBorders' => [
-    //                     'borderStyle' => \PhpOffice\PhpSpreadsheet\Style\Border::BORDER_THIN,
-    //                     'color' => ['rgb' => '000000'],
-    //                 ],
-    //             ],
-    //             'alignment' => [
-    //                 'vertical' => \PhpOffice\PhpSpreadsheet\Style\Alignment::VERTICAL_CENTER,
-    //             ],
-    //         ],
-    //     ];
-
-    //     $customHeaderColors = [
-    //         'A' => '538DD5',
-    //         'B' => '538DD5',
-    //         'C' => '538DD5',
-    //         'D' => '538DD5',
-    //         'E' => '538DD5',
-    //         'F' => '538DD5',
-    //         'G' => '538DD5',
-    //         'H' => '538DD5',
-    //         'I' => '538DD5',
-    //         'J' => '538DD5',
-    //         'K' => '538DD5',
-    //         'L' => '538DD5',
-    //         'M' => '538DD5',
-    //         'N' => '538DD5',
-    //         // 
-    //         'O' => '16d52e',
-    //         'P' => '16d52e',
-    //         'Q' => '16d52e',
-    //         'R' => '16d52e',
-    //         'S' => '16d52e',
-    //         'T' => '16d52e',
-    //         'U' => '16d52e',
-    //     ];
-
-    //     foreach ($customHeaderColors as $column => $color) {
-    //         $sheet->getStyle($column . '1')->applyFromArray([
-    //             'fill' => [
-    //                 'fillType' => \PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID,
-    //                 'startColor' => ['rgb' => $color],
-    //             ],
-    //         ]);
-    //     }
-
-    //     return $headerStyle;
-    // }
-
-    // public function columnFormats(): array
-    // {
-    //     return [
-    //         'J' => '0%',
-    //         'O' => '"S/" #,##0.00',
-    //         'P' => '"S/" #,##0.00',
-    //         'Q' => '"S/" #,##0.00',
-    //         'R' => '"S/" #,##0.00',
-    //         'S' => '"S/" #,##0.00',
-    //         'T' => '"S/" #,##0.00',
-    //         'U' => '"S/" #,##0.00',
-    //     ];
-    // }
-    // Crear múltiples hojas
     public function styles(Worksheet $sheet)
     {
     }
 
     public function columnFormats(): array
     {
-        return [
-        ];
+        return [];
     }
     public function sheets(): array
     {
@@ -718,7 +581,7 @@ class ReportePdvPremiumRespSheet implements FromCollection, WithHeadings, WithSt
 
     public function title(): string
     {
-        return "Pdv_Premium_Vvdd_Completo";
+        return "Pdv_Premium_Vvdd_Total";
     }
     // 
     public function styles(Worksheet $sheet)
