@@ -486,7 +486,8 @@ class ReportePdvRegularSheet implements FromCollection, WithHeadings, WithStyles
     public function columnFormats(): array
     {
         return [
-            'J' => '0%',
+            // 'J' => '0%',
+            'K' => '0%',
             'P' => '"S/" #,##0.00',
             'Q' => '"S/" #,##0.00',
             'R' => '"S/" #,##0.00',
@@ -645,7 +646,8 @@ class ReportePdvPremiumSheet implements FromCollection, WithHeadings, WithStyles
     public function columnFormats(): array
     {
         return [
-            'J' => '0%',
+            // 'J' => '0%',
+            'K' => '0%',
             'P' => '"S/" #,##0.00',
             'Q' => '"S/" #,##0.00',
             'R' => '"S/" #,##0.00',
@@ -784,7 +786,8 @@ class ReportePdvPremiumRespSheet implements FromCollection, WithHeadings, WithSt
     public function columnFormats(): array
     {
         return [
-            'L' => '0%',
+            // 'L' => '0%',
+            'M' => '0%',
             // 'O' => '"S/" #,##0.00',
             // 'P' => '"S/" #,##0.00',
             'R' => '"S/" #,##0.00',
@@ -926,7 +929,8 @@ class ReportePdvPremiumVvddSheet implements FromCollection, WithHeadings, WithSt
     public function columnFormats(): array
     {
         return [
-            'L' => '0%',
+            // 'L' => '0%',
+            'M' => '0%',
             // 'O' => '"S/" #,##0.00',
             // 'P' => '"S/" #,##0.00',
             'R' => '"S/" #,##0.00',
@@ -1067,7 +1071,8 @@ class ReportePdvPremiumPdvpSheet implements FromCollection, WithHeadings, WithSt
     public function columnFormats(): array
     {
         return [
-            'K' => '0%',
+            // 'K' => '0%',
+            'L' => '0%',
             // 'O' => '"S/" #,##0.00',
             // 'P' => '"S/" #,##0.00',
             'Q' => '"S/" #,##0.00',
