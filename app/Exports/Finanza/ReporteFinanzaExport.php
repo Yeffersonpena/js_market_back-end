@@ -247,7 +247,7 @@ class ReporteResumenChipSheet implements FromCollection, WithHeadings, WithStyle
                 'borders' => ['allBorders' => ['borderStyle' => \PhpOffice\PhpSpreadsheet\Style\Border::BORDER_THIN]],
             ];
 
-            $headers = ['DNI FINAL', 'PROYECTO', 'MONTO'];
+            $headers = ['DNI FINAL', 'PROYECTO', 'MONTO_RECARGA'];
             $colStart = 9;
 
             foreach ($headers as $index => $header) {
