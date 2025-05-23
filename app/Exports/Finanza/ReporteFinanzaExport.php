@@ -62,32 +62,33 @@ class ReporteFinanzaExport implements FromCollection, WithHeadings, WithStyles, 
             $año=2025;
             $mes=5;
             $dni=73532841;
+            $dateFileLoad='2025-05-22';
             $getResumenChip= DB::select('
             select chip.saldo,e.DNI_VENDEDOR as DNI_FINAL, e.ACCION_1 as PROYECTO from dbo.tbl_chip_q2 chip 
             inner join
             dbo.PDV_OUT_ENTREGABLE e on chip.dni=e.DNI_VENDEDOR
-            WHERE e.AÑO = ? AND e.MES = ?;',[$año, $mes]);
+            WHERE e.AÑO = ? AND e.MES = ? AND CONVERT(date, chip.dateFileLoad) = ?;',[$año, $mes, $dateFileLoad]);
 
             $getResumenRecarga= DB::select('
             select sum(redDig.Monto) as MONTO, e.DNI_VENDEDOR as DNI_FINAL, e.ACCION_1 as PROYECTO from dbo.tbl_red_digital_q2 redDig
             inner join
             dbo.PDV_OUT_ENTREGABLE e on redDig.dni=e.DNI_VENDEDOR
-            WHERE e.AÑO = ? AND e.MES = ? and redDig.CONDICION in (?,?) and redDig.CONDICION1 in (?,?) and Columna1 <> ? group by e.DNI_VENDEDOR, e.ACCION_1
-            ;',[$año, $mes, 'CREDITO', 'N/C', 'CREDITO', 'N/C', 'CHIP']);
+            WHERE e.AÑO = ? AND e.MES = ? and redDig.CONDICION in (?,?) and redDig.CONDICION1 in (?,?) and Columna1 <> ? AND CONVERT(date, redDig.dateFileLoad) = ? group by e.DNI_VENDEDOR, e.ACCION_1
+            ;',[$año, $mes, 'CREDITO', 'N/C', 'CREDITO', 'N/C', 'CHIP', $dateFileLoad]);
 
             $getBaseRecarga = DB::select('
             select redDig.*, \'\' as MOVIMIENTO, e.DNI_VENDEDOR as DNI_FINAL, e.ACCION_1 as PROYECTO, e.ZONAL, e.ESTADO from dbo.tbl_red_digital_q2 redDig
             inner join
             dbo.PDV_OUT_ENTREGABLE e on redDig.dni=e.DNI_VENDEDOR
-            WHERE e.AÑO = ? AND e.MES = ? and redDig.CONDICION in (?,?) and redDig.CONDICION1 in (?,?) and Columna1 <> ?
-            ;',[$año, $mes, 'CREDITO', 'N/C', 'CREDITO', 'N/C', 'CHIP']);
+            WHERE e.AÑO = ? AND e.MES = ? and redDig.CONDICION in (?,?) and redDig.CONDICION1 in (?,?) and Columna1 <> ? AND CONVERT(date, redDig.dateFileLoad) = ?
+            ;',[$año, $mes, 'CREDITO', 'N/C', 'CREDITO', 'N/C', 'CHIP', $dateFileLoad]);
 
             $getBaseChip = DB::select('
             select chip.*,e.DNI_VENDEDOR as DNI_FINAL, e.ACCION_1 as PROYECTO, e.ZONAL, e.ESTADO as E_ESTADO from dbo.tbl_chip_q2 chip 
 
             inner join
             dbo.PDV_OUT_ENTREGABLE e on chip.dni=e.DNI_VENDEDOR
-            WHERE e.AÑO =? AND e.MES =?;',[$año, $mes]);
+            WHERE e.AÑO =? AND e.MES =? AND CONVERT(date, chip.dateFileLoad) = ?;',[$año, $mes, $dateFileLoad]);
             
             $resumenChip=collect($getResumenChip)->map(function ($item) {
                 return [
