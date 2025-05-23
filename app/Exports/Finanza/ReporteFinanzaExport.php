@@ -75,7 +75,7 @@ class ReporteFinanzaExport implements FromCollection, WithHeadings, WithStyles, 
             dbo.PDV_OUT_ENTREGABLE e on redDig.dni=e.DNI_VENDEDOR
             WHERE e.AÑO = ? AND e.MES = ?  and (redDig.CONDICION LIKE ? OR redDig.CONDICION = ?) and (redDig.CONDICION1 like ? OR redDig.CONDICION1 = ?) 
             and Columna1 <> ? AND CONVERT(date, redDig.dateFileLoad) = ? group by e.DNI_VENDEDOR, e.ACCION_1
-            ;',[$año, $mes, '%CREDITO%', 'N/C', '%CREDITO%', 'N/C', 'CHIP', $dateFileLoad]);
+            ;',[$año, $mes, '%CR%', 'N/C', '%CR%', 'N/C', 'CHIP', $dateFileLoad]);
             // and redDig.CONDICION in (?,?) 
 
             $getBaseRecarga = DB::select('
@@ -84,7 +84,7 @@ class ReporteFinanzaExport implements FromCollection, WithHeadings, WithStyles, 
             dbo.PDV_OUT_ENTREGABLE e on redDig.dni=e.DNI_VENDEDOR
             WHERE e.AÑO = ? AND e.MES = ? and (redDig.CONDICION LIKE ? OR redDig.CONDICION = ?) and (redDig.CONDICION1 like ? OR redDig.CONDICION1 = ?)
             and Columna1 <> ? AND CONVERT(date, redDig.dateFileLoad) = ?
-            ;',[$año, $mes, '%CREDITO%', 'N/C', '%CREDITO%', 'N/C', 'CHIP', $dateFileLoad]);
+            ;',[$año, $mes, '%CR%', 'N/C', '%CR%', 'N/C', 'CHIP', $dateFileLoad]);
 
             $getBaseChip = DB::select('
             select chip.*,e.DNI_VENDEDOR as DNI_FINAL, e.ACCION_1 as PROYECTO, e.ZONAL, e.ESTADO as E_ESTADO from dbo.tbl_chip_q2 chip 
