@@ -24,9 +24,16 @@ use Maatwebsite\Excel\Concerns\WithTitle;
 class ReporteFinanzaExport implements FromCollection, WithHeadings, WithStyles, WithColumnFormatting, WithMultipleSheets
 {
     protected $tipoReporte;
-    public function __construct($tipoReporte = 1)
+    protected $anio;
+    protected $mes;
+    protected $dateFileLoad;
+
+    public function __construct($tipoReporte = 1, $anio, $mes, $dateFileLoad)
     {
         $this->tipoReporte = $tipoReporte;
+        $this->anio= $anio;
+        $this->mes= $mes;
+        $this->dateFileLoad= $dateFileLoad;
     }
     /**
     * @return \Illuminate\Support\Collection
@@ -59,15 +66,11 @@ class ReporteFinanzaExport implements FromCollection, WithHeadings, WithStyles, 
     }
     public function sheets(): array
     {
-            $año=2025;
-            $mes=5;
-            $dni=73532841;
-            $dateFileLoad='2025-05-22';
             $getResumenChip= DB::select('
             select chip.saldo,e.DNI_VENDEDOR as DNI_FINAL, e.ACCION_1 as PROYECTO from dbo.tbl_chip_q2 chip 
             inner join
             dbo.PDV_OUT_ENTREGABLE e on chip.dni=e.DNI_VENDEDOR
-            WHERE e.AÑO = ? AND e.MES = ? AND CONVERT(date, chip.dateFileLoad) = ?;',[$año, $mes, $dateFileLoad]);
+            WHERE e.AÑO = ? AND e.MES = ? AND CONVERT(date, chip.dateFileLoad) = ?;',[$this->anio, $this->mes, $this->dateFileLoad]);
 
             $getResumenRecarga= DB::select('
             select sum(redDig.Monto) as MONTO, e.DNI_VENDEDOR as DNI_FINAL, e.ACCION_1 as PROYECTO from dbo.tbl_red_digital_q2 redDig
@@ -75,7 +78,7 @@ class ReporteFinanzaExport implements FromCollection, WithHeadings, WithStyles, 
             dbo.PDV_OUT_ENTREGABLE e on redDig.dni=e.DNI_VENDEDOR
             WHERE e.AÑO = ? AND e.MES = ?  and (redDig.CONDICION LIKE ? OR redDig.CONDICION = ?) and (redDig.CONDICION1 like ? OR redDig.CONDICION1 = ?) 
             and Columna1 <> ? AND CONVERT(date, redDig.dateFileLoad) = ? group by e.DNI_VENDEDOR, e.ACCION_1
-            ;',[$año, $mes, '%CR%', 'N/C', '%CR%', 'N/C', 'CHIP', $dateFileLoad]);
+            ;',[$this->anio, $this->mes, '%CR%', 'N/C', '%CR%', 'N/C', 'CHIP', $this->dateFileLoad]);
             // and redDig.CONDICION in (?,?) 
 
             $getBaseRecarga = DB::select('
@@ -84,14 +87,13 @@ class ReporteFinanzaExport implements FromCollection, WithHeadings, WithStyles, 
             dbo.PDV_OUT_ENTREGABLE e on redDig.dni=e.DNI_VENDEDOR
             WHERE e.AÑO = ? AND e.MES = ? and (redDig.CONDICION LIKE ? OR redDig.CONDICION = ?) and (redDig.CONDICION1 like ? OR redDig.CONDICION1 = ?)
             and Columna1 <> ? AND CONVERT(date, redDig.dateFileLoad) = ?
-            ;',[$año, $mes, '%CR%', 'N/C', '%CR%', 'N/C', 'CHIP', $dateFileLoad]);
+            ;',[$this->anio, $this->mes, '%CR%', 'N/C', '%CR%', 'N/C', 'CHIP', $this->dateFileLoad]);
 
             $getBaseChip = DB::select('
             select chip.*,e.DNI_VENDEDOR as DNI_FINAL, e.ACCION_1 as PROYECTO, e.ZONAL, e.ESTADO as E_ESTADO from dbo.tbl_chip_q2 chip 
-
             inner join
             dbo.PDV_OUT_ENTREGABLE e on chip.dni=e.DNI_VENDEDOR
-            WHERE e.AÑO =? AND e.MES =? AND CONVERT(date, chip.dateFileLoad) = ?;',[$año, $mes, $dateFileLoad]);
+            WHERE e.AÑO =? AND e.MES =? AND CONVERT(date, chip.dateFileLoad) = ?;',[$this->anio, $this->mes, $this->dateFileLoad]);
             
             $resumenChip=collect($getResumenChip)->map(function ($item) {
                 return [

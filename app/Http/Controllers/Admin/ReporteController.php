@@ -83,14 +83,15 @@ class ReporteController extends Controller
         }
     }
     
-    public function getReporteFinanza($typeReporte){
+    public function getReporteFinanza($typeReporte, $anio, $mes){
         try{
+            $dateFileLoad='2025-05-22';
             $nameFile = match ($typeReporte) {
                 2 => 'reportePdvRegular.xlsx',
                 3 => 'reportePdvPremium.xlsx',
                 default => 'reporteCompletoFinanza.xlsx',
             };
-            return Excel::download(new ReporteFinanzaExport($typeReporte), ''.$nameFile);
+            return Excel::download(new ReporteFinanzaExport($typeReporte, $anio, $mes, $dateFileLoad), ''.$nameFile);
         }catch(\Exception $ex){
             return response()->json(["status" => Response::HTTP_BAD_REQUEST, "message" => $ex->getMessage()], Response::HTTP_BAD_REQUEST);
         }
