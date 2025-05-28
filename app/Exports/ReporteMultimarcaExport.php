@@ -210,7 +210,9 @@ class ReporteMultimarcaExport implements FromCollection, WithHeadings, WithStyle
     // Crear múltiples hojas
     public function sheets(): array
     {
-        $data = ReporteMultimarca::all();
+        $año=2025;
+        $mes=5;
+        $data = ReporteMultimarca::where('año', '=', $año)->where('mes', '=', $mes)->get();
         $detallePreColumns = $data->map(function ($item) {
             return [
                 "año" => $item->año,
