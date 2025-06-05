@@ -55,7 +55,64 @@ class AvanceDiarioController extends Controller
         }
         function getPayment($dni, $anio, $mes, $typeQuincena){
                 try{
-                    // $spPayment=DB::select("exec spCalculoPaymentMM ?,?,?", [$dni, $anio, $mes]);
+                    if(!$typeQuincena){
+                        $getPayment=DB::select('EXEC spResumenGanaciaCampaña_MM_Payment @dni=?, @año=?, @mes=?', [$dni, $anio, $mes]);
+                        if($getPayment){
+                            $payment=collect($getPayment)->map(function($item){
+                                return [
+                                        "dni_vendedor"=> $item->dni_vendedor?? '',
+                                        "ventasLog"=>(float) $item->ventasLog?? 0.00,
+                                        "cantidadCalidad"=>(float) $item->cantidadCalidad?? 0.00,
+                                        "pagoUniCalidad"=>(float) $item->pagoUniCalidad?? 0.00,
+                                        "mes_6"=>(float)$item->mes_6 ?? 0.00,
+                                        "mes_7"=>(float)$item->mes_7 ?? 0.00,
+                                        "mes_8"=>(float)$item->mes_8 ?? 0.00,
+                                        "mes_9"=>(float)$item->mes_9 ?? 0.00,
+                                        "mes_10"=>(float)$item->mes_10 ?? 0.00,
+                                        "mes_11"=>(float)$item->mes_11 ?? 0.00,
+                                        "bonoRecargaNxVendedor"=> (float) $item->bonoRecargaNxVendedor ?? 0.00,
+                                        "bonoCalidad"=> (float) $item->bonoCalidad ?? 0.00,
+                                        "bonoTotal"=> (float) $item->bonoTotal ?? 0.00
+                                ];
+                            });
+                            // return $getPayment;
+                            // return $dataPament;
+                            return response()->json(["status" => Response::HTTP_OK, "message" => "Hay pago para el vendedor Multimarca", "data" => $payment[0]], Response::HTTP_OK);
+                        } else {
+                            $paymentCalidad=DB::select("select count(*) as cantidadCalidad from dbo.PDV_OUT_FUNNEL where DNI_VENDEDOR=? and YEAR(fecha)=? and month(fecha)=? and CALIDAD_CLUSTER in ('Cluster 1: IMEI nuevo', 'Cluster 2: IMEI reutilizado')", [$dni, $anio, $mes]);
+                            $paymentVentaLog=DB::select("select count(*) as ventasLog from dbo.tbl_ventas_prepago_MM where DNI_VENDEDOR=? and YEAR(fecha)=? and month(fecha)=?", [$dni, $anio, $mes]);
+                            // $paymentRecarga=DB::select("select sum(RECARGA_TOTAL) FROM dbo.PDV_OUT_FUNNEL_RESUMEN_MM where DNI_VENDEDOR=? and ANIO=? and MES=?", [$dni, $anio, $mes]);
+                            // $paymentRecarga=0;
+                            // return $paymentVentaLog;
+                            // return (object)[
+                            //           'calidad' => $paymentCalidad->cantidadCalidad ?? 0,
+                            //             'ventas' => $paymentVentaLog->ventasLog ?? 0,
+                            //             // 'recarga_total' => $paymentRecarga->total ?? 0,
+                            // ];
+                            // return $paymentC}alidad;
+                            	// select @ventaLog=count(*) from dbo.tbl_ventas_prepago_MM where dni_vendedor=@dni AND YEAR(fecha)=@año and month(fecha)=@mes;
+                                // select @recargaTotal =sum(RECARGA_TOTAL) FROM dbo.PDV_OUT_FUNNEL_RESUMEN_MM WHERE DNI_VENDEDOR = @dni and ANIO=@año and MES=@mes 
+                            // select @cantidadCalidad=count(*) from dbo.PDV_OUT_FUNNEL where DNI_VENDEDOR=@dni and YEAR(fecha)=@año and month(fecha)=@mes and CALIDAD_CLUSTER in ('Cluster 1: IMEI nuevo', 'Cluster 2: IMEI reutilizado')
+                            // set @gananciaCalidad=@cantidadCalidad *10;
+                            // return $paymentCalidad[0];
+                            $noFountPayment=[
+                                        "dni_vendedor"=> $dni,
+                                        "ventasLog"=>$paymentVentaLog[0]->ventasLog ?? 0,
+                                        "cantidadCalidad"=>$paymentCalidad[0]->cantidadCalidad ?? 0,
+                                        "pagoUniCalidad"=>10.00,
+                                        "mes_6"=>0.00,
+                                        "mes_7"=>0.00,
+                                        "mes_8"=>0.00,
+                                        "mes_9"=>0.00,
+                                        "mes_10"=>0.00,
+                                        "mes_11"=>0.00,
+                                        "bonoRecargaNxVendedor"=> 0.00,
+                                        "bonoCalidad"=> $paymentCalidad[0]->cantidadCalidad * 10 ?? 0.00,
+                                        "bonoTotal"=>$paymentCalidad[0]->cantidadCalidad * 10 ?? 0.00
+                            ];
+                            return response()->json(["status" => Response::HTTP_OK, "message" => "No hay pagos ", "data" => $noFountPayment], Response::HTTP_OK);
+                        }
+                    }
                     $spPayment=DB::select("exec spCalculoPaymentAll ?,?,?,?,?", [$dni, $anio, $mes, $typeQuincena, 3]);
                     // return $spPayment;
                     if ($spPayment) {

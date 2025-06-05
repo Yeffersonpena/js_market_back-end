@@ -25,12 +25,13 @@
 - -1 => `Admin`
 -  0 => `Default`
 -  1 => `Pdv`
--  2 => `Multimarca`    
+-  2 => `Multimarca`   
 ### Nuevo id para Perfiles
 - 1 => `admin`
 - 2 => `pdv`
 - 3 => `multimarca`
-- 4 => `default`
+<!-- - 4 => `default` -->
+- 4 => `supervisor`
 
 ## Documentación del ApiRest
 - Postman link de la [documentación ApiRest](https://web.postman.co/workspace/jsMarket-back-end~cea7cab2-08c0-4ccb-bb37-87c3df14d617/request/42215171-1471a1e8-1f91-4105-8fb5-2c57eb1318e2)
@@ -62,6 +63,10 @@
 	
 	[ADMIN]:
 		admin
+
+    [SUPERVIOSER]:
+        user:3333392
+        pass:3333392
 ```
 
 ### Modulos del Back-end [Admin - Pdv - MM]

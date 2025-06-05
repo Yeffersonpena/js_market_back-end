@@ -89,7 +89,6 @@ Route::middleware(['jwt.apiRest.jsMarket', 'jwt.user.admin'])->group(function ()
     Route::get('/api/v1/admin/historyIngreso/{user}/{fecha}/{zonal}', [GestorController::class, 'historyIngreso'])->name('historyIngreso.admin.api');
     Route::get('/api/v1/admin/getListZonal', [GestorController::class, 'getZonal'])->name('zonal.admin.api');
     // supervisor 
-    // Route::get('/api/v1/supervisor/getListUser', [SupervisorController::class, 'getListUser'])->name('getListUser.supervisor.api');
     Route::get('/api/v1/admin/getListGroup', [AdminController::class, 'getListGroup'])->name('getListGroup.supervisor.api');
     Route::get('/api/v1/admin/getListFlyers/{dateStart}', [AdminController::class, 'getListFlyers'])->name('getListFlyers.admin.api');
     // get list two db
@@ -99,7 +98,17 @@ Route::middleware(['jwt.apiRest.jsMarket', 'jwt.user.admin'])->group(function ()
     Route::get('/api/v1/admin/config/getList', [ConfigController::class, 'getListConfig'])->name('getListConfig.admin.api');
     //Route::get('/api/v1/admin/twoDb/getListFunnel/{dni}/{anio}/{mes}', [AdminController::class, 'getListFunnel'])->name('getListFunnel.admin.api');
     
+    // asesor 
+    Route::get('/api/v1/supervisor/getListZonal', [GestorController::class, 'getZonal'])->name('zonal.admin.api');
+    Route::get('/api/v1/supervisor/user/getList/{zonal}', [SupervisorController::class, 'getListUser'])->name('getListUser.supervisor.api');
+    // Route::get('/api/v1/supervisor/user/getListZonal', [SupervisorController::class, 'getListZonal'])->name('getListZonal.supervisor.api');
+    Route::get('/api/v1/supervisor/user/create', [SupervisorController::class, 'createUser'])->name('createUser.supervisor.api');
+    Route::get('/api/v1/supervisor/user/update', [SupervisorController::class, 'updateUser'])->name('updateUser.supervisor.api');
+    // Route::get('/api/v1/supervisor/getListUser', [SupervisorController::class, 'getListUser'])->name('getListUser.supervisor.api');
+    // Route::get('/api/v1/supervisor/sendUser/{idUser}', [ConfigController::class, 'getListConfig'])->name('getListConfig.admin.api');
+
     
+
 });
 Route::middleware(['jwt.apiRest.jsMarket', 'jwt.user.pdv'])->group(function () {
     Route::get('/api/v1/pdv/getDataPdv/{dni}/{anio}/{mes}', [AvanceDiarioController::class, 'getDataPdv'])->name('getDataPdv.user.api');

@@ -81,6 +81,20 @@ class ReporteFinanzaExport implements FromCollection, WithHeadings, WithStyles, 
             ;',[$this->anio, $this->mes, '%CR%', 'N/C', '%CR%', 'N/C', 'CHIP', $this->dateFileLoad]);
             // and redDig.CONDICION in (?,?) 
 
+            $getResumenChipDay= DB::select('
+            select chip.saldo,e.DNI_VENDEDOR as DNI_FINAL, e.ACCION_1 as PROYECTO, chip.FECHA  from dbo.tbl_chip_q2 chip 
+            inner join
+            dbo.PDV_OUT_ENTREGABLE e on chip.dni=e.DNI_VENDEDOR
+            WHERE e.AÑO = ? AND e.MES = ? AND CONVERT(date, chip.dateFileLoad) = ?;',[$this->anio, $this->mes, $this->dateFileLoad]);
+
+            $getResumenRecargaDay= DB::select('
+            select sum(redDig.Monto) as MONTO, e.DNI_VENDEDOR as DNI_FINAL, e.ACCION_1 as PROYECTO, redDig.fecha from dbo.tbl_red_digital_q2 redDig
+            inner join
+            dbo.PDV_OUT_ENTREGABLE e on redDig.dni=e.DNI_VENDEDOR
+            WHERE e.AÑO = ? AND e.MES = ?  and (redDig.CONDICION LIKE ? OR redDig.CONDICION = ?) and (redDig.CONDICION1 like ? OR redDig.CONDICION1 = ?) 
+            and Columna1 <> ? AND CONVERT(date, redDig.dateFileLoad) = ? group by e.DNI_VENDEDOR, e.ACCION_1, redDig.fecha
+            ;',[$this->anio, $this->mes, '%CR%', 'N/C', '%CR%', 'N/C', 'CHIP', $this->dateFileLoad]);
+
             $getBaseRecarga = DB::select('
             select redDig.*, \'\' as MOVIMIENTO, e.DNI_VENDEDOR as DNI_FINAL, e.ACCION_1 as PROYECTO, e.ZONAL, e.ESTADO from dbo.tbl_red_digital_q2 redDig
             inner join
@@ -95,6 +109,7 @@ class ReporteFinanzaExport implements FromCollection, WithHeadings, WithStyles, 
             dbo.PDV_OUT_ENTREGABLE e on chip.dni=e.DNI_VENDEDOR
             WHERE e.AÑO =? AND e.MES =? AND CONVERT(date, chip.dateFileLoad) = ?;',[$this->anio, $this->mes, $this->dateFileLoad]);
             
+            // $resumenChipDay=
             $resumenChip=collect($getResumenChip)->map(function ($item) {
                 return [
                     'DNI_FINAL'=>$item->DNI_FINAL,
@@ -108,6 +123,24 @@ class ReporteFinanzaExport implements FromCollection, WithHeadings, WithStyles, 
                     'DNI_FINAL'=>$item->DNI_FINAL,
                     'PROYECTO'=>$item->PROYECTO,
                     'MONTO'=>$item->MONTO,
+                ];
+            });
+
+            $resumenChipDay=collect($getResumenChipDay)->map(function ($item) {
+                return [
+                    'DNI_FINAL'=>$item->DNI_FINAL,
+                    'PROYECTO'=>$item->PROYECTO,
+                    'CHIPS'=>$item->saldo,
+                    'FECHA'=>$item->fecha,
+                ];
+            });
+            
+            $resumenRecargaDay=collect($getResumenRecargaDay)->map(function ($item) {
+                return [
+                    'DNI_FINAL'=>$item->DNI_FINAL,
+                    'PROYECTO'=>$item->PROYECTO,
+                    'MONTO'=>$item->MONTO,
+                    'FECHA'=>$item->fecha,
                 ];
             });
 
@@ -177,6 +210,7 @@ class ReporteFinanzaExport implements FromCollection, WithHeadings, WithStyles, 
 
         return [
             new ReporteResumenChipSheet($resumenChip, $resumenRecarga), 
+            new ReporteResumenChipRecargaDaySheet($resumenChipDay, $resumenRecargaDay), 
             new ReporteBaseRecargaSheet($baseRecarga),
             new ReporteBaseChipSheet($baseChip),
 
@@ -292,6 +326,117 @@ class ReporteResumenChipSheet implements FromCollection, WithHeadings, WithStyle
                 'font' => ['bold' => true],
             ]);
         },
+    ];
+    }
+}
+
+// 
+class ReporteResumenChipRecargaDaySheet implements FromCollection, WithHeadings, WithStyles, WithColumnFormatting, WithTitle, WithEvents
+{
+    protected $resumenChipDay;
+    protected $resumenRecargaDay;
+
+    public function __construct($resumenChipDay, $resumenRecargaDay)
+    {
+        $this->resumenChipDay = $resumenChipDay;
+        $this->resumenRecargaDay = $resumenRecargaDay;
+    }
+
+    public function collection()
+    {
+        return $this->resumenChipDay;
+    }
+
+    public function headings(): array
+    {
+        return [
+            'DNI FINAL',
+            'PROYECTO',
+            'CHIPS',
+            'FECHA',
+        ];
+    }
+
+    public function title(): string
+    {
+        return 'RESUMEN_POR_DIA';
+    }
+
+    public function styles(Worksheet $sheet)
+    {
+        $sheet->getRowDimension(1)->setRowHeight(30);
+        $sheet->getStyle('A1:C1')->applyFromArray([
+            'font' => ['bold' => true, 'color' => ['rgb' => 'FFFFFF']],
+            'fill' => ['fillType' => \PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID, 'startColor' => ['rgb' => '538DD5']],
+            'alignment' => ['vertical' => \PhpOffice\PhpSpreadsheet\Style\Alignment::VERTICAL_CENTER],
+            'borders' => ['allBorders' => ['borderStyle' => \PhpOffice\PhpSpreadsheet\Style\Border::BORDER_THIN]],
+        ]);
+        foreach (['A', 'B', 'C'] as $col) {
+            $sheet->getColumnDimension($col)->setAutoSize(true);
+        }
+    }
+
+    public function columnFormats(): array
+    {
+        return [];
+    }
+
+    public function registerEvents(): array
+    {
+        return [
+        // AfterSheet::class => function(AfterSheet $event) {
+        //     $sheet = $event->sheet->getDelegate();
+
+        //     $headerStyle = [
+        //         'font' => ['bold' => true, 'color' => ['rgb' => 'FFFFFF']],
+        //         'fill' => ['fillType' => \PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID, 'startColor' => ['rgb' => '538DD5']],
+        //         'alignment' => ['vertical' => \PhpOffice\PhpSpreadsheet\Style\Alignment::VERTICAL_CENTER],
+        //         'borders' => ['allBorders' => ['borderStyle' => \PhpOffice\PhpSpreadsheet\Style\Border::BORDER_THIN]],
+        //     ];
+
+        //     $headers = ['DNI FINAL', 'PROYECTO', 'MONTO_RECARGA', 'FECHA'];
+        //     $colStart = 9;
+
+        //     foreach ($headers as $index => $header) {
+        //         $cell = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($colStart + $index) . '1';
+        //         $sheet->setCellValue($cell, $header);
+        //         $sheet->getStyle($cell)->applyFromArray($headerStyle);
+        //         $sheet->getColumnDimension(\PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($colStart + $index))->setAutoSize(true);
+        //     }
+
+        //     $row = 2;
+        //     foreach ($this->resumenRecarga as $item) {
+        //         $sheet->setCellValueByColumnAndRow($colStart, $row, $item['DNI_FINAL']);
+        //         $sheet->setCellValueByColumnAndRow($colStart + 1, $row, $item['PROYECTO']);
+        //         $sheet->setCellValueByColumnAndRow($colStart + 2, $row, $item['MONTO']);
+        //         $row++;
+        //     }
+
+        //     $totalRowRecarga = $row;
+        //     $sheet->setCellValue(\PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($colStart + 1) . $totalRowRecarga, 'TOTAL GENERAL');
+            
+        //     $sheet->setCellValue(
+        //         \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($colStart + 2) . $totalRowRecarga,
+        //         '=SUM(' . \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($colStart + 2) . '2:' .
+        //         \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($colStart + 2) . ($totalRowRecarga - 1) . ')'
+        //     );
+
+        //     $sheet->getStyle(\PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($colStart + 1) . $totalRowRecarga . ':' .
+        //         \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($colStart + 2) . $totalRowRecarga)
+        //         ->applyFromArray([
+        //             'fill' => ['fillType' => \PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID, 'startColor' => ['rgb' => 'b6d7a8']],
+        //             'font' => ['bold' => true],
+        //         ]);
+
+        //     $totalRowChip = count($this->resumenChip) + 2;
+        //     $sheet->setCellValue('B' . $totalRowChip, 'TOTAL GENERAL');
+        //     $sheet->setCellValue('C' . $totalRowChip, '=SUM(C2:C' . ($totalRowChip - 1) . ')');
+
+        //     $sheet->getStyle('B' . $totalRowChip . ':C' . $totalRowChip)->applyFromArray([
+        //         'fill' => ['fillType' => \PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID, 'startColor' => ['rgb' => 'b6d7a8']],
+        //         'font' => ['bold' => true],
+        //     ]);
+        // },
     ];
     }
 }
