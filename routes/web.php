@@ -13,6 +13,7 @@ use App\Http\Controllers\Admin\ImagenController;
 use App\Http\Controllers\Admin\MenuPerfilController;
 use App\Http\Controllers\Admin\ImportacionController;
 use App\Http\Controllers\Admin\ReporteController;
+use App\Http\Controllers\General\IncidenciaController;
 use App\Http\Controllers\Multimarca\MultimarcaControlller;
 use App\Http\Controllers\SupervisorController;
 use App\Models\PDV_ABONOS;
@@ -106,10 +107,14 @@ Route::middleware(['jwt.apiRest.jsMarket', 'jwt.user.admin'])->group(function ()
     Route::get('/api/v1/supervisor/user/update', [SupervisorController::class, 'updateUser'])->name('updateUser.supervisor.api');
     // Route::get('/api/v1/supervisor/getListUser', [SupervisorController::class, 'getListUser'])->name('getListUser.supervisor.api');
     // Route::get('/api/v1/supervisor/sendUser/{idUser}', [ConfigController::class, 'getListConfig'])->name('getListConfig.admin.api');
-
     
-
 });
+Route::post('/api/v1/general/incidencia/create', [IncidenciaController::class, 'create'])->name('create.incidencia.api');
+Route::get('/api/v1/general/incidencia/getList/{typeSearch}/{id}', [IncidenciaController::class, 'getList'])->name('getList.incidencia.api');
+Route::put('/api/v1/general/incidencia/update/{id}', [IncidenciaController::class, 'update'])->name('update.incidencia.api');
+Route::delete('/api/v1/general/incidencia/delete/{id}', [IncidenciaController::class, 'delete'])->name('delete.incidencia.api');
+    
+    
 Route::middleware(['jwt.apiRest.jsMarket', 'jwt.user.pdv'])->group(function () {
     Route::get('/api/v1/pdv/getDataPdv/{dni}/{anio}/{mes}', [AvanceDiarioController::class, 'getDataPdv'])->name('getDataPdv.user.api');
     Route::get('/api/v1/pdv/getAvanceDiario/{dni}/{anio}/{mes}', [LogicController::class, 'getAvanceDiario'])->name('avanceDiarioMM.user.api');
