@@ -67,6 +67,9 @@
     [SUPERVIOSER]:
         user:3333392
         pass:3333392
+
+    [General]
+     @user='gestor' ,@password='gestor0293'
 ```
 
 ### Modulos del Back-end [Admin - Pdv - MM]

@@ -219,7 +219,7 @@ class LogicController extends Controller
                         "precioUniSchema"=>0.00,
                         "levelUser"=>0.00,
                         "cantidadRecarga"=>0.00,
-
+                        "bonoDevolucionChips"=>0.00,
                     ];
                     
                     foreach ($spPayment as $item) {
@@ -249,8 +249,7 @@ class LogicController extends Controller
                         $acumuladorPayment["cantidadRecarga"] =(float) $item->cantidadRecarga;
                         $acumuladorPayment["cantidadRecarga"] =(float) $item->cantidadRecarga;
                         $acumuladorPayment["ventaTotal"] =(float) $item->bonoChips;
-
-                        
+                        $acumuladorPayment["bonoDevolucionChips"] =(float) $item->bonoDevolucionChips;
                     }
                     // $payment= $spPayment;
                     $payment= $acumuladorPayment;
