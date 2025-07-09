@@ -56,6 +56,9 @@ class AvanceDiarioController extends Controller
     function getPayment($dni, $anio, $mes, $typeQuincena)
     {
         try {
+            if($anio==2025 and $mes>0 and $mes <6){
+                $typeQuincena=2;
+            }
             if (!$typeQuincena) {
                 $getPayment = DB::select('EXEC spResumenGanaciaCampaña_MM_Payment @dni=?, @año=?, @mes=?', [$dni, $anio, $mes]);
                 if ($getPayment) {
