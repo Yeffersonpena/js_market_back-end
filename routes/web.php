@@ -130,7 +130,7 @@ Route::middleware(['jwt.apiRest.jsMarket', 'jwt.user.multimarca'])->group(functi
     Route::get('/api/v1/multimarca/getAvanceQuincenalDiario/{dni}/{anio}/{mes}/{typeQuincena}', [MultimarcaAvanceDiarioController::class, 'getAvanceQuinDiario'])->name('avanceQuinDiarioMM.user.api');
     Route::get('/api/v1/multimarca/getAvanceDiario/{dni}/{anio}/{mes}', [MultimarcaAvanceDiarioController::class, 'getAvanceDiario'])->name('avanceDiarioMM.user.api');
     Route::get('/api/v1/multimarca/getFlyers/{dni}/{anio}/{mes}', [LogicController::class, 'getFlyers'])->name('flyers.user.api');
-    Route::get('/api/v1/multimarca/getAbono/{dni}/{anio}/{mes}', [LogicController::class, 'getAbono'])->name('flyers.user.api');
+    Route::get('/api/v1/multimarca/getAbono/{dni}/{anio}/{mes}', [LogicController::class, 'getAbonoMm'])->name('flyers.user.api');
     Route::get('/api/v1/multimarca/getHistoryVenta/{dni}/{anio}/{mes}', [LogicController::class, 'getHistoryVenta'])->name('history.user.api');
     Route::get('/api/v1/multimarca/getPayment/{dni}/{anio}/{mes}/{typeQuincena}', [MultimarcaAvanceDiarioController::class, 'getPayment'])->name('paymentMM.user.api');
     Route::get('/api/v1/multimarca/getIncidencia/{dni}/{anio}/{mes}', [LogicController::class, 'getIncidencia'])->name('incidencia.user.api');
