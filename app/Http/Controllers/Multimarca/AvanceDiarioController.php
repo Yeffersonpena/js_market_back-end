@@ -60,26 +60,95 @@ class AvanceDiarioController extends Controller
                 $typeQuincena=2;
             }
             if (!$typeQuincena) {
-                $getPayment = DB::select('EXEC spResumenGanaciaCampaña_MM_Payment @dni=?, @año=?, @mes=?', [$dni, $anio, $mes]);
+                // $getPayment = DB::select('EXEC spResumenGanaciaCampaña_MM_Payment @dni=?, @año=?, @mes=?', [$dni, $anio, $mes]);
+                // return $mes;
+                // if($mes==6){
+                //     $getPayment = DB::select('EXEC spResumenGanaciaCampaña_MM_Payment @dni=?, @año=?, @mes=?', [$dni, $anio, $mes]);
+                // }else{
+                    $getPayment = DB::select('EXEC spResumenGanaciaCampaña_MM_Payment_test_1 @dni=?, @año=?, @mes=?', [$dni, $anio, $mes]);
+                // }
+                // return $getPayment;
                 if ($getPayment) {
-                    $payment = collect($getPayment)->map(function ($item) {
-                        return [
-                            "dni_vendedor" => $item->dni_vendedor ?? '',
-                            "ventasLog" => (float) $item->ventasLog ?? 0.00,
-                            "cantidadCalidad" => (float) $item->cantidadCalidad ?? 0.00,
-                            "pagoUniCalidad" => (float) $item->pagoUniCalidad ?? 0.00,
-                            "mes_6" => (float)$item->mes_6 ?? 0.00,
-                            "mes_7" => (float)$item->mes_7 ?? 0.00,
-                            "mes_8" => (float)$item->mes_8 ?? 0.00,
-                            "mes_9" => (float)$item->mes_9 ?? 0.00,
-                            "mes_10" => (float)$item->mes_10 ?? 0.00,
-                            "mes_11" => (float)$item->mes_11 ?? 0.00,
-                            "bonoRecargaNxVendedor" => (float) $item->bonoRecargaNxVendedor ?? 0.00,
-                            "bonoCalidad" => (float) $item->bonoCalidad ?? 0.00,
-                            "bonoTotal" => (float) $item->bonoTotal ?? 0.00
-                        ];
-                    });
+                    if($mes==6){
+                        // return $getPayment;
+                        $payment = collect($getPayment)->map(function ($item) {
+                            // $mes_6 = $item->PERIODO_EVALUACION === 'N0' ? (float)$item->MONTO_GANANCIA : 0.00;
+                            // $mes_7 = $item->PERIODO_EVALUACION == 'N1' ? (float)$item->MONTO_GANANCIA : 0.00;
+                            // $mes_8 = $item->PERIODO_EVALUACION === 'N2' ? (float)$item->MONTO_GANANCIA : 0.00;
+                            // $mes_9 = $item->PERIODO_EVALUACION === 'N3' ? (float)$item->MONTO_GANANCIA : 0.00;
+                            // $mes_10 = $item->PERIODO_EVALUACION === 'N4' ? (float)$item->MONTO_GANANCIA : 0.00;
+                            // $mes_11 = $item->PERIODO_EVALUACION === 'N5' ? (float)$item->MONTO_GANANCIA : 0.00;
+                            return [
+                                "dni_vendedor" => $item->dni_vendedor ?? '',
+                                "ventasLog" => (float) $item->ventasLog ?? 0.00,
+                                "cantidadCalidad" => (float) $item->cantidadCalidad ?? 0.00,
+                                "pagoUniCalidad" => (float) $item->pagoUniCalidad ?? 0.00,
+                                // "mes_6" => (float)$item->mes_6 ?? 0.00,
+                                // "mes_7" => (float)$item->mes_7 ?? 0.00,
+                                // "mes_8" => (float)$item->mes_8 ?? 0.00,
+                                // "mes_9" => (float)$item->mes_9 ?? 0.00,
+                                // "mes_10" => (float)$item->mes_10 ?? 0.00,
+                                // "mes_11" => (float)$item->mes_11 ?? 0.00,
+                                "mes_6" => (float) $item->MONTO_GANANCIA,
+                                "mes_7" => 0.00,
+                                "mes_8" => 0.00,
+                                "mes_9" => 0.00,
+                                "mes_10" => 0.00,
+                                "mes_11" => 0.00,
+                                "bonoRecargaNxVendedor" => (float) $item->bonoRecargaNxVendedor ?? 0.00,
+                                "bonoCalidad" => (float) $item->bonoCalidad ?? 0.00,
+                                "bonoTotal" => (float) $item->bonoTotal ?? 0.00
+                            ];
+                        });
+                        // return $getPayment[0];
                     return response()->json(["status" => Response::HTTP_OK, "message" => "Hay pago para el vendedor Multimarca", "data" => $payment[0]], Response::HTTP_OK);
+
+                    }else{
+                        // Reducir los resultados a un solo objeto
+                        $payment = collect($getPayment)->reduce(function ($carry, $item) {
+                            // Asignar MONTO_GANANCIA a los meses correspondientes según el PERIODO_EVALUACION
+                            switch ($item->PERIODO_EVALUACION) {
+                                case 'N0':
+                                    $carry['mes_6'] = (float) $item->MONTO_GANANCIA;
+                                    break;
+                                case 'N1':
+                                    $carry['mes_7'] = (float) $item->MONTO_GANANCIA;
+                                    break;
+                                case 'N2':
+                                    $carry['mes_8'] = (float) $item->MONTO_GANANCIA;
+                                    break;
+                                case 'N3':
+                                    $carry['mes_9'] = (float) $item->MONTO_GANANCIA;
+                                    break;
+                                case 'N4':
+                                    $carry['mes_10'] = (float) $item->MONTO_GANANCIA;
+                                    break;
+                                case 'N5':
+                                    $carry['mes_11'] = (float) $item->MONTO_GANANCIA;
+                                    break;
+                            }
+                            $carry['dni_vendedor'] = $item->dni_vendedor ?? '';
+                            $carry['ventasLog'] = (float) $item->ventasLog ?? 0.00;
+                            $carry['cantidadCalidad'] = (float) $item->cantidadCalidad ?? 0.00;
+                            $carry['pagoUniCalidad'] = (float) $item->pagoUniCalidad ?? 0.00;
+                            $carry['bonoRecargaNxVendedor'] = (float) $item->bonoRecargaNxVendedor ?? 0.00;
+                            $carry['bonoCalidad'] = (float) $item->bonoCalidad ?? 0.00;
+                            $carry['bonoTotal'] = (float) $item->bonoTotal ?? 0.00;
+                            return $carry;
+                        }, []);
+
+                        // Asegurar que todos los meses estén presentes, incluso si no se asignaron
+                        $payment = array_merge([
+                            "mes_6" => 0.00,
+                            "mes_7" => 0.00,
+                            "mes_8" => 0.00,
+                            "mes_9" => 0.00,
+                            "mes_10" => 0.00,
+                            "mes_11" => 0.00
+                        ], $payment);
+                    }
+                    // return $payment;
+                    return response()->json(["status" => Response::HTTP_OK, "message" => "Hay pago para el vendedor Multimarca", "data" => $payment], Response::HTTP_OK);
                 } else {
                     $paymentCalidad = DB::select("select count(*) as cantidadCalidad from dbo.PDV_OUT_FUNNEL where DNI_VENDEDOR=? and YEAR(fecha)=? and month(fecha)=? and CALIDAD_CLUSTER in ('Cluster 1: IMEI nuevo', 'Cluster 2: IMEI reutilizado')", [$dni, $anio, $mes]);
                     $paymentVentaLog = DB::select("select count(*) as ventasLog from dbo.tbl_ventas_prepago_MM where DNI_VENDEDOR=? and YEAR(fecha)=? and month(fecha)=?", [$dni, $anio, $mes]);

@@ -3,6 +3,7 @@
 use App\Http\Controllers\Admin\AdminController;
 use App\Http\Controllers\Admin\Config\ConfigController;
 use App\Http\Controllers\Admin\GestorController;
+use App\Http\Controllers\Admin\GestorEntregableController;
 use App\Http\Controllers\All\LogicController;
 use App\Http\Controllers\Controller;
 use App\Http\Controllers\LoginController;
@@ -107,6 +108,13 @@ Route::middleware(['jwt.apiRest.jsMarket', 'jwt.user.admin'])->group(function ()
     Route::get('/api/v1/supervisor/user/update', [SupervisorController::class, 'updateUser'])->name('updateUser.supervisor.api');
     // Route::get('/api/v1/supervisor/getListUser', [SupervisorController::class, 'getListUser'])->name('getListUser.supervisor.api');
     // Route::get('/api/v1/supervisor/sendUser/{idUser}', [ConfigController::class, 'getListConfig'])->name('getListConfig.admin.api');
+    
+    // manager entregable
+    Route::get('/api/v1/admin/entregable/getList/{anio}/{mes}/{stateSearchAll}/{dni}', [GestorEntregableController::class, 'getList'])->name('getList.entregable.api');
+    Route::post('/api/v1/admin/entregable/post', [GestorEntregableController::class, 'post'])->name('post.entregable.api');
+    Route::delete('/api/v1/admin/entregable/delete/{anio}/{mes}/{dniResp}/{dniVen}', [GestorEntregableController::class, 'delete'])->name('delete.entregable.api');
+    Route::put('/api/v1/admin/entregable/update/{anio}/{mes}/{dniResp}/{dniVen}', [GestorEntregableController::class, 'update'])->name('update.entregable.api');
+
     
 });
 Route::post('/api/v1/general/incidencia/create', [IncidenciaController::class, 'create'])->name('create.incidencia.api');
