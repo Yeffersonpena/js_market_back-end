@@ -65,7 +65,7 @@ class AvanceDiarioController extends Controller
                 // if($mes==6){
                 //     $getPayment = DB::select('EXEC spResumenGanaciaCampaña_MM_Payment @dni=?, @año=?, @mes=?', [$dni, $anio, $mes]);
                 // }else{
-                    $getPayment = DB::select('EXEC spResumenGanaciaCampaña_MM_Payment_test_1 @dni=?, @año=?, @mes=?', [$dni, $anio, $mes]);
+                    $getPayment = DB::select('EXEC spResumenGanaciaCampaña_MM_Payment @dni=?, @año=?, @mes=?', [$dni, $anio, $mes]);
                 // }
                 // return $getPayment;
                 if ($getPayment) {
@@ -89,13 +89,13 @@ class AvanceDiarioController extends Controller
                                 // "mes_9" => (float)$item->mes_9 ?? 0.00,
                                 // "mes_10" => (float)$item->mes_10 ?? 0.00,
                                 // "mes_11" => (float)$item->mes_11 ?? 0.00,
-                                "mes_6" => (float) $item->MONTO_GANANCIA,
+                                "mes_6" => (float) $item->ganaciaPorRecarga,
                                 "mes_7" => 0.00,
                                 "mes_8" => 0.00,
                                 "mes_9" => 0.00,
                                 "mes_10" => 0.00,
                                 "mes_11" => 0.00,
-                                "bonoRecargaNxVendedor" => (float) $item->bonoRecargaNxVendedor ?? 0.00,
+                                "bonoRecargaNxVendedor" => (float) $item->bonoRecargaNxVendedorSubTotal ?? 0.00,
                                 "bonoCalidad" => (float) $item->bonoCalidad ?? 0.00,
                                 "bonoTotal" => (float) $item->bonoTotal ?? 0.00
                             ];
@@ -109,29 +109,29 @@ class AvanceDiarioController extends Controller
                             // Asignar MONTO_GANANCIA a los meses correspondientes según el PERIODO_EVALUACION
                             switch ($item->PERIODO_EVALUACION) {
                                 case 'N0':
-                                    $carry['mes_6'] = (float) $item->MONTO_GANANCIA;
+                                    $carry['mes_6'] = (float) $item->ganaciaPorRecarga;
                                     break;
                                 case 'N1':
-                                    $carry['mes_7'] = (float) $item->MONTO_GANANCIA;
+                                    $carry['mes_7'] = (float) $item->ganaciaPorRecarga;
                                     break;
                                 case 'N2':
-                                    $carry['mes_8'] = (float) $item->MONTO_GANANCIA;
+                                    $carry['mes_8'] = (float) $item->ganaciaPorRecarga;
                                     break;
                                 case 'N3':
-                                    $carry['mes_9'] = (float) $item->MONTO_GANANCIA;
+                                    $carry['mes_9'] = (float) $item->ganaciaPorRecarga;
                                     break;
                                 case 'N4':
-                                    $carry['mes_10'] = (float) $item->MONTO_GANANCIA;
+                                    $carry['mes_10'] = (float) $item->ganaciaPorRecarga;
                                     break;
                                 case 'N5':
-                                    $carry['mes_11'] = (float) $item->MONTO_GANANCIA;
+                                    $carry['mes_11'] = (float) $item->ganaciaPorRecarga;
                                     break;
                             }
                             $carry['dni_vendedor'] = $item->dni_vendedor ?? '';
                             $carry['ventasLog'] = (float) $item->ventasLog ?? 0.00;
                             $carry['cantidadCalidad'] = (float) $item->cantidadCalidad ?? 0.00;
                             $carry['pagoUniCalidad'] = (float) $item->pagoUniCalidad ?? 0.00;
-                            $carry['bonoRecargaNxVendedor'] = (float) $item->bonoRecargaNxVendedor ?? 0.00;
+                            $carry['bonoRecargaNxVendedor'] = (float) $item->bonoRecargaNxVendedorSubTotal ?? 0.00;
                             $carry['bonoCalidad'] = (float) $item->bonoCalidad ?? 0.00;
                             $carry['bonoTotal'] = (float) $item->bonoTotal ?? 0.00;
                             return $carry;
