@@ -60,17 +60,9 @@ class AvanceDiarioController extends Controller
                 $typeQuincena=2;
             }
             if (!$typeQuincena) {
-                // $getPayment = DB::select('EXEC spResumenGanaciaCampaña_MM_Payment @dni=?, @año=?, @mes=?', [$dni, $anio, $mes]);
-                // return $mes;
-                // if($mes==6){
-                //     $getPayment = DB::select('EXEC spResumenGanaciaCampaña_MM_Payment @dni=?, @año=?, @mes=?', [$dni, $anio, $mes]);
-                // }else{
                     $getPayment = DB::select('EXEC spResumenGanaciaCampaña_MM_Payment @dni=?, @año=?, @mes=?', [$dni, $anio, $mes]);
-                // }
-                // return $getPayment;
                 if ($getPayment) {
                     if($mes==6){
-                        // return $getPayment;
                         $payment = collect($getPayment)->map(function ($item) {
                             // $mes_6 = $item->PERIODO_EVALUACION === 'N0' ? (float)$item->MONTO_GANANCIA : 0.00;
                             // $mes_7 = $item->PERIODO_EVALUACION == 'N1' ? (float)$item->MONTO_GANANCIA : 0.00;
@@ -100,11 +92,9 @@ class AvanceDiarioController extends Controller
                                 "bonoTotal" => (float) $item->bonoTotal ?? 0.00
                             ];
                         });
-                        // return $getPayment[0];
-                    return response()->json(["status" => Response::HTTP_OK, "message" => "Hay pago para el vendedor Multimarca", "data" => $payment[0]], Response::HTTP_OK);
-
+                        return response()->json(["status" => Response::HTTP_OK, "message" => "Hay pago para el vendedor Multimarca", "data" => $payment[0]], Response::HTTP_OK);
                     }else{
-                        // Reducir los resultados a un solo objeto
+                        // return $getPayment;
                         $payment = collect($getPayment)->reduce(function ($carry, $item) {
                             // Asignar MONTO_GANANCIA a los meses correspondientes según el PERIODO_EVALUACION
                             switch ($item->PERIODO_EVALUACION) {
@@ -134,10 +124,15 @@ class AvanceDiarioController extends Controller
                             $carry['bonoRecargaNxVendedor'] = (float) $item->bonoRecargaNxVendedorSubTotal ?? 0.00;
                             $carry['bonoCalidad'] = (float) $item->bonoCalidad ?? 0.00;
                             $carry['bonoTotal'] = (float) $item->bonoTotal ?? 0.00;
+                            $carry['cantidadPortaPostOPre'] = (float) $item->cantidadPortaPostOPre ?? 0.00;
+                            $carry['precioPortaPostOPre'] = (float) $item->precioPortaPostOPre ?? 0.00;
+                            $carry['cantidadPortaPostOPost'] = (float) $item->cantidadPortaPostOPost ?? 0.00;
+                            $carry['precioPortaPostOPost'] = (float) $item->precioPortaPostOPost ?? 0.00;
+                            $carry['bonoPortaPostOPre'] = (float) $item->bonoPortaPostOPre ?? 0.00;
+                            $carry['bonoPortaPostOPost'] = (float) $item->bonoPortaPostOPost ?? 0.00;
                             return $carry;
                         }, []);
 
-                        // Asegurar que todos los meses estén presentes, incluso si no se asignaron
                         $payment = array_merge([
                             "mes_6" => 0.00,
                             "mes_7" => 0.00,
@@ -166,7 +161,14 @@ class AvanceDiarioController extends Controller
                         "mes_11" => 0.00,
                         "bonoRecargaNxVendedor" => 0.00,
                         "bonoCalidad" => $paymentCalidad[0]->cantidadCalidad * $paymentPrecioUniCalidad[0]->precioUniCalidad ?? 0.00,
-                        "bonoTotal" => $paymentCalidad[0]->cantidadCalidad * $paymentPrecioUniCalidad[0]->precioUniCalidad ?? 0.00
+                        "bonoTotal" => $paymentCalidad[0]->cantidadCalidad * $paymentPrecioUniCalidad[0]->precioUniCalidad ?? 0.00,
+                        // 
+                        "cantidadPortaPostOPre" => (float) 0.00,
+                        "precioPortaPostOPre" => (float) 0.00,
+                        "cantidadPortaPostOPost" => (float) 0.00,
+                        "precioPortaPostOPost" => (float) 0.00,
+                        "bonoPortaPostOPre" => (float) 0.00,
+                        "bonoPortaPostOPost" => (float) 0.00,
                     ];
                     return response()->json(["status" => Response::HTTP_OK, "message" => "No hay pagos ", "data" => $noFountPayment], Response::HTTP_OK);
                 }

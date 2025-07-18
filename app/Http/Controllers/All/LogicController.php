@@ -25,6 +25,7 @@ class LogicController extends Controller
             // ->whereYear('FECHA', $anio)
             // ->whereMonth('FECHA', $mes)
             // ->exists();
+        // $existeAvance = DB::select( "EXEC spView_Avances_Diarios_test_1 ?, ?, ?", [$dni, $anio, $mes]);
         $existeAvance = DB::select( "EXEC spView_Avances_Diarios ?, ?, ?", [$dni, $anio, $mes]);
             if ($existeAvance) {
                 $avances=$existeAvance;
@@ -246,6 +247,9 @@ class LogicController extends Controller
                         "levelUser"=>0.00,
                         "cantidadRecarga"=>0.00,
                         "bonoDevolucionChips"=>0.00,
+                        "precioUniCalidadAdi"=>0.00,
+                        "cantidadCalidad"=>0.00,
+                        "bonoCalidad"=>0.00,
                     ];
                     
                     foreach ($spPayment as $item) {
@@ -276,6 +280,12 @@ class LogicController extends Controller
                         $acumuladorPayment["cantidadRecarga"] =(float) $item->cantidadRecarga;
                         $acumuladorPayment["ventaTotal"] =(float) $item->bonoChips;
                         $acumuladorPayment["bonoDevolucionChips"] =(float) $item->bonoDevolucionChips;
+                        $acumuladorPayment["precioUniCalidadAdi"] =(float) $item->precioUniCalidadAdi ?? 0;
+                        $acumuladorPayment["cantidadCalidad"] =(float) $item->cantidadCalidad ?? 0;
+                        $acumuladorPayment["bonoCalidad"] =(float) $item->bonoCalidad ?? 0;
+                        // $acumuladorPayment["precioUniCalidadAdi"] =(float) 1;
+                        // $acumuladorPayment["cantidadCalidad"] =(float) 13;
+                        // $acumuladorPayment["bonoCalidad"] =(float) 14;
                     }
                     // $payment= $spPayment;
                     $payment= $acumuladorPayment;
