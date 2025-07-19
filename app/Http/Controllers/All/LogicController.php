@@ -250,6 +250,7 @@ class LogicController extends Controller
                         "precioUniCalidadAdi"=>0.00,
                         "cantidadCalidad"=>0.00,
                         "bonoCalidad"=>0.00,
+                        "zonal"=>"",
                     ];
                     
                     foreach ($spPayment as $item) {
@@ -283,6 +284,7 @@ class LogicController extends Controller
                         $acumuladorPayment["precioUniCalidadAdi"] =(float) $item->precioUniCalidadAdi ?? 0;
                         $acumuladorPayment["cantidadCalidad"] =(float) $item->cantidadCalidad ?? 0;
                         $acumuladorPayment["bonoCalidad"] =(float) $item->bonoCalidad ?? 0;
+                        $acumuladorPayment["zonal"] = $item->zonal ?? "";
                         // $acumuladorPayment["precioUniCalidadAdi"] =(float) 1;
                         // $acumuladorPayment["cantidadCalidad"] =(float) 13;
                         // $acumuladorPayment["bonoCalidad"] =(float) 14;
