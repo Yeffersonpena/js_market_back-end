@@ -281,13 +281,10 @@ class LogicController extends Controller
                         $acumuladorPayment["cantidadRecarga"] =(float) $item->cantidadRecarga;
                         $acumuladorPayment["ventaTotal"] =(float) $item->bonoChips;
                         $acumuladorPayment["bonoDevolucionChips"] =(float) $item->bonoDevolucionChips;
-                        $acumuladorPayment["precioUniCalidadAdi"] =(float) $item->precioUniCalidadAdi ?? 0;
-                        $acumuladorPayment["cantidadCalidad"] =(float) $item->cantidadCalidad ?? 0;
-                        $acumuladorPayment["bonoCalidad"] =(float) $item->bonoCalidad ?? 0;
-                        $acumuladorPayment["zonal"] = $item->zonal ?? "";
-                        // $acumuladorPayment["precioUniCalidadAdi"] =(float) 1;
-                        // $acumuladorPayment["cantidadCalidad"] =(float) 13;
-                        // $acumuladorPayment["bonoCalidad"] =(float) 14;
+                        $acumuladorPayment["precioUniCalidadAdi"] = property_exists($item, 'precioUniCalidadAdi') ? (float) $item->precioUniCalidadAdi: 0;
+                        $acumuladorPayment["cantidadCalidad"] =property_exists($item, 'cantidadCalidad') ? (float) $item->cantidadCalidad : 0;
+                        $acumuladorPayment["bonoCalidad"] =property_exists($item, 'bonoCalidad') ? (float) $item->bonoCalidad : 0;
+                        $acumuladorPayment["zonal"] = property_exists($item, 'zonal') ? $item->zonal : "";
                     }
                     // $payment= $spPayment;
                     $payment= $acumuladorPayment;
