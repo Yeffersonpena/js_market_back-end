@@ -121,19 +121,20 @@ class LogicController extends Controller
     public function getAbono($dni, $anio, $mes)
     {
         try {
-            $existeAbono = PDV_ABONOS::where('DNI RESP', $dni)->where('año', '=', $anio)->where('mes', '=', $mes)->exists();
-            if ($existeAbono) {
-                $abono = PDV_ABONOS::where('DNI RESP', $dni)->where('año', '=', $anio)->where('mes', '=', $mes)->get();
-                // return 2;
-                // return $abono;
-                $abono->makeHidden(['DNI ']);
+            $abono = PDV_ABONOS::where('DNI RESP', $dni)->where('año', '=', $anio)->where('mes', '=', $mes)->get();
+            $flagAbono = false;
+            if (!$abono->isEmpty()) {
+                $flagAbono = true;
+            } else {
+                $abono = PDV_ABONOS::where('DNI GANADOR', $dni)->where('año', '=', $anio)->where('mes', '=', $mes)->get();
+                !$abono->isEmpty() ? $flagAbono = true : $flagAbono = false;
+            }
+            if ($flagAbono) {
                 $abono = $abono->map(function ($item) {
                     return [
-                        // "id" => $item->id,
                         "año" => $item->AÑO,
                         "mes" => $item->MES,
                         "detalle" => $item->DETALLE,
-                        // "estado" => $item->{"STATUS DEL ABONO"},
                         "estado" => $item->{"MÉTODO DE PAGO"},
                         "total" => (float)$item->{"BONO TOTAL"},
                         "fecha" => $item->{"FECHAS_ ABONO"},
@@ -142,32 +143,7 @@ class LogicController extends Controller
                 });
                 return response()->json(["status" => Response::HTTP_OK, "message" => "Historial de Abono", "data" => $abono], Response::HTTP_OK);
             } else {
-                $existeAbono = PDV_ABONOS::where('DNI GANADOR', $dni)->where('año', '=', $anio)->where('mes', '=', $mes)->exists();
-                // return $existeAbono;
-                // return $abono;
-                if ($existeAbono) {
-                    $abono = PDV_ABONOS::where('DNI GANADOR', $dni)->where('año', '=', $anio)->where('mes', '=', $mes)->get();
-                    // $abono = PDV_ABONOS::where('DNI RESP', $dni)->where('año', '=', $anio)->where('mes', '=', $mes)->get();
-                    // $abono->makeHidden(['DNI ']);
-                    // return $abono;
-                    $abono = $abono->map(function ($item) {
-                        return [
-                            // "id" => $item->id,
-                            "año" => $item->AÑO,
-                            "mes" => $item->MES,
-                            "detalle" => $item->DETALLE,
-                            // "estado" => $item->{"STATUS DEL ABONO"},
-                            "estado" => $item->{"MÉTODO DE PAGO"},
-                            "total" => (float)$item->{"BONO TOTAL"},
-                            "fecha" => $item->{"FECHAS_ ABONO"},
-                            "dniGanador" => $item->{"DNI GANADOR"},
-                        ];
-                    });
-                    return response()->json(["status" => Response::HTTP_OK, "message" => "Historial de Abono", "data" => $abono], Response::HTTP_OK);
-                    // return response()->json(["status" => Response::HTTP_OK, "message" => "No hay historial de Abono", "data" => []], Response::HTTP_OK);
-                } else {
-                    return response()->json(["status" => Response::HTTP_OK, "message" => "No hay historial de Abono", "data" => []], Response::HTTP_OK);
-                }
+                return response()->json(["status" => Response::HTTP_OK, "message" => "No hay historial de Abono", "data" => []], Response::HTTP_OK);
             }
         } catch (\Exception $ex) {
             return response()->json(["status" => Response::HTTP_BAD_REQUEST, "message" => $ex->getMessage()], Response::HTTP_BAD_REQUEST);
