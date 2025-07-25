@@ -89,30 +89,21 @@ class LogicController extends Controller
     {
         try {
             $existeAvance = VI_FLYERS::where('DNI_Responsable', $dni)->exists();
-            if ($existeAvance) {
-                $avances = VI_FLYERS::where('DNI_Responsable', $dni)->whereRaw('? BETWEEN MONTH(fecha_inicio) AND MONTH(fecha_fin)', [$mes])->orderBy('fecha_fin', 'asc')->get();
+            if(!$existeAvance){
+                $getDniResp= DB::select("select top 1 DNI_RESPONSABLE FROM dbo.PDV_OUT_FUNNEL WHERE DNI_VENDEDOR= ? AND year(fecha) = ? AND month(fecha)= ? and SOCIO='JS MARKET'", [$dni, $anio, $mes]);
+                $dni= $getDniResp[0]->DNI_RESPONSABLE ?? 0;
+            }
+            $avances = VI_FLYERS::where('DNI_Responsable', $dni)->whereRaw('? BETWEEN MONTH(fecha_inicio) AND MONTH(fecha_fin)', [$mes])->orderBy('fecha_fin', 'asc')->get();
+            if (!$avances->isEmpty()) {
                 $agrupados = $avances->groupBy('tipoImg');
                 $agrupados->each(function ($items) {
                     foreach ($items as $item) {
-                        // foreach ($items as $key=>$item) {
-                        // foreach ($items as $key=>$item) {
-                        // $item[$key]= [
-                        //     "año" => $item->año,
-                        //     "mes" => $item->mes,
-                        //     "dni_responsable" => $item->dni_responsable,
-                        //     "zonal" => $item->zonal,
-                        //     "foto_esquema" => env('APP_DOMAIN') . '/storage/img/' . $item->foto_esquema,
-                        //     "fecha_inicio" => $item->fecha_inicio,
-                        //     "fecha_fin" => $item->fecha_fin,
-                        //     "tipoImg"=> $item->tipoImg
-                        // ];
                         $item->foto_esquema = env('APP_DOMAIN') . '/storage/img/' . $item->foto_esquema;
                     }
                 });
-                // return $agrupados;
                 return response()->json(["status" => Response::HTTP_OK, "message" => "Fyers", "data" => $agrupados], Response::HTTP_OK);
             } else {
-                return response()->json(["status" => Response::HTTP_OK, "message" => "No hay fyers " . $dni, "data" => []], Response::HTTP_OK);
+                return response()->json(["status" => Response::HTTP_OK, "message" => "No hay fyers para el dni " . $dni, "data" => []], Response::HTTP_OK);
             }
         } catch (\Exception $ex) {
             return response()->json(["status" => Response::HTTP_BAD_REQUEST, "message" => $ex->getMessage()], Response::HTTP_BAD_REQUEST);
