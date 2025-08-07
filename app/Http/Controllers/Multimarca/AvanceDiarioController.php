@@ -90,25 +90,14 @@ class AvanceDiarioController extends Controller
                         ], Response::HTTP_OK);
                     } else {
                         $payment = collect($getPayment)->reduce(function ($carry, $item) {
-                            switch ($item->PERIODO_EVALUACION) {
-                                case 'N0':
-                                    $carry['mes_6'] = (float) $item->ganaciaPorRecarga;
-                                    break;
-                                case 'N1':
-                                    $carry['mes_7'] = (float) $item->ganaciaPorRecarga;
-                                    break;
-                                case 'N2':
-                                    $carry['mes_8'] = (float) $item->ganaciaPorRecarga;
-                                    break;
-                                case 'N3':
-                                    $carry['mes_9'] = (float) $item->ganaciaPorRecarga;
-                                    break;
-                                case 'N4':
-                                    $carry['mes_10'] = (float) $item->ganaciaPorRecarga;
-                                    break;
-                                case 'N5':
-                                    $carry['mes_11'] = (float) $item->ganaciaPorRecarga;
-                                    break;
+                            // Asignación dinámica de mes según PERIODO_EVALUACION
+                            $mesActual = (int)date('n'); // mes actual (1-12)
+                            $n = (int)str_replace('N', '', $item->PERIODO_EVALUACION); // extrae el número de N
+                            $mesDestino = $mesActual - $n;
+                            // Si el mes destino es menor a 1, puedes decidir si saltar o ajustar (por ahora, solo asigna si es válido)
+                            if ($mesDestino >= 1 && $mesDestino <= 12) {
+                                $claveMes = 'mes_' . $mesDestino;
+                                $carry[$claveMes] = (float) $item->ganaciaPorRecarga;
                             }
 
                             $carry['dni_vendedor'] = $item->dni_vendedor ?? '';
