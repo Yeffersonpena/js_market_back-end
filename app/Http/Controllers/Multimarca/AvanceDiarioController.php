@@ -61,26 +61,14 @@ class AvanceDiarioController extends Controller
             }
             if (!$typeQuincena) {
                     $getPayment = DB::select('EXEC spResumenGanaciaCampaña_MM_Payment @dni=?, @año=?, @mes=?', [$dni, $anio, $mes]);
-                if ($getPayment) {
+                if (!empty($getPayment)) {
                     if($mes==6){
                         $payment = collect($getPayment)->map(function ($item) {
-                            // $mes_6 = $item->PERIODO_EVALUACION === 'N0' ? (float)$item->MONTO_GANANCIA : 0.00;
-                            // $mes_7 = $item->PERIODO_EVALUACION == 'N1' ? (float)$item->MONTO_GANANCIA : 0.00;
-                            // $mes_8 = $item->PERIODO_EVALUACION === 'N2' ? (float)$item->MONTO_GANANCIA : 0.00;
-                            // $mes_9 = $item->PERIODO_EVALUACION === 'N3' ? (float)$item->MONTO_GANANCIA : 0.00;
-                            // $mes_10 = $item->PERIODO_EVALUACION === 'N4' ? (float)$item->MONTO_GANANCIA : 0.00;
-                            // $mes_11 = $item->PERIODO_EVALUACION === 'N5' ? (float)$item->MONTO_GANANCIA : 0.00;
                             return [
                                 "dni_vendedor" => $item->dni_vendedor ?? '',
                                 "ventasLog" => (float) $item->ventasLog ?? 0.00,
                                 "cantidadCalidad" => (float) $item->cantidadCalidad ?? 0.00,
                                 "pagoUniCalidad" => (float) $item->pagoUniCalidad ?? 0.00,
-                                // "mes_6" => (float)$item->mes_6 ?? 0.00,
-                                // "mes_7" => (float)$item->mes_7 ?? 0.00,
-                                // "mes_8" => (float)$item->mes_8 ?? 0.00,
-                                // "mes_9" => (float)$item->mes_9 ?? 0.00,
-                                // "mes_10" => (float)$item->mes_10 ?? 0.00,
-                                // "mes_11" => (float)$item->mes_11 ?? 0.00,
                                 "mes_6" => (float) $item->ganaciaPorRecarga,
                                 "mes_7" => 0.00,
                                 "mes_8" => 0.00,
@@ -174,7 +162,7 @@ class AvanceDiarioController extends Controller
                 }
             }
             $spPayment = DB::select("exec spCalculoPaymentAll ?,?,?,?,?", [$dni, $anio, $mes, $typeQuincena, 3]);
-            if ($spPayment) {
+            if (!empty($spPayment)) {
                 $acumuladorPayment = [
                     "bonoPre" => 0.0,
                     "bonoRecargaPre" => 0.0,
