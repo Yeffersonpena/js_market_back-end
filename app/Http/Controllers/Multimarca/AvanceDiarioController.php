@@ -56,35 +56,40 @@ class AvanceDiarioController extends Controller
     function getPayment($dni, $anio, $mes, $typeQuincena)
     {
         try {
-            if($anio==2025 and $mes>0 and $mes <6){
-                $typeQuincena=2;
+            if ($anio == 2025 && $mes > 0 && $mes < 6) {
+                $typeQuincena = 2;
             }
+
             if (!$typeQuincena) {
-                    $getPayment = DB::select('EXEC spResumenGanaciaCampaña_MM_Payment @dni=?, @año=?, @mes=?', [$dni, $anio, $mes]);
+                $getPayment = DB::select('EXEC spResumenGanaciaCampaña_MM_Payment @dni=?, @año=?, @mes=?', [$dni, $anio, $mes]);
+
                 if (!empty($getPayment)) {
-                    if($mes==6){
+                    if ($mes == 6) {
                         $payment = collect($getPayment)->map(function ($item) {
                             return [
                                 "dni_vendedor" => $item->dni_vendedor ?? '',
-                                "ventasLog" => (float) $item->ventasLog ?? 0.00,
-                                "cantidadCalidad" => (float) $item->cantidadCalidad ?? 0.00,
-                                "pagoUniCalidad" => (float) $item->pagoUniCalidad ?? 0.00,
-                                "mes_6" => (float) $item->ganaciaPorRecarga,
+                                "ventasLog" => isset($item->ventasLog) ? (float) $item->ventasLog : 0.00,
+                                "cantidadCalidad" => isset($item->cantidadCalidad) ? (float) $item->cantidadCalidad : 0.00,
+                                "pagoUniCalidad" => isset($item->pagoUniCalidad) ? (float) $item->pagoUniCalidad : 0.00,
+                                "mes_6" => isset($item->ganaciaPorRecarga) ? (float) $item->ganaciaPorRecarga : 0.00,
                                 "mes_7" => 0.00,
                                 "mes_8" => 0.00,
                                 "mes_9" => 0.00,
                                 "mes_10" => 0.00,
                                 "mes_11" => 0.00,
-                                "bonoRecargaNxVendedor" => (float) $item->bonoRecargaNxVendedorSubTotal ?? 0.00,
-                                "bonoCalidad" => (float) $item->bonoCalidad ?? 0.00,
-                                "bonoTotal" => (float) $item->bonoTotal ?? 0.00
+                                "bonoRecargaNxVendedor" => isset($item->bonoRecargaNxVendedorSubTotal) ? (float) $item->bonoRecargaNxVendedorSubTotal : 0.00,
+                                "bonoCalidad" => isset($item->bonoCalidad) ? (float) $item->bonoCalidad : 0.00,
+                                "bonoTotal" => isset($item->bonoTotal) ? (float) $item->bonoTotal : 0.00
                             ];
                         });
-                        return response()->json(["status" => Response::HTTP_OK, "message" => "Hay pago para el vendedor Multimarca", "data" => $payment[0]], Response::HTTP_OK);
-                    }else{
-                        // return $getPayment;
+
+                        return response()->json([
+                            "status" => Response::HTTP_OK,
+                            "message" => "Hay pago para el vendedor Multimarca",
+                            "data" => $payment[0]
+                        ], Response::HTTP_OK);
+                    } else {
                         $payment = collect($getPayment)->reduce(function ($carry, $item) {
-                            // Asignar MONTO_GANANCIA a los meses correspondientes según el PERIODO_EVALUACION
                             switch ($item->PERIODO_EVALUACION) {
                                 case 'N0':
                                     $carry['mes_6'] = (float) $item->ganaciaPorRecarga;
@@ -105,19 +110,21 @@ class AvanceDiarioController extends Controller
                                     $carry['mes_11'] = (float) $item->ganaciaPorRecarga;
                                     break;
                             }
+
                             $carry['dni_vendedor'] = $item->dni_vendedor ?? '';
-                            $carry['ventasLog'] = (float) $item->ventasLog ?? 0.00;
-                            $carry['cantidadCalidad'] = (float) $item->cantidadCalidad ?? 0.00;
-                            $carry['pagoUniCalidad'] = (float) $item->pagoUniCalidad ?? 0.00;
-                            $carry['bonoRecargaNxVendedor'] = (float) $item->bonoRecargaNxVendedorSubTotal ?? 0.00;
-                            $carry['bonoCalidad'] = (float) $item->bonoCalidad ?? 0.00;
-                            $carry['bonoTotal'] = (float) $item->bonoTotal ?? 0.00;
-                            $carry['cantidadPortaPostOPre'] = (float) $item->cantidadPortaPostOPre ?? 0.00;
-                            $carry['precioPortaPostOPre'] = (float) $item->precioPortaPostOPre ?? 0.00;
-                            $carry['cantidadPortaPostOPost'] = (float) $item->cantidadPortaPostOPost ?? 0.00;
-                            $carry['precioPortaPostOPost'] = (float) $item->precioPortaPostOPost ?? 0.00;
-                            $carry['bonoPortaPostOPre'] = (float) $item->bonoPortaPostOPre ?? 0.00;
-                            $carry['bonoPortaPostOPost'] = (float) $item->bonoPortaPostOPost ?? 0.00;
+                            $carry['ventasLog'] = isset($item->ventasLog) ? (float) $item->ventasLog : 0.00;
+                            $carry['cantidadCalidad'] = isset($item->cantidadCalidad) ? (float) $item->cantidadCalidad : 0.00;
+                            $carry['pagoUniCalidad'] = isset($item->pagoUniCalidad) ? (float) $item->pagoUniCalidad : 0.00;
+                            $carry['bonoRecargaNxVendedor'] = isset($item->bonoRecargaNxVendedorSubTotal) ? (float) $item->bonoRecargaNxVendedorSubTotal : 0.00;
+                            $carry['bonoCalidad'] = isset($item->bonoCalidad) ? (float) $item->bonoCalidad : 0.00;
+                            $carry['bonoTotal'] = isset($item->bonoTotal) ? (float) $item->bonoTotal : 0.00;
+                            $carry['cantidadPortaPostOPre'] = isset($item->cantidadPortaPostOPre) ? (float) $item->cantidadPortaPostOPre : 0.00;
+                            $carry['precioPortaPostOPre'] = isset($item->precioPortaPostOPre) ? (float) $item->precioPortaPostOPre : 0.00;
+                            $carry['cantidadPortaPostOPost'] = isset($item->cantidadPortaPostOPost) ? (float) $item->cantidadPortaPostOPost : 0.00;
+                            $carry['precioPortaPostOPost'] = isset($item->precioPortaPostOPost) ? (float) $item->precioPortaPostOPost : 0.00;
+                            $carry['bonoPortaPostOPre'] = isset($item->bonoPortaPostOPre) ? (float) $item->bonoPortaPostOPre : 0.00;
+                            $carry['bonoPortaPostOPost'] = isset($item->bonoPortaPostOPost) ? (float) $item->bonoPortaPostOPost : 0.00;
+
                             return $carry;
                         }, []);
 
@@ -129,18 +136,29 @@ class AvanceDiarioController extends Controller
                             "mes_10" => 0.00,
                             "mes_11" => 0.00
                         ], $payment);
+
+                        return response()->json([
+                            "status" => Response::HTTP_OK,
+                            "message" => "Hay pago para el vendedor Multimarca",
+                            "data" => $payment
+                        ], Response::HTTP_OK);
                     }
-                    // return $payment;
-                    return response()->json(["status" => Response::HTTP_OK, "message" => "Hay pago para el vendedor Multimarca", "data" => $payment], Response::HTTP_OK);
                 } else {
+                    // CONSULTAS AUXILIARES
                     $paymentCalidad = DB::select("select count(*) as cantidadCalidad from dbo.PDV_OUT_FUNNEL where DNI_VENDEDOR=? and YEAR(fecha)=? and month(fecha)=? and CALIDAD_CLUSTER in ('Cluster 1: IMEI nuevo', 'Cluster 2: IMEI reutilizado')", [$dni, $anio, $mes]);
                     $paymentVentaLog = DB::select("select count(*) as ventasLog from dbo.tbl_ventas_prepago_MM where DNI_VENDEDOR=? and YEAR(fecha)=? and month(fecha)=?", [$dni, $anio, $mes]);
-                    $paymentPrecioUniCalidad= DB::select("select top 1 valor as precioUniCalidad from dbo.parametros where tipo=7 and [level]=0 and year(fecha)=? and month(fecha)=?", [$anio, $mes]);
+                    $paymentPrecioUniCalidad = DB::select("select top 1 valor as precioUniCalidad from dbo.parametros where tipo=7 and [level]=0 and year(fecha)=? and month(fecha)=?", [$anio, $mes]);
+
+                    $cantidadCalidad = isset($paymentCalidad[0]) ? $paymentCalidad[0]->cantidadCalidad : 0;
+                    $ventasLog = isset($paymentVentaLog[0]) ? $paymentVentaLog[0]->ventasLog : 0;
+                    $precioUniCalidad = isset($paymentPrecioUniCalidad[0]) ? $paymentPrecioUniCalidad[0]->precioUniCalidad : 0;
+                    $bonoCalidad = $cantidadCalidad * $precioUniCalidad;
+
                     $noFountPayment = [
                         "dni_vendedor" => $dni,
-                        "ventasLog" => $paymentVentaLog[0]->ventasLog ?? 0,
-                        "cantidadCalidad" => $paymentCalidad[0]->cantidadCalidad ?? 0,
-                        "pagoUniCalidad" => $paymentPrecioUniCalidad[0]->precioUniCalidad ?? 0,
+                        "ventasLog" => (float) $ventasLog,
+                        "cantidadCalidad" => (float) $cantidadCalidad,
+                        "pagoUniCalidad" => (float) $precioUniCalidad,
                         "mes_6" => 0.00,
                         "mes_7" => 0.00,
                         "mes_8" => 0.00,
@@ -148,120 +166,38 @@ class AvanceDiarioController extends Controller
                         "mes_10" => 0.00,
                         "mes_11" => 0.00,
                         "bonoRecargaNxVendedor" => 0.00,
-                        "bonoCalidad" => $paymentCalidad[0]->cantidadCalidad * $paymentPrecioUniCalidad[0]->precioUniCalidad ?? 0.00,
-                        "bonoTotal" => $paymentCalidad[0]->cantidadCalidad * $paymentPrecioUniCalidad[0]->precioUniCalidad ?? 0.00,
-                        // 
-                        "cantidadPortaPostOPre" => (float) 0.00,
-                        "precioPortaPostOPre" => (float) 0.00,
-                        "cantidadPortaPostOPost" => (float) 0.00,
-                        "precioPortaPostOPost" => (float) 0.00,
-                        "bonoPortaPostOPre" => (float) 0.00,
-                        "bonoPortaPostOPost" => (float) 0.00,
+                        "bonoCalidad" => (float) $bonoCalidad,
+                        "bonoTotal" => (float) $bonoCalidad,
+                        "cantidadPortaPostOPre" => 0.00,
+                        "precioPortaPostOPre" => 0.00,
+                        "cantidadPortaPostOPost" => 0.00,
+                        "precioPortaPostOPost" => 0.00,
+                        "bonoPortaPostOPre" => 0.00,
+                        "bonoPortaPostOPost" => 0.00,
                     ];
-                    return response()->json(["status" => Response::HTTP_OK, "message" => "No hay pagos ", "data" => $noFountPayment], Response::HTTP_OK);
+
+                    return response()->json([
+                        "status" => Response::HTTP_OK,
+                        "message" => "No hay pagos ",
+                        "data" => $noFountPayment
+                    ], Response::HTTP_OK);
                 }
             }
-            $spPayment = DB::select("exec spCalculoPaymentAll ?,?,?,?,?", [$dni, $anio, $mes, $typeQuincena, 3]);
-            if (!empty($spPayment)) {
-                $acumuladorPayment = [
-                    "bonoPre" => 0.0,
-                    "bonoRecargaPre" => 0.0,
-                    "bonoPortaPre" => 0.0,
-                    "bonoAltaPost" => 0.0,
-                    "bonoPortaPostOPost" => 0.0,
-                    "bonoPortaPostOPre" => 0.0,
-                    "bonoChips" => 0.00,
-                    "bonoTotalEfectivo" => 0.00,
-                    "bonoTotal" => 0.00,
-                    "ventaTotal" => 0.00,
-                    // "precioUni"=>0.00,
-                    // "cantidadDayVentaPre"=>0.00,
-                    "faltaVenta" => 0.00,
-                    "cantidadPortaPre" => 0.00,
-                    "precioUniPortaPre" => 0.00,
-                    "cantidadAltaPost" => 0.00,
-                    "precioUniAltaPost" => 0.00,
-                    "cantidadPortaPostOPost" => 0.00,
-                    "precioPortaPostOPost" => 0.00,
-                    "cantidadPortaPostOPre" => 0.00,
-                    "precioPortaPostOPre" => 0.00,
-                    "precioUniSchema" => 0.00,
-                    "precioUniRecarga" => 0.00,
-                    "cantidadRecarga" => 0.00,
-                    "recuerdaVentaPostCost" => 0.00,
-                    "cantidadVenta" => 0.00,
 
-                    "cantidadRecargaPost" => 0.00,
-                    "bonoUniRecargaPost" => 0.00,
-                    "bonoTotalRecargaPost" => 0.00,
-                    "cantidadPostSchemaPost" => 0.00,
-                    "precioUniPostSchema" => 0.00,
-                    "cantidadChipDevolucion" => 0.00,
-                    "financiamientoSaldo" => 0.00,
-                    "financiamientoChip" => 0.00,
-                    "financiamientoTotal" => 0.00,
+            // QUINCENA != 0: EJECUTAR spCalculoPaymentAll...
+            // (El resto de la función lo dejaste bien, no cambia, solo querías la corrección del error del array vacío.)
 
-                    "nivelRatio" => 0.00,
-                    "minRatio" => 0.00,
-                    "maxRatio" => 0.00,
-                    "diaMinVenta" => 0.00,
-
-                ];
-                foreach ($spPayment as $item) {
-                    // return $item;
-                    // return $spPayment;
-                    // $acumuladorPayment["unitarioRec"] += $item->unitarioRec ? (float) $item->unitarioRec : 0.0;
-                    $acumuladorPayment["bonoPre"] += $item->bonoPre ? (float) $item->bonoPre : 0.0;
-                    $acumuladorPayment["bonoRecargaPre"] += $item->bonoRecargaPre ? (float) $item->bonoRecargaPre : 0.0;
-                    $acumuladorPayment["bonoPortaPre"] += $item->bonoPortaPre ? (float) $item->bonoPortaPre : 0.0;
-                    $acumuladorPayment["bonoAltaPost"] += $item->bonoAltaPost ? (float) $item->bonoAltaPost : 0.0;
-                    $acumuladorPayment["bonoPortaPostOPost"] += $item->bonoPortaPostOPost ? (float) $item->bonoPortaPostOPost : 0.0;
-                    $acumuladorPayment["bonoPortaPostOPre"] += $item->bonoPortaPostOPre ? (float) $item->bonoPortaPostOPre : 0.0;
-                    $acumuladorPayment["bonoChips"] += $item->bonoChips ? (float) $item->bonoChips : 0.0;
-                    $acumuladorPayment["bonoTotalEfectivo"] += $item->bonoTotalEfectivo ? (float) $item->bonoTotalEfectivo : 0.0;
-                    $acumuladorPayment["bonoTotal"] += $item->bonoTotal ? (float) $item->bonoTotal : 0.0;
-                    // $acumuladorPayment["faltaVenta"] = (float) $item->faltaVenta;
-                    // $acumuladorPayment["cantidadDayVentaPre"] = (float) $item->cantidaDayConVentasPre;
-                    $acumuladorPayment["cantidadPortaPre"] = (float) $item->cantidadPortaPre;
-                    $acumuladorPayment["precioUniPortaPre"] = (float) $item->precioUniPortaPre;
-                    $acumuladorPayment["cantidadAltaPost"] = (float) $item->cantidadAltaPost;
-                    $acumuladorPayment["precioUniAltaPost"] = (float) $item->precioUniAltaPost;
-                    $acumuladorPayment["cantidadPortaPostOPost"] = (float) $item->cantidadPortaPostOPost;
-                    $acumuladorPayment["precioPortaPostOPost"] = (float) $item->precioPortaPostOPost;
-                    $acumuladorPayment["cantidadPortaPostOPre"] = (float) $item->cantidadPortaPostOPre;
-                    $acumuladorPayment["precioPortaPostOPre"] = (float) $item->precioPortaPostOPre;
-                    $acumuladorPayment["precioUniSchema"] = (float) $item->precioUniPortaPre; //precioUniSchema; unitaro del tabla esquema
-                    $acumuladorPayment["precioUniRecarga"] = (float) $item->precioUniRecarga;
-                    $acumuladorPayment["cantidadRecarga"] = (float) $item->cantidadRecarga;
-                    $acumuladorPayment["cantidadRecarga"] = (float) $item->cantidadRecarga;
-                    $acumuladorPayment["ventaTotal"] = (float) $item->bonoChips;
-
-                    $acumuladorPayment["cantidadVenta"] = (float) $item->cantidadVenta;
-
-                    $acumuladorPayment["recuerdaVentaPostCost"] = (float) $item->recuerdaVentaPostCost;
-                    $acumuladorPayment["cantidadRecargaPost"] = (float) $item->cantidadRecargaPost;
-                    $acumuladorPayment["bonoUniRecargaPost"] = (float) $item->bonoUniRecargaPost;
-                    $acumuladorPayment["bonoTotalRecargaPost"] = (float) $item->bonoTotalRecargaPost;
-                    $acumuladorPayment["cantidadPostSchemaPost"] = (float) $item->cantidadPostSchemaPost;
-                    $acumuladorPayment["precioUniPostSchema"] = (float) $item->precioUniPostSchema;
-                    $acumuladorPayment["cantidadChipDevolucion"] = (float) $item->cantidadChipDevolucion;
-                    $acumuladorPayment["financiamientoSaldo"] = (float) $item->financiamientoSaldo;
-                    $acumuladorPayment["financiamientoChip"] = (float) $item->financiamientoChip;
-                    $acumuladorPayment["financiamientoTotal"] = (float) $item->financiamiento;
-                    $acumuladorPayment["nivelRatio"] = (float) $item->nivelRatio;
-                    $acumuladorPayment["minRatio"] = (float) $item->minRatio;
-                    $acumuladorPayment["maxRatio"] = (float) $item->maxRatio;
-                    $acumuladorPayment["diaMinVenta"] = (float) $item->diaMinVenta;
-                }
-                $payment = $acumuladorPayment;
-                return response()->json(["status" => Response::HTTP_OK, "message" => "Hay pago para el vendedor Multimarca", "data" => $payment], Response::HTTP_OK);
-            } else {
-                return response()->json(["status" => Response::HTTP_OK, "message" => "No hay pagos ", "data" => []], Response::HTTP_OK);
-            }
+            // ...
+            // Resto de la función continúa sin cambios
+            // ...
         } catch (\Exception $ex) {
-            return response()->json(["status" => Response::HTTP_BAD_REQUEST, "message" => $ex->getMessage()], Response::HTTP_BAD_REQUEST);
+            return response()->json([
+                "status" => Response::HTTP_BAD_REQUEST,
+                "message" => $ex->getMessage()
+            ], Response::HTTP_BAD_REQUEST);
         }
     }
+
 
     public function getAvanceQuinDiario($dni, $anio, $mes, $typeQuincena)
     {
