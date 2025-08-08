@@ -12,6 +12,24 @@ use Symfony\Component\HttpFoundation\Response;
 
 class AvanceDiarioController extends Controller
 {
+    private const ZERO_DEFAULTS = [
+        'mes_6'                 => 0.00,
+        'mes_7'                 => 0.00,
+        'mes_8'                 => 0.00,
+        'mes_9'                 => 0.00,
+        'mes_10'                => 0.00,
+        'mes_11'                => 0.00,
+        'bonoRecargaNxVendedor' => 0.00,
+        'bonoCalidad'           => 0.00,
+        'bonoTotal'             => 0.00,
+        'cantidadPortaPostOPre' => 0.00,
+        'precioPortaPostOPre'   => 0.00,
+        'cantidadPortaPostOPost' => 0.00,
+        'precioPortaPostOPost'  => 0.00,
+        'bonoPortaPostOPre'     => 0.00,
+        'bonoPortaPostOPost'    => 0.00,
+    ];
+
     public function getDataMM($dni, $anio, $mes)
     {
         try {
@@ -53,140 +71,121 @@ class AvanceDiarioController extends Controller
             return response()->json(["status" => Response::HTTP_BAD_REQUEST, "message" => $ex->getMessage()], Response::HTTP_BAD_REQUEST);
         }
     }
-    function getPayment($dni, $anio, $mes, $typeQuincena)
+
+    public function getPayment(int $dni, int $anio, int $mes, int $typeQuincena)
     {
         try {
-            if ($anio == 2025 && $mes > 0 && $mes < 6) {
+            if ($anio === 2025 && $mes > 0 && $mes < 6) {
                 $typeQuincena = 2;
             }
-
-            if (!$typeQuincena) {
-                $getPayment = DB::select('EXEC spResumenGanaciaCampaña_MM_Payment @dni=?, @año=?, @mes=?', [$dni, $anio, $mes]);
-
-                if (!empty($getPayment)) {
-                    if ($mes == 6) {
-                        $payment = collect($getPayment)->map(function ($item) {
-                            return [
-                                "dni_vendedor" => $item->dni_vendedor ?? '',
-                                "ventasLog" => isset($item->ventasLog) ? (float) $item->ventasLog : 0.00,
-                                "cantidadCalidad" => isset($item->cantidadCalidad) ? (float) $item->cantidadCalidad : 0.00,
-                                "pagoUniCalidad" => isset($item->pagoUniCalidad) ? (float) $item->pagoUniCalidad : 0.00,
-                                "mes_6" => isset($item->ganaciaPorRecarga) ? (float) $item->ganaciaPorRecarga : 0.00,
-                                "mes_7" => 0.00,
-                                "mes_8" => 0.00,
-                                "mes_9" => 0.00,
-                                "mes_10" => 0.00,
-                                "mes_11" => 0.00,
-                                "bonoRecargaNxVendedor" => isset($item->bonoRecargaNxVendedorSubTotal) ? (float) $item->bonoRecargaNxVendedorSubTotal : 0.00,
-                                "bonoCalidad" => isset($item->bonoCalidad) ? (float) $item->bonoCalidad : 0.00,
-                                "bonoTotal" => isset($item->bonoTotal) ? (float) $item->bonoTotal : 0.00
-                            ];
-                        });
-
-                        return response()->json([
-                            "status" => Response::HTTP_OK,
-                            "message" => "Hay pago para el vendedor Multimarca",
-                            "data" => $payment[0]
-                        ], Response::HTTP_OK);
-                    } else {
-                        $payment = collect($getPayment)->reduce(function ($carry, $item) {
-                            // Asignación dinámica de mes según PERIODO_EVALUACION
-                            $mesActual = (int)date('n'); // mes actual (1-12)
-                            $n = (int)str_replace('N', '', $item->PERIODO_EVALUACION); // extrae el número de N
-                            $mesDestino = $mesActual - $n;
-                            // Si el mes destino es menor a 1, puedes decidir si saltar o ajustar (por ahora, solo asigna si es válido)
-                            if ($mesDestino >= 1 && $mesDestino <= 12) {
-                                $claveMes = 'mes_' . $mesDestino;
-                                $carry[$claveMes] = (float) $item->ganaciaPorRecarga;
-                            }
-
-                            $carry['dni_vendedor'] = $item->dni_vendedor ?? '';
-                            $carry['ventasLog'] = isset($item->ventasLog) ? (float) $item->ventasLog : 0.00;
-                            $carry['cantidadCalidad'] = isset($item->cantidadCalidad) ? (float) $item->cantidadCalidad : 0.00;
-                            $carry['pagoUniCalidad'] = isset($item->pagoUniCalidad) ? (float) $item->pagoUniCalidad : 0.00;
-                            $carry['bonoRecargaNxVendedor'] = isset($item->bonoRecargaNxVendedorSubTotal) ? (float) $item->bonoRecargaNxVendedorSubTotal : 0.00;
-                            $carry['bonoCalidad'] = isset($item->bonoCalidad) ? (float) $item->bonoCalidad : 0.00;
-                            $carry['bonoTotal'] = isset($item->bonoTotal) ? (float) $item->bonoTotal : 0.00;
-                            $carry['cantidadPortaPostOPre'] = isset($item->cantidadPortaPostOPre) ? (float) $item->cantidadPortaPostOPre : 0.00;
-                            $carry['precioPortaPostOPre'] = isset($item->precioPortaPostOPre) ? (float) $item->precioPortaPostOPre : 0.00;
-                            $carry['cantidadPortaPostOPost'] = isset($item->cantidadPortaPostOPost) ? (float) $item->cantidadPortaPostOPost : 0.00;
-                            $carry['precioPortaPostOPost'] = isset($item->precioPortaPostOPost) ? (float) $item->precioPortaPostOPost : 0.00;
-                            $carry['bonoPortaPostOPre'] = isset($item->bonoPortaPostOPre) ? (float) $item->bonoPortaPostOPre : 0.00;
-                            $carry['bonoPortaPostOPost'] = isset($item->bonoPortaPostOPost) ? (float) $item->bonoPortaPostOPost : 0.00;
-
-                            return $carry;
-                        }, []);
-
-                        $payment = array_merge([
-                            "mes_6" => 0.00,
-                            "mes_7" => 0.00,
-                            "mes_8" => 0.00,
-                            "mes_9" => 0.00,
-                            "mes_10" => 0.00,
-                            "mes_11" => 0.00
-                        ], $payment);
-
-                        return response()->json([
-                            "status" => Response::HTTP_OK,
-                            "message" => "Hay pago para el vendedor Multimarca",
-                            "data" => $payment
-                        ], Response::HTTP_OK);
-                    }
-                } else {
-                    // CONSULTAS AUXILIARES
-                    $paymentCalidad = DB::select("select count(*) as cantidadCalidad from dbo.PDV_OUT_FUNNEL where DNI_VENDEDOR=? and YEAR(fecha)=? and month(fecha)=? and CALIDAD_CLUSTER in ('Cluster 1: IMEI nuevo', 'Cluster 2: IMEI reutilizado')", [$dni, $anio, $mes]);
-                    $paymentVentaLog = DB::select("select count(*) as ventasLog from dbo.tbl_ventas_prepago_MM where DNI_VENDEDOR=? and YEAR(fecha)=? and month(fecha)=?", [$dni, $anio, $mes]);
-                    $paymentPrecioUniCalidad = DB::select("select top 1 valor as precioUniCalidad from dbo.parametros where tipo=7 and [level]=0 and year(fecha)=? and month(fecha)=?", [$anio, $mes]);
-
-                    $cantidadCalidad = isset($paymentCalidad[0]) ? $paymentCalidad[0]->cantidadCalidad : 0;
-                    $ventasLog = isset($paymentVentaLog[0]) ? $paymentVentaLog[0]->ventasLog : 0;
-                    $precioUniCalidad = isset($paymentPrecioUniCalidad[0]) ? $paymentPrecioUniCalidad[0]->precioUniCalidad : 0;
-                    $bonoCalidad = $cantidadCalidad * $precioUniCalidad;
-
-                    $noFountPayment = [
-                        "dni_vendedor" => $dni,
-                        "ventasLog" => (float) $ventasLog,
-                        "cantidadCalidad" => (float) $cantidadCalidad,
-                        "pagoUniCalidad" => (float) $precioUniCalidad,
-                        "mes_6" => 0.00,
-                        "mes_7" => 0.00,
-                        "mes_8" => 0.00,
-                        "mes_9" => 0.00,
-                        "mes_10" => 0.00,
-                        "mes_11" => 0.00,
-                        "bonoRecargaNxVendedor" => 0.00,
-                        "bonoCalidad" => (float) $bonoCalidad,
-                        "bonoTotal" => (float) $bonoCalidad,
-                        "cantidadPortaPostOPre" => 0.00,
-                        "precioPortaPostOPre" => 0.00,
-                        "cantidadPortaPostOPost" => 0.00,
-                        "precioPortaPostOPost" => 0.00,
-                        "bonoPortaPostOPre" => 0.00,
-                        "bonoPortaPostOPost" => 0.00,
-                    ];
-
-                    return response()->json([
-                        "status" => Response::HTTP_OK,
-                        "message" => "No hay pagos ",
-                        "data" => $noFountPayment
-                    ], Response::HTTP_OK);
-                }
-            }
-
-            // QUINCENA != 0: EJECUTAR spCalculoPaymentAll...
-            // (El resto de la función lo dejaste bien, no cambia, solo querías la corrección del error del array vacío.)
-
-            // ...
-            // Resto de la función continúa sin cambios
-            // ...
+            $raw    = $this->fetchRawData($dni, $anio, $mes, $typeQuincena);
+            $data   = !empty($raw)
+                ? $this->processRawData($raw, $mes)
+                : $this->fetchAuxiliaryData($dni, $anio, $mes);
+            $status = Response::HTTP_OK;
+            $msg    = !empty($raw) ? 'Hay pago para el vendedor Multimarca' : 'No hay pagos';
+            return response()->json(compact('status', 'msg', 'data'), $status);
         } catch (\Exception $ex) {
             return response()->json([
-                "status" => Response::HTTP_BAD_REQUEST,
-                "message" => $ex->getMessage()
+                'status'  => Response::HTTP_BAD_REQUEST,
+                'message' => $ex->getMessage(),
             ], Response::HTTP_BAD_REQUEST);
         }
     }
 
+    private function fetchRawData(int $dni, int $anio, int $mes, int $typeQuincena): array
+    {
+        if ($typeQuincena !== 0) {
+            return [];
+        }
+        return DB::select(
+            'EXEC spResumenGanaciaCampaña_MM_Payment @dni=?, @año=?, @mes=?',
+            [$dni, $anio, $mes]
+        );
+    }
+
+    private function processRawData(array $rows, int $mes): array
+    {
+        if ($mes === 6) {
+            $item = collect($rows)->first();
+            return array_merge(
+                $this->getCommonFields($item),
+                self::ZERO_DEFAULTS,
+                ['mes_6' => (float) ($item->ganaciaPorRecarga ?? 0)]
+            );
+        }
+
+        $result = collect($rows)->reduce(function (array $carry, $item) {
+            // Mes destino dinámico
+            $n          = (int) str_replace('N', '', $item->PERIODO_EVALUACION);
+            $mesDestino = (int) date('n') - $n;
+
+            if ($mesDestino >= 1 && $mesDestino <= 12) {
+                $carry['mes_' . $mesDestino] = (float) $item->ganaciaPorRecarga;
+            }
+
+            return array_merge($carry, $this->getCommonFields($item));
+        }, self::ZERO_DEFAULTS);
+
+        return $result;
+    }
+
+    private function fetchAuxiliaryData(int $dni, int $anio, int $mes): array
+    {
+        $calidad   = DB::table('PDV_OUT_FUNNEL')
+            ->where('DNI_VENDEDOR', $dni)
+            ->whereYear('fecha', $anio)
+            ->whereMonth('fecha', $mes)
+            ->whereIn('CALIDAD_CLUSTER', [
+                'Cluster 1: IMEI nuevo',
+                'Cluster 2: IMEI reutilizado',
+            ])->count();
+
+        $ventasLog = DB::table('tbl_ventas_prepago_MM')
+            ->where('DNI_VENDEDOR', $dni)
+            ->whereYear('fecha', $anio)
+            ->whereMonth('fecha', $mes)
+            ->count();
+
+        $precioUni = DB::table('parametros')
+            ->where('tipo', 7)
+            ->where('level', 0)
+            ->whereYear('fecha', $anio)
+            ->whereMonth('fecha', $mes)
+            ->value('valor') ?? 0;
+
+        $data = array_merge(
+            [
+                'dni_vendedor'    => $dni,
+                'ventasLog'       => (float) $ventasLog,
+                'cantidadCalidad' => (float) $calidad,
+                'pagoUniCalidad'  => (float) $precioUni,
+            ],
+            self::ZERO_DEFAULTS
+        );
+        $data['bonoCalidad'] = $calidad * $precioUni;
+        $data['bonoTotal']   = $data['bonoCalidad'];
+        return $data;
+    }
+
+    private function getCommonFields($item): array
+    {
+        return [
+            'dni_vendedor'          => $item->dni_vendedor ?? '',
+            'ventasLog'             => (float) ($item->ventasLog ?? 0),
+            'cantidadCalidad'       => (float) ($item->cantidadCalidad ?? 0),
+            'pagoUniCalidad'        => (float) ($item->pagoUniCalidad ?? 0),
+            'bonoRecargaNxVendedor' => (float) ($item->bonoRecargaNxVendedorSubTotal ?? 0),
+            'bonoCalidad'           => (float) ($item->bonoCalidad ?? 0),
+            'bonoTotal'             => (float) ($item->bonoTotal ?? 0),
+            'cantidadPortaPostOPre' => (float) ($item->cantidadPortaPostOPre ?? 0),
+            'precioPortaPostOPre'   => (float) ($item->precioPortaPostOPre ?? 0),
+            'cantidadPortaPostOPost' => (float) ($item->cantidadPortaPostOPost ?? 0),
+            'precioPortaPostOPost'  => (float) ($item->precioPortaPostOPost ?? 0),
+            'bonoPortaPostOPre'     => (float) ($item->bonoPortaPostOPre ?? 0),
+            'bonoPortaPostOPost'    => (float) ($item->bonoPortaPostOPost ?? 0),
+        ];
+    }
 
     public function getAvanceQuinDiario($dni, $anio, $mes, $typeQuincena)
     {
