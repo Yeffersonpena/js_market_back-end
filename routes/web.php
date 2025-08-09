@@ -16,6 +16,7 @@ use App\Http\Controllers\Admin\ImportacionController;
 use App\Http\Controllers\Admin\ReporteController;
 use App\Http\Controllers\General\IncidenciaController;
 use App\Http\Controllers\Multimarca\MultimarcaControlller;
+use App\Http\Controllers\Multimarca\VentasRecargasController;
 use App\Http\Controllers\SupervisorController;
 use App\Models\PDV_ABONOS;
 use Illuminate\Support\Facades\Route;
@@ -142,4 +143,9 @@ Route::middleware(['jwt.apiRest.jsMarket', 'jwt.user.multimarca'])->group(functi
     Route::get('/api/v1/multimarca/getHistoryVenta/{dni}/{anio}/{mes}', [LogicController::class, 'getHistoryVenta'])->name('history.user.api');
     Route::get('/api/v1/multimarca/getPayment/{dni}/{anio}/{mes}/{typeQuincena}', [MultimarcaAvanceDiarioController::class, 'getPayment'])->name('paymentMM.user.api');
     Route::get('/api/v1/multimarca/getIncidencia/{dni}/{anio}/{mes}', [LogicController::class, 'getIncidencia'])->name('incidencia.user.api');
+    
+    // Rutas para funcionalidad de N's (ventas y recargas)
+    Route::get('/api/v1/multimarca/getPeriodosN', [VentasRecargasController::class, 'getPeriodosN'])->name('periodosN.user.api');
+    Route::get('/api/v1/multimarca/getVentasRecargasByN/{dni}/{periodoN}', [VentasRecargasController::class, 'getVentasRecargasByN'])->name('ventasRecargasN.user.api');
+    Route::get('/api/v1/multimarca/getResumenPeriodosN/{dni}', [VentasRecargasController::class, 'getResumenPeriodosN'])->name('resumenPeriodosN.user.api');
 });
