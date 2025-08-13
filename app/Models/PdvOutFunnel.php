@@ -49,6 +49,7 @@ class PdvOutFunnel extends Model
             WHERE DNI_VENDEDOR = ? 
             AND YEAR(FECHA) = ? 
             AND MONTH(FECHA) = ?
+            AND PRODUCTO = 'PREPAGO'
             ORDER BY FECHA DESC
         ", [$dniVendedor, $anio, $mes]);
     }
@@ -64,6 +65,7 @@ class PdvOutFunnel extends Model
             WHERE DNI_VENDEDOR = ? 
             AND FECHA >= ? 
             AND FECHA <= ?
+            AND PRODUCTO = 'PREPAGO'
             ORDER BY FECHA DESC
         ", [$dniVendedor, $fechaInicio, $fechaFin]);
     }
