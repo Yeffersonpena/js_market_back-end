@@ -141,10 +141,11 @@ class AvanceDiarioController extends Controller
                 'Cluster 2: IMEI reutilizado',
             ])->count();
 
-        $ventasLog = DB::table('tbl_ventas_prepago_MM')
+        $ventasLog = DB::table('PORTAL_COMERCIAL.dbo.PDV_OUT_FUNNEL')
             ->where('DNI_VENDEDOR', $dni)
             ->whereYear('fecha', $anio)
             ->whereMonth('fecha', $mes)
+            ->where('PRODUCTO', 'PREPAGO')
             ->count();
 
         $precioUni = DB::table('parametros')
@@ -218,7 +219,7 @@ class AvanceDiarioController extends Controller
     public function getAvanceDiario($dni, $anio, $mes)
     {
         try {
-            $existeAvance = DB::select("EXEC spView_Avances_Diarios_MM ?, ?, ?", [$dni, $anio, $mes]);
+            $existeAvance = DB::select("EXEC spView_Avances_Diarios_Quincenal_MM ?, ?, ?, ?", [$dni, $anio, $mes, 2]);
             if ($existeAvance) {
                 $avances = $existeAvance;
                 $avances = array_map(function ($item) {
