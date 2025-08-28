@@ -90,8 +90,21 @@ class LogicController extends Controller
         try {
             $existeAvance = VI_FLYERS::where('DNI_Responsable', $dni)->exists();
             if(!$existeAvance){
-                $getDniResp= DB::select("SELECT TOP 1 DNI_RESPONSABLE FROM dbo.PDV_OUT_FUNNEL WHERE DNI_VENDEDOR = ? AND SOCIO = 'JS MARKET' AND ((year(fecha) = ? AND month(fecha) = ?) OR fecha = (SELECT MAX(fecha) FROM dbo.PDV_OUT_FUNNEL WHERE DNI_VENDEDOR = ? AND SOCIO = 'JS MARKET')) ORDER BY CASE WHEN year(fecha) = ? AND month(fecha) = ? THEN 0 ELSE 1 END, fecha DESC", [$dni, $anio, $mes, $dni, $anio, $mes]);
-                $dni= $getDniResp[0]->DNI_RESPONSABLE ?? 0;
+                // Primero: buscar por año y mes específicos
+                $getDniResp = DB::select("SELECT TOP 1 DNI_RESPONSABLE FROM dbo.PDV_OUT_FUNNEL WHERE DNI_VENDEDOR = ? AND SOCIO = 'JS MARKET' AND year(fecha) = ? AND month(fecha) = ?", [$dni, $anio, $mes]);
+                
+                // Si no encuentra resultados para el mes/año, buscar la fecha más reciente
+                if (empty($getDniResp)) {
+                    // Obtener la fecha máxima en consulta separada
+                    $maxFecha = DB::select("SELECT MAX(fecha) as max_fecha FROM dbo.PDV_OUT_FUNNEL WHERE DNI_VENDEDOR = ? AND SOCIO = 'JS MARKET'", [$dni]);
+                    
+                    if (!empty($maxFecha) && $maxFecha[0]->max_fecha) {
+                        // Usar la fecha máxima para obtener el DNI_RESPONSABLE
+                        $getDniResp = DB::select("SELECT TOP 1 DNI_RESPONSABLE FROM dbo.PDV_OUT_FUNNEL WHERE DNI_VENDEDOR = ? AND SOCIO = 'JS MARKET' AND fecha = ?", [$dni, $maxFecha[0]->max_fecha]);
+                    }
+                }
+                
+                $dni = $getDniResp[0]->DNI_RESPONSABLE ?? 0;
             }
             $avances = VI_FLYERS::where('DNI_Responsable', $dni)->whereRaw('? BETWEEN MONTH(fecha_inicio) AND MONTH(fecha_fin)', [$mes])->orderBy('fecha_fin', 'asc')->get();
             if (!$avances->isEmpty()) {
