@@ -60,7 +60,7 @@ class PdvOutFunnel extends Model
     public static function getTelefonosVendidosPeriodo($dniVendedor, $fechaInicio, $fechaFin)
     {
         return DB::select("
-            SELECT DISTINCT TELEFONO, FECHA, RECARGA_SI_NO, MONTO_ACUMULADO_RECARGAS
+            SELECT DISTINCT TELEFONO, FECHA, RECARGA_SI_NO
             FROM PORTAL_COMERCIAL.dbo.PDV_OUT_FUNNEL 
             WHERE DNI_VENDEDOR = ? 
             AND FECHA >= ? 
