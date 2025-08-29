@@ -145,7 +145,6 @@ Route::middleware(['jwt.apiRest.jsMarket', 'jwt.user.multimarca'])->group(functi
     Route::get('/api/v1/multimarca/getIncidencia/{dni}/{anio}/{mes}', [LogicController::class, 'getIncidencia'])->name('incidencia.user.api');
     
     // Rutas para funcionalidad de N's (ventas y recargas)
-    Route::get('/api/v1/multimarca/getPeriodosN', [VentasRecargasController::class, 'getPeriodosN'])->name('periodosN.user.api');
+
     Route::get('/api/v1/multimarca/getVentasRecargasByN/{dni}/{periodoN}', [VentasRecargasController::class, 'getVentasRecargasByN'])->name('ventasRecargasN.user.api');
-    Route::get('/api/v1/multimarca/getResumenPeriodosN/{dni}', [VentasRecargasController::class, 'getResumenPeriodosN'])->name('resumenPeriodosN.user.api');
 });
