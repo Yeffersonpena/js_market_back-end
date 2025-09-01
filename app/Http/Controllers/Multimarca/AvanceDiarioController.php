@@ -115,10 +115,18 @@ class AvanceDiarioController extends Controller
             );
         }
 
-        $result = collect($rows)->reduce(function (array $carry, $item) {
-            // Mes destino dinámico
+        // Obtener la fecha máxima del parámetro tipo=1
+        $fechaMaxima = DB::table('parametros')
+            ->where('tipo', 1)
+            ->value('valor');
+        
+        // Convertir la fecha máxima a mes de referencia
+        $mesReferencia = $fechaMaxima ? (int) date('n', strtotime($fechaMaxima)) : (int) date('n');
+
+        $result = collect($rows)->reduce(function (array $carry, $item) use ($mesReferencia) {
+            // Mes destino dinámico basado en la fecha máxima del parámetro
             $n          = (int) str_replace('N', '', $item->PERIODO_EVALUACION);
-            $mesDestino = (int) date('n') - $n;
+            $mesDestino = $mesReferencia - $n;
 
             if ($mesDestino >= 1 && $mesDestino <= 12) {
                 $carry['mes_' . $mesDestino] = (float) $item->ganaciaPorRecarga;
