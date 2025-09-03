@@ -101,37 +101,32 @@ class AvanceDiarioController extends Controller
 
     private function getMetasManuales(int $anio, int $mes, string $zonal): array
     {
-        // Array de metas manuales
+        // Array de metas manuales por año y mes
         $metasManuales = [
-            [
-                'anio' => 2025,
-                'mes' => 9,
-                'zonal' => 'LIMA SUR',
-                'pre' => 150,
-                'calidad' => 40
-            ],
-            [
-                'anio' => 2025,
-                'mes' => 9,
-                'zonal' => 'REGIONES',
-                'pre' => 150,
-                'calidad' => 45
+            2025 => [
+                9 => [ // Septiembre
+                    'LIMA SUR' => ['pre' => 150, 'calidad' => 40],
+                    'REGIONES' => ['pre' => 150, 'calidad' => 45]
+                ]
             ]
         ];
 
-        // Para septiembre 2025 en adelante
-        if ($anio >= 2025 && $mes >= 9) {
-            foreach ($metasManuales as $meta) {
-                if ($meta['anio'] == $anio && $meta['mes'] <= $mes && $meta['zonal'] === $zonal) {
-                    return [
-                        'pre' => $meta['pre'],
-                        'calidad' => $meta['calidad']
-                    ];
-                }
+        // Verificar si existe configuración para el año y mes solicitado
+        if (isset($metasManuales[$anio][$mes])) {
+            $metasDelMes = $metasManuales[$anio][$mes];
+            
+            // Si es LIMA SUR, usar sus valores específicos
+            if ($zonal === 'LIMA SUR' && isset($metasDelMes['LIMA SUR'])) {
+                return $metasDelMes['LIMA SUR'];
+            }
+            
+            // Cualquier otra zona se considera REGIONES
+            if (isset($metasDelMes['REGIONES'])) {
+                return $metasDelMes['REGIONES'];
             }
         }
 
-        // Para meses anteriores a septiembre, devolver cero
+        // Para meses sin configuración, devolver cero
         return [
             'pre' => 0,
             'calidad' => 0
