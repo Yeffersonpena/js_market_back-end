@@ -84,6 +84,12 @@ class AvanceDiarioController extends Controller
                     "infoUpdateCalidad" => $infoVendedor->{'DATE_UPDATE_CALIDAD'} ?? 0,
                     "typeUser" => property_exists($infoVendedor, 'typeUser') ? (float) $infoVendedor->{'typeUser'} : 0
                 ];
+                
+                // Agregar metas manuales
+                $metas = $this->getMetasManuales($anio, $mes, $infoVendedor->ZONAL ?? '');
+                $infoVendedor['metaPre'] = $metas['pre'];
+                $infoVendedor['metaCalidad'] = $metas['calidad'];
+                
                 return response()->json(["status" => Response::HTTP_OK, "message" => "Información", "data" => $infoVendedor], Response::HTTP_OK);
             } else {
                 return response()->json(["status" => Response::HTTP_OK, "message" => "No hay información", "data" => []], Response::HTTP_OK);
@@ -91,5 +97,44 @@ class AvanceDiarioController extends Controller
         } catch (\Exception $ex) {
             return response()->json(["status" => Response::HTTP_BAD_REQUEST, "message" => $ex->getMessage()], Response::HTTP_BAD_REQUEST);
         }
+    }
+
+    private function getMetasManuales(int $anio, int $mes, string $zonal): array
+    {
+        // Array de metas manuales
+        $metasManuales = [
+            [
+                'anio' => 2025,
+                'mes' => 9,
+                'zonal' => 'LIMA SUR',
+                'pre' => 150,
+                'calidad' => 40
+            ],
+            [
+                'anio' => 2025,
+                'mes' => 9,
+                'zonal' => 'REGIONES',
+                'pre' => 150,
+                'calidad' => 45
+            ]
+        ];
+
+        // Para septiembre 2025 en adelante
+        if ($anio >= 2025 && $mes >= 9) {
+            foreach ($metasManuales as $meta) {
+                if ($meta['anio'] == $anio && $meta['mes'] <= $mes && $meta['zonal'] === $zonal) {
+                    return [
+                        'pre' => $meta['pre'],
+                        'calidad' => $meta['calidad']
+                    ];
+                }
+            }
+        }
+
+        // Para meses anteriores a septiembre, devolver cero
+        return [
+            'pre' => 0,
+            'calidad' => 0
+        ];
     }
 }
