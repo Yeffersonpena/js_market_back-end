@@ -137,7 +137,15 @@ class AvanceDiarioController extends Controller
                 $carry['mes_' . $mesDestino] = $gananciaPorRecarga;
             }
 
-            return array_merge($carry, $this->getCommonFields($item));
+            $commonFields = $this->getCommonFields($item);
+            
+            // Validación para agosto 2025: si ventasLog < 10, establecer bonoRecargaNxVendedor y bonoCalidad en 0
+            if ($mes === 8 && $anio === 2025 && ($item->ventasLog ?? 0) < 10) {
+                $commonFields['bonoRecargaNxVendedor'] = 0.0;
+                $commonFields['bonoCalidad'] = 0.0;
+            }
+
+            return array_merge($carry, $commonFields);
         }, self::ZERO_DEFAULTS);
 
         return $result;
@@ -177,7 +185,14 @@ class AvanceDiarioController extends Controller
             ],
             self::ZERO_DEFAULTS
         );
-        $data['bonoCalidad'] = $calidad * $precioUni;
+        
+        // Validación para agosto 2025: si ventasLog < 10, establecer bonoCalidad en 0
+        $bonoCalidad = $calidad * $precioUni;
+        if ($mes === 8 && $anio === 2025 && $ventasLog < 10) {
+            $bonoCalidad = 0.0;
+        }
+        
+        $data['bonoCalidad'] = $bonoCalidad;
         $data['bonoTotal']   = $data['bonoCalidad'];
         return $data;
     }
@@ -269,15 +284,24 @@ class AvanceDiarioController extends Controller
     private function buildOptimizedPaymentData(object $baseData, array $periodsData, int $mes, int $anio): array
     {
         if ($mes === 6) {
-            return $this->buildMes6Data($baseData, $periodsData);
+            return $this->buildMes6Data($baseData, $periodsData, $mes, $anio);
         }
         
         return $this->buildOtherMonthsData($baseData, $periodsData, $mes, $anio);
     }
 
-    private function buildMes6Data(object $baseData, array $periodsData): array
+    private function buildMes6Data(object $baseData, array $periodsData, int $mes, int $anio): array
     {
         $periodo = collect($periodsData)->first();
+        
+        // Validación para agosto 2025: si ventasLog < 10, establecer ganancias y bono en 0
+        $gananciaPorRecarga = (float) ($periodo->ganaciaPorRecarga ?? 0);
+        $bonoRecargaNxVendedor = $gananciaPorRecarga;
+        
+        if ($mes === 8 && $anio === 2025 && ($baseData->ventasLog ?? 0) < 10) {
+            $gananciaPorRecarga = 0.0;
+            $bonoRecargaNxVendedor = 0.0;
+        }
         
         return array_merge(
             [
@@ -285,9 +309,9 @@ class AvanceDiarioController extends Controller
                 'ventasLog'             => (float) $baseData->ventasLog,
                 'cantidadCalidad'       => (float) $baseData->cantidadCalidad,
                 'pagoUniCalidad'        => (float) $baseData->pagoUniCalidad,
-                'bonoRecargaNxVendedor' => (float) ($periodo->ganaciaPorRecarga ?? 0),
+                'bonoRecargaNxVendedor' => $bonoRecargaNxVendedor,
                 'bonoCalidad'           => (float) $baseData->bonoCalidad,
-                'bonoTotal'             => (float) ($baseData->bonoTotal + ($periodo->ganaciaPorRecarga ?? 0)),
+                'bonoTotal'             => (float) ($baseData->bonoTotal + $gananciaPorRecarga),
                 'cantidadPortaPostOPre' => (float) $baseData->cantidadPortaPostOPre,
                 'precioPortaPostOPre'   => (float) $baseData->precioPortaPostOPre,
                 'cantidadPortaPostOPost' => (float) $baseData->cantidadPortaPostOPost,
@@ -296,7 +320,7 @@ class AvanceDiarioController extends Controller
                 'bonoPortaPostOPost'    => (float) $baseData->bonoPortaPostOPost,
             ],
             self::ZERO_DEFAULTS,
-            ['mes_6' => (float) ($periodo->ganaciaPorRecarga ?? 0)]
+            ['mes_6' => $gananciaPorRecarga]
         );
     }
 
@@ -308,13 +332,19 @@ class AvanceDiarioController extends Controller
         
         $mesReferencia = $fechaMaxima ? (int) date('n', strtotime($fechaMaxima)) : (int) date('n');
         
+        // Validación para agosto 2025: si ventasLog < 10, establecer bonoRecargaNxVendedor en 0
+        $bonoRecargaNxVendedor = (float) $baseData->bonoRecargaNxVendedorSubTotal;
+        if ($mes === 8 && $anio === 2025 && ($baseData->ventasLog ?? 0) < 10) {
+            $bonoRecargaNxVendedor = 0.0;
+        }
+
         $result = array_merge(
             [
                 'dni_vendedor'          => $baseData->dni_vendedor,
                 'ventasLog'             => (float) $baseData->ventasLog,
                 'cantidadCalidad'       => (float) $baseData->cantidadCalidad,
                 'pagoUniCalidad'        => (float) $baseData->pagoUniCalidad,
-                'bonoRecargaNxVendedor' => (float) $baseData->bonoRecargaNxVendedorSubTotal,
+                'bonoRecargaNxVendedor' => $bonoRecargaNxVendedor,
                 'bonoCalidad'           => (float) $baseData->bonoCalidad,
                 'bonoTotal'             => (float) $baseData->bonoTotal,
                 'cantidadPortaPostOPre' => (float) $baseData->cantidadPortaPostOPre,
