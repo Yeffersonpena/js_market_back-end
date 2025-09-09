@@ -143,6 +143,7 @@ class AvanceDiarioController extends Controller
             if ($mes === 8 && $anio === 2025 && ($item->ventasLog ?? 0) < 10) {
                 $commonFields['bonoRecargaNxVendedor'] = 0.0;
                 $commonFields['bonoCalidad'] = 0.0;
+                $commonFields['pagoUniCalidad'] = 0.0;
             }
 
             return array_merge($carry, $commonFields);
