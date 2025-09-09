@@ -80,7 +80,7 @@ class AvanceDiarioController extends Controller
             }
             $raw    = $this->fetchRawData($dni, $anio, $mes, $typeQuincena);
             $data   = !empty($raw)
-                ? $this->processRawData($raw, $mes)
+                ? $this->processRawData($raw, $mes, $anio)
                 : $this->fetchAuxiliaryData($dni, $anio, $mes);
             $status = Response::HTTP_OK;
             $msg    = !empty($raw) ? 'Hay pago para el vendedor Multimarca' : 'No hay pagos';
@@ -104,7 +104,7 @@ class AvanceDiarioController extends Controller
         );
     }
 
-    private function processRawData(array $rows, int $mes): array
+    private function processRawData(array $rows, int $mes, int $anio): array
     {
         if ($mes === 6) {
             $item = collect($rows)->first();
@@ -123,7 +123,7 @@ class AvanceDiarioController extends Controller
         // Convertir la fecha máxima a mes de referencia
         $mesReferencia = $fechaMaxima ? (int) date('n', strtotime($fechaMaxima)) : (int) date('n');
 
-        $result = collect($rows)->reduce(function (array $carry, $item) use ($mesReferencia) {
+        $result = collect($rows)->reduce(function (array $carry, $item) use ($mesReferencia, $mes, $anio) {
             // Mes destino dinámico basado en la fecha máxima del parámetro
             $n          = (int) str_replace('N', '', $item->PERIODO_EVALUACION);
             $mesDestino = $mesReferencia - $n;
@@ -131,7 +131,7 @@ class AvanceDiarioController extends Controller
             if ($mesDestino >= 1 && $mesDestino <= 12) {
                 // Validación para agosto 2025: si ventasLog < 10, establecer ganancias en 0
                 $gananciaPorRecarga = (float) $item->ganaciaPorRecarga;
-                if ($mesReferencia === 8 && date('Y') === '2025' && ($item->ventasLog ?? 0) < 10) {
+                if ($mes === 8 && $anio === 2025 && ($item->ventasLog ?? 0) < 10) {
                     $gananciaPorRecarga = 0.0;
                 }
                 $carry['mes_' . $mesDestino] = $gananciaPorRecarga;
@@ -266,13 +266,13 @@ class AvanceDiarioController extends Controller
         return DB::select('EXEC spResumenGanancia_MM_Periodos_Payment @dni=?, @año=?, @mes=?', [$dni, $anio, $mes]);
     }
 
-    private function buildOptimizedPaymentData(object $baseData, array $periodsData, int $mes): array
+    private function buildOptimizedPaymentData(object $baseData, array $periodsData, int $mes, int $anio): array
     {
         if ($mes === 6) {
             return $this->buildMes6Data($baseData, $periodsData);
         }
         
-        return $this->buildOtherMonthsData($baseData, $periodsData);
+        return $this->buildOtherMonthsData($baseData, $periodsData, $mes, $anio);
     }
 
     private function buildMes6Data(object $baseData, array $periodsData): array
@@ -300,7 +300,7 @@ class AvanceDiarioController extends Controller
         );
     }
 
-    private function buildOtherMonthsData(object $baseData, array $periodsData): array
+    private function buildOtherMonthsData(object $baseData, array $periodsData, int $mes, int $anio): array
     {
         $fechaMaxima = DB::table('parametros')
             ->where('tipo', 1)
@@ -334,7 +334,7 @@ class AvanceDiarioController extends Controller
             if ($mesDestino >= 1 && $mesDestino <= 12) {
                 // Validación para agosto 2025: si ventasLog < 10, establecer ganancias en 0
                 $gananciaPorRecarga = (float) $periodo->ganaciaPorRecarga;
-                if ($mesReferencia === 8 && date('Y') === '2025' && ($baseData->ventasLog ?? 0) < 10) {
+                if ($mes === 8 && $anio === 2025 && ($baseData->ventasLog ?? 0) < 10) {
                     $gananciaPorRecarga = 0.0;
                 }
                 $result['mes_' . $mesDestino] = $gananciaPorRecarga;
@@ -362,7 +362,7 @@ class AvanceDiarioController extends Controller
                 $data = $this->fetchAuxiliaryData($dni, $anio, $mes);
                 $msg = 'No hay pagos';
             } else {
-                $data = $this->buildOptimizedPaymentData($baseData, $periodsData, $mes);
+                $data = $this->buildOptimizedPaymentData($baseData, $periodsData, $mes, $anio);
                 $msg = 'Hay pago para el vendedor Multimarca';
             }
 
