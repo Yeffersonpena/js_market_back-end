@@ -129,7 +129,12 @@ class AvanceDiarioController extends Controller
             $mesDestino = $mesReferencia - $n;
 
             if ($mesDestino >= 1 && $mesDestino <= 12) {
-                $carry['mes_' . $mesDestino] = (float) $item->ganaciaPorRecarga;
+                // Validación para agosto 2025: si ventasLog < 10, establecer ganancias en 0
+                $gananciaPorRecarga = (float) $item->ganaciaPorRecarga;
+                if ($mesReferencia === 8 && date('Y') === '2025' && ($item->ventasLog ?? 0) < 10) {
+                    $gananciaPorRecarga = 0.0;
+                }
+                $carry['mes_' . $mesDestino] = $gananciaPorRecarga;
             }
 
             return array_merge($carry, $this->getCommonFields($item));
@@ -246,6 +251,128 @@ class AvanceDiarioController extends Controller
             }
         } catch (\Exception $ex) {
             return response()->json(["status" => Response::HTTP_BAD_REQUEST, "message" => $ex->getMessage()], Response::HTTP_BAD_REQUEST);
+        }
+    }
+
+    private function fetchBaseData(int $dni, int $anio, int $mes): ?object
+    {
+        $result = DB::select('EXEC spResumenGanancia_MM_Base_Payment @dni=?, @año=?, @mes=?', [$dni, $anio, $mes]);
+        
+        return !empty($result) ? $result[0] : null;
+    }
+
+    private function fetchPeriodsData(int $dni, int $anio, int $mes): array
+    {
+        return DB::select('EXEC spResumenGanancia_MM_Periodos_Payment @dni=?, @año=?, @mes=?', [$dni, $anio, $mes]);
+    }
+
+    private function buildOptimizedPaymentData(object $baseData, array $periodsData, int $mes): array
+    {
+        if ($mes === 6) {
+            return $this->buildMes6Data($baseData, $periodsData);
+        }
+        
+        return $this->buildOtherMonthsData($baseData, $periodsData);
+    }
+
+    private function buildMes6Data(object $baseData, array $periodsData): array
+    {
+        $periodo = collect($periodsData)->first();
+        
+        return array_merge(
+            [
+                'dni_vendedor'          => $baseData->dni_vendedor,
+                'ventasLog'             => (float) $baseData->ventasLog,
+                'cantidadCalidad'       => (float) $baseData->cantidadCalidad,
+                'pagoUniCalidad'        => (float) $baseData->pagoUniCalidad,
+                'bonoRecargaNxVendedor' => (float) ($periodo->ganaciaPorRecarga ?? 0),
+                'bonoCalidad'           => (float) $baseData->bonoCalidad,
+                'bonoTotal'             => (float) ($baseData->bonoTotal + ($periodo->ganaciaPorRecarga ?? 0)),
+                'cantidadPortaPostOPre' => (float) $baseData->cantidadPortaPostOPre,
+                'precioPortaPostOPre'   => (float) $baseData->precioPortaPostOPre,
+                'cantidadPortaPostOPost' => (float) $baseData->cantidadPortaPostOPost,
+                'precioPortaPostOPost'  => (float) $baseData->precioPortaPostOPost,
+                'bonoPortaPostOPre'     => (float) $baseData->bonoPortaPostOPre,
+                'bonoPortaPostOPost'    => (float) $baseData->bonoPortaPostOPost,
+            ],
+            self::ZERO_DEFAULTS,
+            ['mes_6' => (float) ($periodo->ganaciaPorRecarga ?? 0)]
+        );
+    }
+
+    private function buildOtherMonthsData(object $baseData, array $periodsData): array
+    {
+        $fechaMaxima = DB::table('parametros')
+            ->where('tipo', 1)
+            ->value('valor');
+        
+        $mesReferencia = $fechaMaxima ? (int) date('n', strtotime($fechaMaxima)) : (int) date('n');
+        
+        $result = array_merge(
+            [
+                'dni_vendedor'          => $baseData->dni_vendedor,
+                'ventasLog'             => (float) $baseData->ventasLog,
+                'cantidadCalidad'       => (float) $baseData->cantidadCalidad,
+                'pagoUniCalidad'        => (float) $baseData->pagoUniCalidad,
+                'bonoRecargaNxVendedor' => (float) $baseData->bonoRecargaNxVendedorSubTotal,
+                'bonoCalidad'           => (float) $baseData->bonoCalidad,
+                'bonoTotal'             => (float) $baseData->bonoTotal,
+                'cantidadPortaPostOPre' => (float) $baseData->cantidadPortaPostOPre,
+                'precioPortaPostOPre'   => (float) $baseData->precioPortaPostOPre,
+                'cantidadPortaPostOPost' => (float) $baseData->cantidadPortaPostOPost,
+                'precioPortaPostOPost'  => (float) $baseData->precioPortaPostOPost,
+                'bonoPortaPostOPre'     => (float) $baseData->bonoPortaPostOPre,
+                'bonoPortaPostOPost'    => (float) $baseData->bonoPortaPostOPost,
+            ],
+            self::ZERO_DEFAULTS
+        );
+        
+        foreach ($periodsData as $periodo) {
+            $n = (int) str_replace('N', '', $periodo->PERIODO_EVALUACION);
+            $mesDestino = $mesReferencia - $n;
+            
+            if ($mesDestino >= 1 && $mesDestino <= 12) {
+                // Validación para agosto 2025: si ventasLog < 10, establecer ganancias en 0
+                $gananciaPorRecarga = (float) $periodo->ganaciaPorRecarga;
+                if ($mesReferencia === 8 && date('Y') === '2025' && ($baseData->ventasLog ?? 0) < 10) {
+                    $gananciaPorRecarga = 0.0;
+                }
+                $result['mes_' . $mesDestino] = $gananciaPorRecarga;
+            }
+        }
+        
+        return $result;
+    }
+
+    public function getOptimizedPayment(int $dni, int $anio, int $mes, int $typeQuincena)
+    {
+        try {
+            if ($anio === 2025 && $mes > 0 && $mes < 6) {
+                $typeQuincena = 2;
+            }
+
+            if ($typeQuincena !== 0) {
+                return $this->fetchAuxiliaryData($dni, $anio, $mes);
+            }
+
+            $baseData = $this->fetchBaseData($dni, $anio, $mes);
+            $periodsData = $this->fetchPeriodsData($dni, $anio, $mes);
+
+            if (!$baseData) {
+                $data = $this->fetchAuxiliaryData($dni, $anio, $mes);
+                $msg = 'No hay pagos';
+            } else {
+                $data = $this->buildOptimizedPaymentData($baseData, $periodsData, $mes);
+                $msg = 'Hay pago para el vendedor Multimarca';
+            }
+
+            $status = Response::HTTP_OK;
+            return response()->json(compact('status', 'msg', 'data'), $status);
+        } catch (\Exception $ex) {
+            return response()->json([
+                'status'  => Response::HTTP_BAD_REQUEST,
+                'message' => $ex->getMessage(),
+            ], Response::HTTP_BAD_REQUEST);
         }
     }
 }
