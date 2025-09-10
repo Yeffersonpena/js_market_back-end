@@ -115,13 +115,22 @@ class AvanceDiarioController extends Controller
             );
         }
 
-        // Obtener la fecha máxima del parámetro tipo=1
-        $fechaMaxima = DB::table('parametros')
-            ->where('tipo', 1)
-            ->value('valor');
+        // Determinar si el año y mes consultado es el actual
+        $fechaActual = Carbon::now();
+        $esAnioMesActual = ($anio == $fechaActual->year && $mes == $fechaActual->month);
         
-        // Convertir la fecha máxima a mes de referencia
-        $mesReferencia = $fechaMaxima ? (int) date('n', strtotime($fechaMaxima)) : (int) date('n');
+        // Obtener la fecha máxima según el caso
+        if ($esAnioMesActual) {
+            // Para año y mes actual: usar la fecha máxima de la consulta (parámetro tipo=1)
+            $fechaMaxima = DB::table('parametros')
+                ->where('tipo', 1)
+                ->value('valor');
+            $mesReferencia = $fechaMaxima ? (int) date('n', strtotime($fechaMaxima)) : (int) date('n');
+        } else {
+            // Para años y meses anteriores: usar el último día de ese año y mes
+            $ultimoDiaDelMes = Carbon::create($anio, $mes)->endOfMonth();
+            $mesReferencia = $ultimoDiaDelMes->month;
+        }
 
         $result = collect($rows)->reduce(function (array $carry, $item) use ($mesReferencia, $mes, $anio) {
             // Mes destino dinámico basado en la fecha máxima del parámetro
