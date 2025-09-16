@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Http\JsonResponse;
 use App\Models\PDVOutImagen;
+use App\Models\PDVOutCampanasFlyers;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Symfony\Component\HttpFoundation\Response;
@@ -154,6 +155,7 @@ class ImagenController extends Controller
                     'modo'=>'required',
                     // 'group'=>'required',
                     'namePicture'=>'required',
+                    'zonal' => 'nullable|string',
                 ]);
                 $pictureAnio=$request->año;
                 $pictureMes=$request->mes;
@@ -162,6 +164,7 @@ class ImagenController extends Controller
                 $pictureType=$request->type;
                 $pictureModo=$request->modo;
                 $pictureGroup=$request->group ?? '';
+                $pictureZonal=$request->zonal ?? '';
                 $pictureFile=$request->file('image');
                 $pictureName=$request->namePicture;
                 $extenPicture=$pictureFile->getClientOriginalExtension();
@@ -171,10 +174,34 @@ class ImagenController extends Controller
                 $historyFlyer->nombre_imagen=$nameFilePicture;
                 $historyFlyer->fecha_modificacion=Carbon::now();
                 $historyFlyer->save();
-                $loadPicture=DB::statement('exec dbo.spInsertFlyerDinamico ?,?,?,?,?,?,?,?', [$pictureAnio, $pictureMes, $nameFilePicture, $pictureDateStar, $pictureEnd, $pictureType, $pictureModo, $pictureGroup]);
+                
+                // INSERT primero en tabla de campañas flyers
+                $campanaFlyer = PDVOutCampanasFlyers::create([
+                    'nombre_campaña' => $request->namePicture, // Usando namePicture como nombre de campaña
+                    'foto_esquema' => $nameFilePicture,
+                    'fecha_inicio' => $pictureDateStar,
+                    'fecha_fin' => $pictureEnd,
+                    'tipoImg' => $pictureType,
+                    'modo' => $pictureModo,
+                    'criterio_filtro' => $pictureGroup, // Usando group como criterio_filtro
+                    'zonales' => $pictureZonal,
+                    'activa' => true,
+                    'fecha_creacion' => Carbon::now()
+                ]);
+                
+                // Luego ejecutar el procedimiento almacenado
+                // $loadPicture=DB::statement('exec dbo.spInsertFlyerDinamico ?,?,?,?,?,?,?,?,?', [$pictureAnio, $pictureMes, $nameFilePicture, $pictureDateStar, $pictureEnd, $pictureType, $pictureModo, $pictureGroup, $pictureZonal]);
+                
+                // Ejecutar el nuevo procedimiento de sincronización
+                $loadPicture=DB::statement('exec dbo.sp_Sincronizar_Flyers ?,?', [$pictureAnio, $pictureMes]);
                 if($loadPicture){
                     $imgUrl = env('APP_DOMAIN') . '/storage/img/' . $nameFilePicture;
-                    return response()->json(["status" => Response::HTTP_OK, "message" => "Imagen subida exitosamente", "urlPicture" => $imgUrl], Response::HTTP_OK);
+                    return response()->json([
+                        "status" => Response::HTTP_OK, 
+                        "message" => "Imagen subida exitosamente", 
+                        "urlPicture" => $imgUrl,
+                        "campana_id" => $campanaFlyer->id
+                    ], Response::HTTP_OK);
                 }else{
                     return response()->json(["status" => Response::HTTP_OK, "message" => "Error al subir la imagen"], Response::HTTP_OK);
                 }
@@ -182,5 +209,35 @@ class ImagenController extends Controller
             } catch (\Exception $ex) {
                 return response()->json(["status" => Response::HTTP_BAD_REQUEST, "message" => $ex->getMessage()], Response::HTTP_BAD_REQUEST);
             }
+    }
+
+    public function getCampanasFlyers(Request $request)
+    {
+        try {
+            $request->validate([
+                'año' => 'required|integer|min:2020|max:2030',
+                'mes' => 'required|integer|min:1|max:12'
+            ]);
+
+            $año = $request->año;
+            $mes = $request->mes;
+
+            $campanas = PDVOutCampanasFlyers::whereYear('fecha_inicio', $año)
+                ->whereMonth('fecha_inicio', $mes)
+                ->orderBy('fecha_creacion', 'desc')
+                ->get();
+
+            return response()->json([
+                "status" => Response::HTTP_OK,
+                "data" => $campanas,
+                "total" => $campanas->count()
+            ], Response::HTTP_OK);
+
+        } catch (\Exception $ex) {
+            return response()->json([
+                "status" => Response::HTTP_BAD_REQUEST, 
+                "message" => $ex->getMessage()
+            ], Response::HTTP_BAD_REQUEST);
+        }
     }
 }
