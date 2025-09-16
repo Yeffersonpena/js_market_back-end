@@ -211,16 +211,25 @@ class ImagenController extends Controller
             }
     }
 
-    public function getCampanasFlyers(Request $request)
+    public function getCampanasFlyers(Request $request, $año, $mes)
     {
         try {
-            $request->validate([
+            // Validar los parámetros de la ruta
+            $validator = \Validator::make([
+                'año' => $año,
+                'mes' => $mes
+            ], [
                 'año' => 'required|integer|min:2020|max:2030',
                 'mes' => 'required|integer|min:1|max:12'
             ]);
 
-            $año = $request->año;
-            $mes = $request->mes;
+            if ($validator->fails()) {
+                return response()->json([
+                    "status" => Response::HTTP_BAD_REQUEST,
+                    "message" => "Parámetros inválidos",
+                    "errors" => $validator->errors()
+                ], Response::HTTP_BAD_REQUEST);
+            }
 
             $campanas = PDVOutCampanasFlyers::whereYear('fecha_inicio', $año)
                 ->whereMonth('fecha_inicio', $mes)
