@@ -205,9 +205,9 @@ class ImagenController extends Controller
             $historyFlyer->fecha_modificacion = \Carbon\Carbon::now();
             $historyFlyer->save();
 
-            // Fechas
-            $fechaInicio   = \Carbon\Carbon::createFromFormat('Y-m-d', $pictureDateStar)->toDateString();
-            $fechaFin      = \Carbon\Carbon::createFromFormat('Y-m-d', $pictureEnd)->toDateString();
+            // Fechas - usar formato que SQL Server acepta
+            $fechaInicio   = $pictureDateStar; // Ya viene en formato Y-m-d
+            $fechaFin      = $pictureEnd;      // Ya viene en formato Y-m-d
             $fechaCreacion = \Carbon\Carbon::now()->format('Y-m-d H:i:s');
 
             // DEBUG: log antes del insert
@@ -224,10 +224,10 @@ class ImagenController extends Controller
                 'fecha_creacion'  => $fechaCreacion,
             ]);
 
-            // SQL con placeholders
+            // SQL con CAST para fechas
             $sql = "INSERT INTO [PDV_OUT_CAMPAÑAS_FLYERS] 
             ([nombre_campaña], [foto_esquema], [fecha_inicio], [fecha_fin], [tipoImg], [modo], [criterio_filtro], [zonales], [activa], [fecha_creacion])
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+            VALUES (?, ?, CAST(? AS DATE), CAST(? AS DATE), ?, ?, ?, ?, ?, ?)";
 
             $pdo = DB::connection('sqlsrv')->getPdo();
             $stmt = $pdo->prepare($sql);
@@ -252,7 +252,7 @@ class ImagenController extends Controller
             }
 
             // Ejecutar SP de sincronización
-            DB::statement('exec dbo.sp_Sincronizar_Flyers ?, ?', [$pictureAnio, $pictureMes]);
+            //DB::statement('exec dbo.sp_Sincronizar_Flyers ?, ?', [$pictureAnio, $pictureMes]);
 
             // Respuesta
             $imgUrl = env('APP_DOMAIN') . '/storage/img/' . $nameFilePicture;
