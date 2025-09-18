@@ -176,16 +176,9 @@ class ImagenController extends Controller
                 $historyFlyer->fecha_modificacion=Carbon::now();
                 $historyFlyer->save();
                 
-                // Convertir las fechas al formato correcto para SQL Server (solo fecha, sin hora)
-                try {
-                    $fechaInicio = Carbon::createFromFormat('Y-m-d', $pictureDateStar)->toDateString();
-                    $fechaFin = Carbon::createFromFormat('Y-m-d', $pictureEnd)->toDateString();
-                } catch (\Exception $e) {
-                    return response()->json([
-                        "status" => Response::HTTP_BAD_REQUEST,
-                        "message" => "Error en el formato de fechas: " . $e->getMessage()
-                    ], Response::HTTP_BAD_REQUEST);
-                }
+                // Usar las fechas directamente como strings para evitar conversión automática
+                $fechaInicio = $pictureDateStar; // Ya viene en formato Y-m-d
+                $fechaFin = $pictureEnd; // Ya viene en formato Y-m-d
                 
                 // INSERT primero en tabla de campañas flyers
                 $campanaFlyer = PDVOutCampanasFlyers::create([

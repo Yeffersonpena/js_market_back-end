@@ -26,8 +26,8 @@ class PDVOutCampanasFlyers extends Model
     ];
 
     protected $casts = [
-        'fecha_inicio' => 'date',
-        'fecha_fin' => 'date',
+        'fecha_inicio' => 'string',
+        'fecha_fin' => 'string',
         'activa' => 'boolean',
         'fecha_creacion' => 'datetime'
     ];
