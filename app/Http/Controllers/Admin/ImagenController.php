@@ -158,56 +158,55 @@ class ImagenController extends Controller
                 'zonal' => 'nullable' // puede venir string o array
             ]);
 
-            $pictureAnio = $request->año;
-            $pictureMes = $request->mes;
+            $pictureAnio   = $request->año;
+            $pictureMes    = $request->mes;
             $pictureDateStar = $request->dateStar; // 'Y-m-d'
-            $pictureEnd = $request->dateEnd;       // 'Y-m-d'
-            $pictureType = $request->type;
-            $pictureModo = $request->modo;
-            $pictureGroup = $request->group ?? '';
-            $pictureZonal = $request->zonal ?? '';
+            $pictureEnd    = $request->dateEnd;    // 'Y-m-d'
+            $pictureType   = $request->type;
+            $pictureModo   = $request->modo;
+            $pictureGroup  = $request->group ?? '';
+            $pictureZonal  = $request->zonal ?? '';
 
-            // Si zonal viene como array -> unirlo en un solo string (uno solo valor)
+            // Normalizar zonal
             if (is_array($pictureZonal)) {
                 $pictureZonal = implode(', ', array_map('trim', $pictureZonal));
             } else {
-                // trim y normalizar comas dobles si vienen mal
                 $pictureZonal = trim(preg_replace('/\s*,\s*/', ', ', $pictureZonal));
             }
 
+            // Manejo del archivo
             $pictureFile = $request->file('image');
             $pictureName = $request->namePicture;
             $extenPicture = $pictureFile->getClientOriginalExtension();
             $nameFilePicture = $pictureName . '_' . $pictureDateStar . '_' . $pictureEnd . '_' . $pictureType . '_' . $pictureModo . '_' . $pictureGroup . '.' . $extenPicture;
             $request->file('image')->storeAs('img', $nameFilePicture, 'public');
 
-            // Guardar historial de imagen (lo tenías bien)
+            // Guardar historial de imagen
             $historyFlyer = new PDVOutImagen();
             $historyFlyer->nombre_imagen = $nameFilePicture;
             $historyFlyer->fecha_modificacion = Carbon::now();
             $historyFlyer->save();
 
-            // --- INSERT usando ELOQUENT (seguro frente a tipos y comillas) ---
-            // Formatea fechas de forma segura para SQL Server: uso 'Ymd' para date (invariable por locale)
-            $fechaInicioSafe = Carbon::createFromFormat('Y-m-d', $pictureDateStar)->format('Ymd');
-            $fechaFinSafe   = Carbon::createFromFormat('Y-m-d', $pictureEnd)->format('Ymd');
-            // fecha_creacion como datetime string (SQL Server aceptable)
-            $fechaCreacion = Carbon::now()->format('Y-m-d H:i:s');
+            // --- Fechas corregidas ---
+            $fechaInicio   = Carbon::createFromFormat('Y-m-d', $pictureDateStar)->format('Y-m-d'); // DATE
+            $fechaFin      = Carbon::createFromFormat('Y-m-d', $pictureEnd)->format('Y-m-d');     // DATE
+            $fechaCreacion = now()->format('Y-m-d H:i:s'); // DATETIME
 
+            // Insert usando Eloquent
             $campana = PDVOutCampanasFlyers::create([
                 'nombre_campaña'   => $pictureName,
                 'foto_esquema'     => $nameFilePicture,
-                'fecha_inicio'     => $fechaInicioSafe, // 'YYYYMMDD'
-                'fecha_fin'        => $fechaFinSafe,    // 'YYYYMMDD'
+                'fecha_inicio'     => $fechaInicio,
+                'fecha_fin'        => $fechaFin,
                 'tipoImg'          => $pictureType,
                 'modo'             => $pictureModo,
                 'criterio_filtro'  => $pictureGroup,
-                'zonales'          => $pictureZonal,    // UNA sola cadena
+                'zonales'          => $pictureZonal,
                 'activa'           => 1,
                 'fecha_creacion'   => $fechaCreacion
             ]);
 
-            // Ejecutar SP de sincronización (si lo necesitas)
+            // Ejecutar SP de sincronización
             DB::statement('exec dbo.sp_Sincronizar_Flyers ?, ?', [$pictureAnio, $pictureMes]);
 
             if ($campana) {
@@ -219,9 +218,15 @@ class ImagenController extends Controller
                 ], Response::HTTP_OK);
             }
 
-            return response()->json(["status" => Response::HTTP_OK, "message" => "Error al subir la imagen"], Response::HTTP_OK);
+            return response()->json([
+                "status" => Response::HTTP_OK,
+                "message" => "Error al subir la imagen"
+            ], Response::HTTP_OK);
         } catch (\Exception $ex) {
-            return response()->json(["status" => Response::HTTP_BAD_REQUEST, "message" => $ex->getMessage()], Response::HTTP_BAD_REQUEST);
+            return response()->json([
+                "status" => Response::HTTP_BAD_REQUEST,
+                "message" => $ex->getMessage()
+            ], Response::HTTP_BAD_REQUEST);
         }
     }
 

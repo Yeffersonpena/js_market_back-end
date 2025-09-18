@@ -25,11 +25,9 @@ class PDVOutCampanasFlyers extends Model
         'fecha_creacion'
     ];
 
+    // 👇 Quitar casts de fechas para no romper el formato
     protected $casts = [
-        'fecha_inicio' => 'date',
-        'fecha_fin' => 'date',
-        'activa' => 'boolean',
-        'fecha_creacion' => 'datetime'
+        'activa' => 'boolean'
     ];
 
     public $timestamps = false;
