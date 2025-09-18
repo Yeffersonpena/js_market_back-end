@@ -176,18 +176,22 @@ class ImagenController extends Controller
                 $historyFlyer->fecha_modificacion=Carbon::now();
                 $historyFlyer->save();
                 
-                // Usar el modelo con casts correctos para fechas
-                $campanaFlyer = PDVOutCampanasFlyers::create([
-                    'nombre_campaña' => $request->namePicture,
-                    'foto_esquema' => $nameFilePicture,
-                    'fecha_inicio' => $pictureDateStar,
-                    'fecha_fin' => $pictureEnd,
-                    'tipoImg' => $pictureType,
-                    'modo' => $pictureModo,
-                    'criterio_filtro' => $pictureGroup,
-                    'zonales' => $pictureZonal,
-                    'activa' => true,
-                    'fecha_creacion' => Carbon::now()
+                // Usar DB::statement para insertar directamente sin conversión de Laravel
+                $campanaFlyer = DB::statement("
+                    INSERT INTO PDV_OUT_CAMPAÑAS_FLYERS 
+                    (nombre_campaña, foto_esquema, fecha_inicio, fecha_fin, tipoImg, modo, criterio_filtro, zonales, activa, fecha_creacion) 
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ", [
+                    $request->namePicture,
+                    $nameFilePicture,
+                    $pictureDateStar,
+                    $pictureEnd,
+                    $pictureType,
+                    $pictureModo,
+                    $pictureGroup,
+                    $pictureZonal,
+                    1,
+                    Carbon::now()
                 ]);
                 
                 // Luego ejecutar el procedimiento almacenado
@@ -195,13 +199,12 @@ class ImagenController extends Controller
                 
                 // Ejecutar el nuevo procedimiento de sincronización
                 $loadPicture=DB::statement('exec dbo.sp_Sincronizar_Flyers ?,?', [$pictureAnio, $pictureMes]);
-                if($loadPicture){
+                if($campanaFlyer){
                     $imgUrl = env('APP_DOMAIN') . '/storage/img/' . $nameFilePicture;
                     return response()->json([
                         "status" => Response::HTTP_OK, 
                         "message" => "Imagen subida exitosamente", 
-                        "urlPicture" => $imgUrl,
-                        "campana_id" => $campanaFlyer->id
+                        "urlPicture" => $imgUrl
                     ], Response::HTTP_OK);
                 }else{
                     return response()->json(["status" => Response::HTTP_OK, "message" => "Error al subir la imagen"], Response::HTTP_OK);
