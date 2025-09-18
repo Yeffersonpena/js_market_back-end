@@ -176,17 +176,17 @@ class ImagenController extends Controller
                 $historyFlyer->fecha_modificacion=Carbon::now();
                 $historyFlyer->save();
                 
-                // Usar el formato correcto para SQL Server con columnas de tipo DATE
-                $campanaFlyer = DB::table('PDV_OUT_CAMPAÑAS_FLYERS')->insertGetId([
+                // Usar el modelo con casts correctos para fechas
+                $campanaFlyer = PDVOutCampanasFlyers::create([
                     'nombre_campaña' => $request->namePicture,
                     'foto_esquema' => $nameFilePicture,
-                    'fecha_inicio' => DB::raw("'$pictureDateStar'"),
-                    'fecha_fin' => DB::raw("'$pictureEnd'"),
+                    'fecha_inicio' => $pictureDateStar,
+                    'fecha_fin' => $pictureEnd,
                     'tipoImg' => $pictureType,
                     'modo' => $pictureModo,
                     'criterio_filtro' => $pictureGroup,
                     'zonales' => $pictureZonal,
-                    'activa' => 1,
+                    'activa' => true,
                     'fecha_creacion' => Carbon::now()
                 ]);
                 
@@ -201,7 +201,7 @@ class ImagenController extends Controller
                         "status" => Response::HTTP_OK, 
                         "message" => "Imagen subida exitosamente", 
                         "urlPicture" => $imgUrl,
-                        "campana_id" => $campanaFlyer
+                        "campana_id" => $campanaFlyer->id
                     ], Response::HTTP_OK);
                 }else{
                     return response()->json(["status" => Response::HTTP_OK, "message" => "Error al subir la imagen"], Response::HTTP_OK);
