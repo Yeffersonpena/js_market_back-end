@@ -10,6 +10,7 @@ use App\Models\PDVOutImagen;
 use App\Models\PDVOutCampanasFlyers;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Validator;
 use Symfony\Component\HttpFoundation\Response;
 
 class ImagenController extends Controller
@@ -147,14 +148,14 @@ class ImagenController extends Controller
         try{
             $request->validate([
                     'image' => 'required|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
-                    'año'=>'required',
-                    'mes'=>'required',
-                    'dateStar'=>'required',
-                    'dateEnd'=>'required',
-                    'type'=>'required',
-                    'modo'=>'required',
+                    'año'=>'required|integer|min:2020|max:2030',
+                    'mes'=>'required|integer|min:1|max:12',
+                    'dateStar'=>'required|date_format:Y-m-d',
+                    'dateEnd'=>'required|date_format:Y-m-d|after_or_equal:dateStar',
+                    'type'=>'required|string',
+                    'modo'=>'required|string',
                     // 'group'=>'required',
-                    'namePicture'=>'required',
+                    'namePicture'=>'required|string',
                     'zonal' => 'nullable|string',
                 ]);
                 $pictureAnio=$request->año;
@@ -175,12 +176,23 @@ class ImagenController extends Controller
                 $historyFlyer->fecha_modificacion=Carbon::now();
                 $historyFlyer->save();
                 
+                // Convertir las fechas al formato correcto para SQL Server
+                try {
+                    $fechaInicio = Carbon::createFromFormat('Y-m-d', $pictureDateStar)->format('Y-m-d');
+                    $fechaFin = Carbon::createFromFormat('Y-m-d', $pictureEnd)->format('Y-m-d');
+                } catch (\Exception $e) {
+                    return response()->json([
+                        "status" => Response::HTTP_BAD_REQUEST,
+                        "message" => "Error en el formato de fechas: " . $e->getMessage()
+                    ], Response::HTTP_BAD_REQUEST);
+                }
+                
                 // INSERT primero en tabla de campañas flyers
                 $campanaFlyer = PDVOutCampanasFlyers::create([
                     'nombre_campaña' => $request->namePicture, // Usando namePicture como nombre de campaña
                     'foto_esquema' => $nameFilePicture,
-                    'fecha_inicio' => $pictureDateStar,
-                    'fecha_fin' => $pictureEnd,
+                    'fecha_inicio' => $fechaInicio,
+                    'fecha_fin' => $fechaFin,
                     'tipoImg' => $pictureType,
                     'modo' => $pictureModo,
                     'criterio_filtro' => $pictureGroup, // Usando group como criterio_filtro
@@ -215,7 +227,7 @@ class ImagenController extends Controller
     {
         try {
             // Validar los parámetros de la ruta
-            $validator = \Validator::make([
+            $validator = Validator::make([
                 'año' => $año,
                 'mes' => $mes
             ], [
