@@ -157,7 +157,8 @@ class ImagenController extends Controller
                 'type'        => 'required|string',
                 'modo'        => 'required|string',
                 'namePicture' => 'required|string',
-                'zonal'       => 'nullable'
+                'group'       => 'nullable|integer|min:0|max:4',
+                'zonal'       => 'nullable|integer|min:0'
             ]);
 
             // Inputs
@@ -167,14 +168,28 @@ class ImagenController extends Controller
             $pictureEnd      = $request->input('dateEnd');  // 'Y-m-d'
             $pictureType     = (string) $request->input('type');
             $pictureModo     = (string) $request->input('modo');
-            $pictureGroup    = (string) ($request->input('group') ?? '');
-            $pictureZonal    = (string) ($request->input('zonal') ?? '');
+            
+            // Mapear grupo de número a texto
+            $grupoMapping = [
+                1 => "G1",
+                2 => "G2", 
+                3 => "G3",
+                4 => "Pdv Premium"
+            ];
+            $grupoNumber = (int) ($request->input('group') ?? 0);
+            $pictureGroup = $grupoMapping[$grupoNumber] ?? '';
 
-            // Normalizar zonales
-            if (is_array($request->input('zonal'))) {
-                $pictureZonal = implode(', ', array_map('trim', $request->input('zonal')));
+            // Manejar zonales: 0 = todas las zonas, o ID específico
+            $zonalInput = $request->input('zonal');
+            if ($zonalInput === 0 || $zonalInput === '0') {
+                // Concatenar todas las zonas
+                $todasLasZonas = \App\Models\Zonal::pluck('nombre_zonal')->toArray();
+                $pictureZonal = implode(', ', $todasLasZonas);
             } else {
-                $pictureZonal = trim(preg_replace('/\s*,\s*/', ', ', $pictureZonal));
+                // Buscar el nombre de la zona por ID
+                $zonalId = (int) $zonalInput;
+                $zonal = \App\Models\Zonal::find($zonalId);
+                $pictureZonal = $zonal ? $zonal->nombre_zonal : 'ZONA NO ENCONTRADA';
             }
 
             // Manejo del archivo
