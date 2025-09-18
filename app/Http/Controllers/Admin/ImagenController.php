@@ -10,6 +10,7 @@ use App\Models\PDVOutImagen;
 use App\Models\PDVOutCampanasFlyers;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -146,89 +147,120 @@ class ImagenController extends Controller
     public function load(Request $request)
     {
         try {
+            // Validación (igual que antes)
             $request->validate([
-                'image' => 'required|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
-                'año' => 'required|integer|min:2020|max:2030',
-                'mes' => 'required|integer|min:1|max:12',
-                'dateStar' => 'required|date_format:Y-m-d',
-                'dateEnd' => 'required|date_format:Y-m-d|after_or_equal:dateStar',
-                'type' => 'required|string',
-                'modo' => 'required|string',
+                'image'      => 'required|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
+                'año'        => 'required|integer|min:2020|max:2030',
+                'mes'        => 'required|integer|min:1|max:12',
+                'dateStar'   => 'required|date_format:Y-m-d',
+                'dateEnd'    => 'required|date_format:Y-m-d|after_or_equal:dateStar',
+                'type'       => 'required|string',
+                'modo'       => 'required|string',
                 'namePicture' => 'required|string',
-                'zonal' => 'nullable' // puede venir string o array
+                'zonal'      => 'nullable' // puede venir string o array
             ]);
 
-            $pictureAnio   = $request->año;
-            $pictureMes    = $request->mes;
-            $pictureDateStar = $request->dateStar; // 'Y-m-d'
-            $pictureEnd    = $request->dateEnd;    // 'Y-m-d'
-            $pictureType   = $request->type;
-            $pictureModo   = $request->modo;
-            $pictureGroup  = $request->group ?? '';
-            $pictureZonal  = $request->zonal ?? '';
+            // Inputs
+            $pictureAnio     = $request->input('año');
+            $pictureMes      = $request->input('mes');
+            $pictureDateStar = $request->input('dateStar'); // 'Y-m-d'
+            $pictureEnd      = $request->input('dateEnd');  // 'Y-m-d'
+            $pictureType     = $request->input('type');
+            $pictureModo     = $request->input('modo');
+            $pictureGroup    = $request->input('group', '');
+            $pictureZonal    = $request->input('zonal', '');
 
-            // Normalizar zonal
+            // Normalizar zonales a UN solo string
             if (is_array($pictureZonal)) {
                 $pictureZonal = implode(', ', array_map('trim', $pictureZonal));
             } else {
-                $pictureZonal = trim(preg_replace('/\s*,\s*/', ', ', $pictureZonal));
+                $pictureZonal = trim(preg_replace('/\s*,\s*/', ', ', (string)$pictureZonal));
             }
 
             // Manejo del archivo
-            $pictureFile = $request->file('image');
-            $pictureName = $request->namePicture;
-            $extenPicture = $pictureFile->getClientOriginalExtension();
+            $pictureFile     = $request->file('image');
+            $pictureName     = $request->input('namePicture');
+            $extenPicture    = $pictureFile->getClientOriginalExtension();
             $nameFilePicture = $pictureName . '_' . $pictureDateStar . '_' . $pictureEnd . '_' . $pictureType . '_' . $pictureModo . '_' . $pictureGroup . '.' . $extenPicture;
             $request->file('image')->storeAs('img', $nameFilePicture, 'public');
 
-            // Guardar historial de imagen
-            $historyFlyer = new PDVOutImagen();
+            // Guardar historial de imagen (igual)
+            $historyFlyer = new \App\Models\PDVOutImagen();
             $historyFlyer->nombre_imagen = $nameFilePicture;
-            $historyFlyer->fecha_modificacion = Carbon::now();
+            $historyFlyer->fecha_modificacion = \Carbon\Carbon::now();
             $historyFlyer->save();
 
-            // --- Fechas corregidas ---
-            $fechaInicio   = Carbon::createFromFormat('Y-m-d', $pictureDateStar)->format('Y-m-d'); // DATE
-            $fechaFin      = Carbon::createFromFormat('Y-m-d', $pictureEnd)->format('Y-m-d');     // DATE
-            $fechaCreacion = now()->format('Y-m-d H:i:s'); // DATETIME
+            // Fechas: DATE => 'Y-m-d', DATETIME => 'Y-m-d H:i:s'
+            $fechaInicio   = \Carbon\Carbon::createFromFormat('Y-m-d', $pictureDateStar)->toDateString(); // 'YYYY-MM-DD'
+            $fechaFin      = \Carbon\Carbon::createFromFormat('Y-m-d', $pictureEnd)->toDateString();      // 'YYYY-MM-DD'
+            $fechaCreacion = \Carbon\Carbon::now()->format('Y-m-d H:i:s');                                // DATETIME
 
-            // Insert usando Eloquent
-            $campana = PDVOutCampanasFlyers::create([
-                'nombre_campaña'   => $pictureName,
-                'foto_esquema'     => $nameFilePicture,
-                'fecha_inicio'     => $fechaInicio,
-                'fecha_fin'        => $fechaFin,
-                'tipoImg'          => $pictureType,
-                'modo'             => $pictureModo,
-                'criterio_filtro'  => $pictureGroup,
-                'zonales'          => $pictureZonal,
-                'activa'           => 1,
-                'fecha_creacion'   => $fechaCreacion
+            // DEBUG LOG: mira exactamente lo que vamos a insertar
+            Log::info('PDV_OUT_CAMPAÑAS_FLYERS - insert payload', [
+                'nombre_campaña' => $pictureName,
+                'foto_esquema'   => $nameFilePicture,
+                'fecha_inicio'   => $fechaInicio,
+                'fecha_fin'      => $fechaFin,
+                'tipoImg'        => $pictureType,
+                'modo'           => $pictureModo,
+                'criterio_filtro' => $pictureGroup,
+                'zonales'        => $pictureZonal,
+                'activa'         => 1,
+                'fecha_creacion' => $fechaCreacion,
             ]);
 
-            // Ejecutar SP de sincronización
+            // SQL con placeholders (usar corchetes para nombres con ñ/acentos)
+            $sql = "INSERT INTO [PDV_OUT_CAMPAÑAS_FLYERS] 
+            ([nombre_campaña], [foto_esquema], [fecha_inicio], [fecha_fin], [tipoImg], [modo], [criterio_filtro], [zonales], [activa], [fecha_creacion])
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+
+            // Preparar y bind con PDO explicitando tipos (todo como STRING excepto activa)
+            $pdo = DB::connection('sqlsrv')->getPdo();
+            $stmt = $pdo->prepare($sql);
+
+            $stmt->bindValue(1, $pictureName, \PDO::PARAM_STR);
+            $stmt->bindValue(2, $nameFilePicture, \PDO::PARAM_STR);
+            $stmt->bindValue(3, $fechaInicio, \PDO::PARAM_STR);     // DATE como string 'YYYY-MM-DD'
+            $stmt->bindValue(4, $fechaFin, \PDO::PARAM_STR);        // DATE como string 'YYYY-MM-DD'
+            $stmt->bindValue(5, $pictureType, \PDO::PARAM_STR);
+            $stmt->bindValue(6, $pictureModo, \PDO::PARAM_STR);
+            $stmt->bindValue(7, $pictureGroup, \PDO::PARAM_STR);
+            $stmt->bindValue(8, $pictureZonal, \PDO::PARAM_STR);
+            $stmt->bindValue(9, 1, \PDO::PARAM_INT);                // activa
+            $stmt->bindValue(10, $fechaCreacion, \PDO::PARAM_STR);  // DATETIME como string
+
+            $executed = $stmt->execute();
+
+            // Si quieres ver errorInfo en caso de fallo:
+            if (!$executed) {
+                $err = $stmt->errorInfo();
+                Log::error('PDV_OUT_CAMPAÑAS_FLYERS - PDO errorInfo', $err);
+                throw new \Exception('Error en insert PDO: ' . json_encode($err));
+            }
+
+            // Ejecutar SP de sincronización (igual que antes)
             DB::statement('exec dbo.sp_Sincronizar_Flyers ?, ?', [$pictureAnio, $pictureMes]);
 
-            if ($campana) {
+            // Respuesta
+            if ($executed) {
                 $imgUrl = env('APP_DOMAIN') . '/storage/img/' . $nameFilePicture;
                 return response()->json([
-                    "status" => Response::HTTP_OK,
-                    "message" => "Imagen subida exitosamente",
+                    "status"     => Response::HTTP_OK,
+                    "message"    => "Imagen subida exitosamente",
                     "urlPicture" => $imgUrl
                 ], Response::HTTP_OK);
             }
 
-            return response()->json([
-                "status" => Response::HTTP_OK,
-                "message" => "Error al subir la imagen"
-            ], Response::HTTP_OK);
+            return response()->json(["status" => Response::HTTP_OK, "message" => "Error al subir la imagen"], Response::HTTP_OK);
+        } catch (\PDOException $pdoEx) {
+            Log::error('PDOException en load', ['message' => $pdoEx->getMessage(), 'trace' => $pdoEx->getTraceAsString()]);
+            return response()->json(["status" => Response::HTTP_BAD_REQUEST, "message" => $pdoEx->getMessage()], Response::HTTP_BAD_REQUEST);
         } catch (\Exception $ex) {
-            return response()->json([
-                "status" => Response::HTTP_BAD_REQUEST,
-                "message" => $ex->getMessage()
-            ], Response::HTTP_BAD_REQUEST);
+            Log::error('Exception en load', ['message' => $ex->getMessage(), 'trace' => $ex->getTraceAsString()]);
+            return response()->json(["status" => Response::HTTP_BAD_REQUEST, "message" => $ex->getMessage()], Response::HTTP_BAD_REQUEST);
         }
     }
+
 
     public function getCampanasFlyers(Request $request, $año, $mes)
     {
