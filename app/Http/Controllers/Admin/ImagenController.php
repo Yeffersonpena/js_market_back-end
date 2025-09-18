@@ -176,10 +176,10 @@ class ImagenController extends Controller
                 $historyFlyer->fecha_modificacion=Carbon::now();
                 $historyFlyer->save();
                 
-                // Convertir las fechas al formato correcto para SQL Server
+                // Convertir las fechas al formato correcto para SQL Server (solo fecha, sin hora)
                 try {
-                    $fechaInicio = Carbon::createFromFormat('Y-m-d', $pictureDateStar)->format('Y-m-d');
-                    $fechaFin = Carbon::createFromFormat('Y-m-d', $pictureEnd)->format('Y-m-d');
+                    $fechaInicio = Carbon::createFromFormat('Y-m-d', $pictureDateStar)->toDateString();
+                    $fechaFin = Carbon::createFromFormat('Y-m-d', $pictureEnd)->toDateString();
                 } catch (\Exception $e) {
                     return response()->json([
                         "status" => Response::HTTP_BAD_REQUEST,
