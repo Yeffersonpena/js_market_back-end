@@ -176,21 +176,17 @@ class ImagenController extends Controller
                 $historyFlyer->fecha_modificacion=Carbon::now();
                 $historyFlyer->save();
                 
-                // Usar las fechas directamente como strings para evitar conversión automática
-                $fechaInicio = $pictureDateStar; // Ya viene en formato Y-m-d
-                $fechaFin = $pictureEnd; // Ya viene en formato Y-m-d
-                
-                // INSERT primero en tabla de campañas flyers
-                $campanaFlyer = PDVOutCampanasFlyers::create([
-                    'nombre_campaña' => $request->namePicture, // Usando namePicture como nombre de campaña
+                // Usar el formato correcto para SQL Server con columnas de tipo DATE
+                $campanaFlyer = DB::table('PDV_OUT_CAMPAÑAS_FLYERS')->insertGetId([
+                    'nombre_campaña' => $request->namePicture,
                     'foto_esquema' => $nameFilePicture,
-                    'fecha_inicio' => $fechaInicio,
-                    'fecha_fin' => $fechaFin,
+                    'fecha_inicio' => DB::raw("'$pictureDateStar'"),
+                    'fecha_fin' => DB::raw("'$pictureEnd'"),
                     'tipoImg' => $pictureType,
                     'modo' => $pictureModo,
-                    'criterio_filtro' => $pictureGroup, // Usando group como criterio_filtro
+                    'criterio_filtro' => $pictureGroup,
                     'zonales' => $pictureZonal,
-                    'activa' => true,
+                    'activa' => 1,
                     'fecha_creacion' => Carbon::now()
                 ]);
                 
@@ -205,7 +201,7 @@ class ImagenController extends Controller
                         "status" => Response::HTTP_OK, 
                         "message" => "Imagen subida exitosamente", 
                         "urlPicture" => $imgUrl,
-                        "campana_id" => $campanaFlyer->id
+                        "campana_id" => $campanaFlyer
                     ], Response::HTTP_OK);
                 }else{
                     return response()->json(["status" => Response::HTTP_OK, "message" => "Error al subir la imagen"], Response::HTTP_OK);
