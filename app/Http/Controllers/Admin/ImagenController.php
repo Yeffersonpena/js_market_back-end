@@ -191,7 +191,7 @@ class ImagenController extends Controller
                     $pictureGroup,
                     $pictureZonal,
                     1,
-                    Carbon::now()
+                    Carbon::now()->format('Y-m-d H:i:s.v') 
                 ]);
                 
                 // Luego ejecutar el procedimiento almacenado
