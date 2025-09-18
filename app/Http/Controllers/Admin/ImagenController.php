@@ -183,13 +183,13 @@ class ImagenController extends Controller
             $zonalInput = $request->input('zonal');
             if ($zonalInput === 0 || $zonalInput === '0') {
                 // Concatenar todas las zonas
-                $todasLasZonas = \App\Models\Zonal::pluck('nombre_zonal')->toArray();
+                $todasLasZonas = \App\Models\Zonal::pluck('zonal')->toArray();
                 $pictureZonal = implode(', ', $todasLasZonas);
             } else {
                 // Buscar el nombre de la zona por ID
                 $zonalId = (int) $zonalInput;
                 $zonal = \App\Models\Zonal::find($zonalId);
-                $pictureZonal = $zonal ? $zonal->nombre_zonal : 'ZONA NO ENCONTRADA';
+                $pictureZonal = $zonal ? $zonal->zonal : 'ZONA NO ENCONTRADA';
             }
 
             // Manejo del archivo
