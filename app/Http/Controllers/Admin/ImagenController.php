@@ -68,7 +68,7 @@ class ImagenController extends Controller
             'nombre_imagen' => $filename,
             'fecha_modificacion' => Carbon::now(),
         ]);
-        
+
 
         $imageUrl = env('APP_DOMAIN') . '/storage/img/' . $filename;
         return response()->json([
@@ -79,12 +79,12 @@ class ImagenController extends Controller
 
     public function updateImg(Request $request)
     {
-        try{
+        try {
             $request->validate([
                 'images' => 'required|array',
                 'images.*' => 'image|mimes:jpeg,png,jpg,gif,svg|max:2048',
             ]);
-            
+
             $imageUrls = [];
             foreach ($request->file('images') as $image) {
                 $filename = $image->getClientOriginalName();
@@ -92,7 +92,7 @@ class ImagenController extends Controller
                 $imageUrl = env('APP_DOMAIN') . '/storage/img/' . $filename;
                 $imageUrls[] = $imageUrl;
             }
-            return response()->json(['message' => 'Imagen subida exitosamente','url' => $imageUrls]);
+            return response()->json(['message' => 'Imagen subida exitosamente', 'url' => $imageUrls]);
         } catch (\Exception $ex) {
             return response()->json(["status" => Response::HTTP_BAD_REQUEST, "message" => $ex->getMessage()], Response::HTTP_BAD_REQUEST);
         }
@@ -142,77 +142,75 @@ class ImagenController extends Controller
             'url' => $imageUrl,
         ]);
     }
-    
+
     public function load(Request $request)
     {
-        try{
+        try {
             $request->validate([
-                    'image' => 'required|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
-                    'año'=>'required|integer|min:2020|max:2030',
-                    'mes'=>'required|integer|min:1|max:12',
-                    'dateStar'=>'required|date_format:Y-m-d',
-                    'dateEnd'=>'required|date_format:Y-m-d|after_or_equal:dateStar',
-                    'type'=>'required|string',
-                    'modo'=>'required|string',
-                    // 'group'=>'required',
-                    'namePicture'=>'required|string',
-                    'zonal' => 'nullable|string',
-                ]);
-                $pictureAnio=$request->año;
-                $pictureMes=$request->mes;
-                $pictureDateStar=$request->dateStar;
-                $pictureEnd=$request->dateEnd;
-                $pictureType=$request->type;
-                $pictureModo=$request->modo;
-                $pictureGroup=$request->group ?? '';
-                $pictureZonal=$request->zonal ?? '';
-                $pictureFile=$request->file('image');
-                $pictureName=$request->namePicture;
-                $extenPicture=$pictureFile->getClientOriginalExtension();
-                $nameFilePicture=$pictureName.'_'.$pictureDateStar.'_'.$pictureEnd.'_'.$pictureType.'_'.$pictureModo.'_'.$pictureGroup.'.'.$extenPicture;
-                $request->file('image')->storeAs('img', $nameFilePicture, 'public');
-                $historyFlyer=new PDVOutImagen();
-                $historyFlyer->nombre_imagen=$nameFilePicture;
-                $historyFlyer->fecha_modificacion=Carbon::now();
-                $historyFlyer->save();
-                
-                // Usar DB::statement para insertar directamente sin conversión de Laravel
-                $campanaFlyer = DB::statement("
-                    INSERT INTO PDV_OUT_CAMPAÑAS_FLYERS 
-                    (nombre_campaña, foto_esquema, fecha_inicio, fecha_fin, tipoImg, modo, criterio_filtro, zonales, activa, fecha_creacion) 
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                ", [
-                    $request->namePicture,
-                    $nameFilePicture,
-                    $pictureDateStar,
-                    $pictureEnd,
-                    $pictureType,
-                    $pictureModo,
-                    $pictureGroup,
-                    $pictureZonal,
-                    1,
-                    Carbon::now()->format('Y-m-d H:i:s.v') 
-                ]);
-                
-                // Luego ejecutar el procedimiento almacenado
-                // $loadPicture=DB::statement('exec dbo.spInsertFlyerDinamico ?,?,?,?,?,?,?,?,?', [$pictureAnio, $pictureMes, $nameFilePicture, $pictureDateStar, $pictureEnd, $pictureType, $pictureModo, $pictureGroup, $pictureZonal]);
-                
-                // Ejecutar el nuevo procedimiento de sincronización
-                $loadPicture=DB::statement('exec dbo.sp_Sincronizar_Flyers ?,?', [$pictureAnio, $pictureMes]);
-                if($campanaFlyer){
-                    $imgUrl = env('APP_DOMAIN') . '/storage/img/' . $nameFilePicture;
-                    return response()->json([
-                        "status" => Response::HTTP_OK, 
-                        "message" => "Imagen subida exitosamente", 
-                        "urlPicture" => $imgUrl
-                    ], Response::HTTP_OK);
-                }else{
-                    return response()->json(["status" => Response::HTTP_OK, "message" => "Error al subir la imagen"], Response::HTTP_OK);
-                }
+                'image' => 'required|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
+                'año' => 'required|integer|min:2020|max:2030',
+                'mes' => 'required|integer|min:1|max:12',
+                'dateStar' => 'required|date_format:Y-m-d',
+                'dateEnd' => 'required|date_format:Y-m-d|after_or_equal:dateStar',
+                'type' => 'required|string',
+                'modo' => 'required|string',
+                // 'group'=>'required',
+                'namePicture' => 'required|string',
+                'zonal' => 'nullable|string',
+            ]);
+            $pictureAnio = $request->año;
+            $pictureMes = $request->mes;
+            $pictureDateStar = $request->dateStar;
+            $pictureEnd = $request->dateEnd;
+            $pictureType = $request->type;
+            $pictureModo = $request->modo;
+            $pictureGroup = $request->group ?? '';
+            $pictureZonal = $request->zonal ?? '';
+            $pictureFile = $request->file('image');
+            $pictureName = $request->namePicture;
+            $extenPicture = $pictureFile->getClientOriginalExtension();
+            $nameFilePicture = $pictureName . '_' . $pictureDateStar . '_' . $pictureEnd . '_' . $pictureType . '_' . $pictureModo . '_' . $pictureGroup . '.' . $extenPicture;
+            $request->file('image')->storeAs('img', $nameFilePicture, 'public');
+            $historyFlyer = new PDVOutImagen();
+            $historyFlyer->nombre_imagen = $nameFilePicture;
+            $historyFlyer->fecha_modificacion = Carbon::now();
+            $historyFlyer->save();
 
-            } catch (\Exception $ex) {
-                return response()->json(["status" => Response::HTTP_BAD_REQUEST, "message" => $ex->getMessage()], Response::HTTP_BAD_REQUEST);
+            $campanaFlyer = DB::insert("
+                INSERT INTO PDV_OUT_CAMPAÑAS_FLYERS 
+                (nombre_campaña, foto_esquema, fecha_inicio, fecha_fin, tipoImg, modo, criterio_filtro, zonales, activa, fecha_creacion) 
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ", [
+                $request->namePicture,
+                $nameFilePicture,
+                $pictureDateStar, // '2025-09-18'
+                $pictureEnd,      // '2025-09-20'
+                $pictureType,     // 'ACELERADOR'
+                $pictureModo,     // 'PDV'
+                $pictureGroup,    // 'Pdv Premium'
+                $pictureZonal,    // 'AYACUCHO, H. CENTRO, LIMA SUR...'
+                1,
+                Carbon::now()->toDateTimeString()
+            ]);
+
+            // Luego ejecutar el procedimiento almacenado
+            // $loadPicture=DB::statement('exec dbo.spInsertFlyerDinamico ?,?,?,?,?,?,?,?,?', [$pictureAnio, $pictureMes, $nameFilePicture, $pictureDateStar, $pictureEnd, $pictureType, $pictureModo, $pictureGroup, $pictureZonal]);
+
+            // Ejecutar el nuevo procedimiento de sincronización
+            $loadPicture = DB::statement('exec dbo.sp_Sincronizar_Flyers ?,?', [$pictureAnio, $pictureMes]);
+            if ($campanaFlyer) {
+                $imgUrl = env('APP_DOMAIN') . '/storage/img/' . $nameFilePicture;
+                return response()->json([
+                    "status" => Response::HTTP_OK,
+                    "message" => "Imagen subida exitosamente",
+                    "urlPicture" => $imgUrl
+                ], Response::HTTP_OK);
+            } else {
+                return response()->json(["status" => Response::HTTP_OK, "message" => "Error al subir la imagen"], Response::HTTP_OK);
             }
+        } catch (\Exception $ex) {
+            return response()->json(["status" => Response::HTTP_BAD_REQUEST, "message" => $ex->getMessage()], Response::HTTP_BAD_REQUEST);
+        }
     }
 
     public function getCampanasFlyers(Request $request, $año, $mes)
@@ -245,10 +243,9 @@ class ImagenController extends Controller
                 "data" => $campanas,
                 "total" => $campanas->count()
             ], Response::HTTP_OK);
-
         } catch (\Exception $ex) {
             return response()->json([
-                "status" => Response::HTTP_BAD_REQUEST, 
+                "status" => Response::HTTP_BAD_REQUEST,
                 "message" => $ex->getMessage()
             ], Response::HTTP_BAD_REQUEST);
         }
