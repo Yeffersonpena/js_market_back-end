@@ -158,7 +158,7 @@ class ImagenController extends Controller
                 'modo'        => 'required|string',
                 'namePicture' => 'required|string',
                 'group'       => 'nullable|integer|min:0|max:4',
-                'zonal'       => 'nullable|integer|min:0'
+                'zonal'       => 'nullable|string|max:500' // Cambiado a string para manejar zonas concatenadas
             ]);
 
             // Inputs
@@ -174,13 +174,13 @@ class ImagenController extends Controller
                 1 => "G1",
                 2 => "G2", 
                 3 => "G3",
-                4 => "Pdv Premium"
+                4 => "PDV PREMIUM"
             ];
             $grupoNumber = (int) ($request->input('group') ?? 0);
             $pictureGroup = $grupoMapping[$grupoNumber] ?? '';
 
-            // Manejar zonales - SIMPLIFICADO PARA VALIDAR
-            $pictureZonal = 'HOLA';
+            // Manejar zonales - recibir zonas concatenadas del frontend
+            $pictureZonal = $request->input('zonal', '');
 
             // Manejo del archivo
             $pictureFile     = $request->file('image');
@@ -284,4 +284,5 @@ class ImagenController extends Controller
             ], Response::HTTP_BAD_REQUEST);
         }
     }
+
 }
