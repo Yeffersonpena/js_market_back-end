@@ -256,7 +256,7 @@ class ImagenController extends Controller
 
             $campanas = PDVOutCampanasFlyers::whereYear('fecha_inicio', $año)
                 ->whereMonth('fecha_inicio', $mes)
-                ->orderBy('fecha_creacion', 'desc')
+                ->orderBy('fecha_inicio', 'desc')
                 ->get();
 
             return response()->json([
