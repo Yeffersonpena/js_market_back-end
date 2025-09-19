@@ -195,9 +195,9 @@ class ImagenController extends Controller
             $historyFlyer->fecha_modificacion = \Carbon\Carbon::now();
             $historyFlyer->save();
 
-            // Fechas - usar formato que SQL Server acepta
-            $fechaInicio   = $pictureDateStar; // Ya viene en formato Y-m-d
-            $fechaFin      = $pictureEnd;      // Ya viene en formato Y-m-d
+            // Fechas - convertir a formato que SQL Server acepta correctamente
+            $fechaInicio   = \Carbon\Carbon::createFromFormat('Y-m-d', $pictureDateStar)->format('Y-m-d');
+            $fechaFin      = \Carbon\Carbon::createFromFormat('Y-m-d', $pictureEnd)->format('Y-m-d');
             $fechaCreacion = \Carbon\Carbon::now()->format('Y-m-d H:i:s');
 
             // DEBUG: log antes del insert
@@ -214,10 +214,10 @@ class ImagenController extends Controller
                 'fecha_creacion'  => $fechaCreacion,
             ]);
 
-            // SQL con CAST para fechas
+            // SQL usando CONVERT para fechas en lugar de CAST
             $sql = "INSERT INTO [PDV_OUT_CAMPAÑAS_FLYERS] 
             ([nombre_campaña], [foto_esquema], [fecha_inicio], [fecha_fin], [tipoImg], [modo], [criterio_filtro], [zonales], [activa], [fecha_creacion])
-            VALUES (?, ?, CAST(? AS DATE), CAST(? AS DATE), ?, ?, ?, ?, ?, ?)";
+            VALUES (?, ?, CONVERT(DATE, ?, 23), CONVERT(DATE, ?, 23), ?, ?, ?, ?, ?, ?)";
 
             $pdo = DB::connection('sqlsrv')->getPdo();
             $stmt = $pdo->prepare($sql);
