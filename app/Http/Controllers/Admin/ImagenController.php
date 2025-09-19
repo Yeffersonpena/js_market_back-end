@@ -179,18 +179,8 @@ class ImagenController extends Controller
             $grupoNumber = (int) ($request->input('group') ?? 0);
             $pictureGroup = $grupoMapping[$grupoNumber] ?? '';
 
-            // Manejar zonales: 0 = todas las zonas, o ID específico
-            $zonalInput = $request->input('zonal');
-            if ($zonalInput === 0 || $zonalInput === '0') {
-                // Concatenar todas las zonas
-                $todasLasZonas = \App\Models\Zonal::pluck('zonal')->toArray();
-                $pictureZonal = implode(', ', $todasLasZonas);
-            } else {
-                // Buscar el nombre de la zona por ID
-                $zonalId = (int) $zonalInput;
-                $zonal = \App\Models\Zonal::find($zonalId);
-                $pictureZonal = $zonal ? $zonal->zonal : 'ZONA NO ENCONTRADA';
-            }
+            // Manejar zonales - SIMPLIFICADO PARA VALIDAR
+            $pictureZonal = 'HOLA';
 
             // Manejo del archivo
             $pictureFile     = $request->file('image');
