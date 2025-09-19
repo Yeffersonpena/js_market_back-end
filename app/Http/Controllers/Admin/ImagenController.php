@@ -195,43 +195,43 @@ class ImagenController extends Controller
             $historyFlyer->fecha_modificacion = \Carbon\Carbon::now();
             $historyFlyer->save();
 
-            // Fechas - convertir a formato que SQL Server acepta correctamente
-            $fechaInicio   = \Carbon\Carbon::createFromFormat('Y-m-d', $pictureDateStar)->format('Y-m-d');
-            $fechaFin      = \Carbon\Carbon::createFromFormat('Y-m-d', $pictureEnd)->format('Y-m-d');
-            $fechaCreacion = \Carbon\Carbon::now()->format('Y-m-d H:i:s');
+            // FECHAS COMENTADAS TEMPORALMENTE PARA DEBUGGING
+            // $fechaInicio   = \Carbon\Carbon::createFromFormat('Y-m-d', $pictureDateStar)->format('Y-m-d');
+            // $fechaFin      = \Carbon\Carbon::createFromFormat('Y-m-d', $pictureEnd)->format('Y-m-d');
+            // $fechaCreacion = \Carbon\Carbon::now()->format('Y-m-d H:i:s');
 
             // DEBUG: log antes del insert
             Log::info('Insertando en PDV_OUT_CAMPAÑAS_FLYERS', [
                 'nombre_campaña'  => $pictureName,
                 'foto_esquema'    => $nameFilePicture,
-                'fecha_inicio'    => $fechaInicio,
-                'fecha_fin'       => $fechaFin,
+                'fecha_inicio'    => 'NULL (comentado)',
+                'fecha_fin'       => 'NULL (comentado)',
                 'tipoImg'         => $pictureType,
                 'modo'            => $pictureModo,
                 'criterio_filtro' => $pictureGroup,
                 'zonales'         => $pictureZonal,
                 'activa'          => 1,
-                'fecha_creacion'  => $fechaCreacion,
+                'fecha_creacion'  => 'NULL (comentado)',
             ]);
 
-            // SQL usando CONVERT para fechas en lugar de CAST
+            // SQL con fechas como NULL para descartar el problema
             $sql = "INSERT INTO [PDV_OUT_CAMPAÑAS_FLYERS] 
             ([nombre_campaña], [foto_esquema], [fecha_inicio], [fecha_fin], [tipoImg], [modo], [criterio_filtro], [zonales], [activa], [fecha_creacion])
-            VALUES (?, ?, CONVERT(DATE, ?, 23), CONVERT(DATE, ?, 23), ?, ?, ?, ?, ?, ?)";
+            VALUES (?, ?, NULL, NULL, ?, ?, ?, ?, ?, NULL)";
 
             $pdo = DB::connection('sqlsrv')->getPdo();
             $stmt = $pdo->prepare($sql);
 
             $stmt->bindValue(1, $pictureName, \PDO::PARAM_STR);
             $stmt->bindValue(2, $nameFilePicture, \PDO::PARAM_STR);
-            $stmt->bindValue(3, $fechaInicio, \PDO::PARAM_STR);
-            $stmt->bindValue(4, $fechaFin, \PDO::PARAM_STR);
-            $stmt->bindValue(5, $pictureType, \PDO::PARAM_STR);
-            $stmt->bindValue(6, $pictureModo, \PDO::PARAM_STR);
-            $stmt->bindValue(7, $pictureGroup, \PDO::PARAM_STR);
-            $stmt->bindValue(8, $pictureZonal, \PDO::PARAM_STR);
-            $stmt->bindValue(9, 1, \PDO::PARAM_INT);
-            $stmt->bindValue(10, $fechaCreacion, \PDO::PARAM_STR);
+            // $stmt->bindValue(3, $fechaInicio, \PDO::PARAM_STR);  // COMENTADO
+            // $stmt->bindValue(4, $fechaFin, \PDO::PARAM_STR);     // COMENTADO
+            $stmt->bindValue(3, $pictureType, \PDO::PARAM_STR);
+            $stmt->bindValue(4, $pictureModo, \PDO::PARAM_STR);
+            $stmt->bindValue(5, $pictureGroup, \PDO::PARAM_STR);
+            $stmt->bindValue(6, $pictureZonal, \PDO::PARAM_STR);
+            $stmt->bindValue(7, 1, \PDO::PARAM_INT);
+            // $stmt->bindValue(10, $fechaCreacion, \PDO::PARAM_STR); // COMENTADO
 
             $executed = $stmt->execute();
 
