@@ -147,7 +147,6 @@ class ImagenController extends Controller
     public function load(Request $request)
     {
         try {
-            // Validación
             $request->validate([
                 'image'       => 'required|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
                 'año'         => 'required|integer|min:2020|max:2030',
@@ -161,80 +160,68 @@ class ImagenController extends Controller
                 'zonal'       => 'nullable|string|max:500' // Cambiado a string para manejar zonas concatenadas
             ]);
 
-            // Inputs
             $pictureAnio     = (int) $request->input('año');
             $pictureMes      = (int) $request->input('mes');
             $pictureDateStar = $request->input('dateStar'); // 'Y-m-d'
             $pictureEnd      = $request->input('dateEnd');  // 'Y-m-d'
             $pictureType     = (string) $request->input('type');
             $pictureModo     = (string) $request->input('modo');
-            
-            // Mapear grupo de número a texto
+
             $grupoMapping = [
                 1 => "G1",
-                2 => "G2", 
+                2 => "G2",
                 3 => "G3",
                 4 => "PDV PREMIUM"
             ];
             $grupoNumber = (int) ($request->input('group') ?? 0);
             $pictureGroup = $grupoMapping[$grupoNumber] ?? '';
 
-            // Manejar zonales - recibir zonas concatenadas del frontend
             $pictureZonal = $request->input('zonal', '');
 
-            // Manejo del archivo
             $pictureFile     = $request->file('image');
             $pictureName     = $request->input('namePicture');
             $extenPicture    = $pictureFile->getClientOriginalExtension();
             $nameFilePicture = $pictureName . '_' . $pictureDateStar . '_' . $pictureEnd . '_' . $pictureType . '_' . $pictureModo . '_' . $pictureGroup . '.' . $extenPicture;
             $request->file('image')->storeAs('img', $nameFilePicture, 'public');
 
-            // Guardar historial de imagen
             $historyFlyer = new \App\Models\PDVOutImagen();
             $historyFlyer->nombre_imagen = $nameFilePicture;
             $historyFlyer->fecha_modificacion = \Carbon\Carbon::now();
             $historyFlyer->save();
 
-            // Fechas - convertir a formato que SQL Server acepta correctamente
             $fechaInicio   = \Carbon\Carbon::createFromFormat('Y-m-d', $pictureDateStar)->format('Y-m-d');
             $fechaFin      = \Carbon\Carbon::createFromFormat('Y-m-d', $pictureEnd)->format('Y-m-d');
-            // fecha_creacion se maneja con GETDATE() por defecto en la tabla
+            
+            $campanaFlyer = new PDVOutCampanasFlyers();
+            $campanaFlyer->nombre_campaña = $pictureName;
+            $campanaFlyer->foto_esquema = $nameFilePicture;
+            $campanaFlyer->fecha_inicio = $fechaInicio;
+            $campanaFlyer->fecha_fin = $fechaFin;
+            $campanaFlyer->tipoImg = $pictureType;
+            $campanaFlyer->modo = $pictureModo;
+            $campanaFlyer->criterio_filtro = $pictureGroup;
+            $campanaFlyer->zonales = $pictureZonal;
+            $campanaFlyer->activa = 1;
+            $campanaFlyer->save();
 
-            // SQL con fechas inicio y fin, fecha_creacion se omite para usar GETDATE()
-            $sql = "INSERT INTO [PDV_OUT_CAMPAÑAS_FLYERS] 
-            ([nombre_campaña], [foto_esquema], [fecha_inicio], [fecha_fin], [tipoImg], [modo], [criterio_filtro], [zonales], [activa])
-            VALUES (?, ?, CONVERT(DATE, ?, 23), CONVERT(DATE, ?, 23), ?, ?, ?, ?, ?)";
-
-            $pdo = DB::connection('sqlsrv')->getPdo();
-            $stmt = $pdo->prepare($sql);
-
-            $stmt->bindValue(1, $nameFilePicture, \PDO::PARAM_STR);
-            $stmt->bindValue(2, $nameFilePicture, \PDO::PARAM_STR);
-            $stmt->bindValue(3, $fechaInicio, \PDO::PARAM_STR);
-            $stmt->bindValue(4, $fechaFin, \PDO::PARAM_STR);
-            $stmt->bindValue(5, $pictureType, \PDO::PARAM_STR);
-            $stmt->bindValue(6, $pictureModo, \PDO::PARAM_STR);
-            $stmt->bindValue(7, $pictureGroup, \PDO::PARAM_STR);
-            $stmt->bindValue(8, $pictureZonal, \PDO::PARAM_STR);
-            $stmt->bindValue(9, 1, \PDO::PARAM_INT);
-
-            $executed = $stmt->execute();
-
-            if (!$executed) {
-                $err = $stmt->errorInfo();
-                Log::error('Error PDO insert', $err);
-                throw new \Exception('Error en insert PDO: ' . json_encode($err));
+            try {
+                DB::statement('exec dbo.sp_Sincronizar_Flyers ?, ?', [$pictureAnio, $pictureMes]);
+                Log::info('SP sp_Sincronizar_Flyers ejecutado correctamente', ['año' => $pictureAnio, 'mes' => $pictureMes]);
+            } catch (\Exception $spEx) {
+                Log::error('Error ejecutando SP sp_Sincronizar_Flyers', [
+                    'año' => $pictureAnio,
+                    'mes' => $pictureMes,
+                    'error' => $spEx->getMessage()
+                ]);
             }
+            $registrosCount = $this->verificarRegistrosCreados($nameFilePicture);
 
-            // Ejecutar SP de sincronización
-            //DB::statement('exec dbo.sp_Sincronizar_Flyers ?, ?', [$pictureAnio, $pictureMes]);
-
-            // Respuesta
             $imgUrl = env('APP_DOMAIN') . '/storage/img/' . $nameFilePicture;
             return response()->json([
                 "status"     => Response::HTTP_OK,
                 "message"    => "Imagen subida exitosamente",
-                "urlPicture" => $imgUrl
+                "urlPicture" => $imgUrl,
+                "registrosCreados" => $registrosCount
             ], Response::HTTP_OK);
         } catch (\PDOException $pdoEx) {
             Log::error('PDOException en load', ['message' => $pdoEx->getMessage(), 'trace' => $pdoEx->getTraceAsString()]);
@@ -285,4 +272,31 @@ class ImagenController extends Controller
         }
     }
 
+    /**
+     * Verifica cuántos registros se crearon en PDV_OUT_FLYERS para una imagen específica
+     * 
+     * @param string $nombreImagen Nombre de la imagen a verificar
+     * @return int Número de registros encontrados
+     */
+    private function verificarRegistrosCreados(string $nombreImagen): int
+    {
+        try {
+            $result = DB::select('SELECT COUNT(*) as total FROM PORTAL_COMERCIAL.dbo.PDV_OUT_FLYERS WHERE foto_esquema = ?', [$nombreImagen]);
+            $registrosCount = $result[0]->total ?? 0;
+
+            Log::info('Verificación de registro exitosa', [
+                'imagen' => $nombreImagen,
+                'registros' => $registrosCount
+            ]);
+
+            return $registrosCount;
+        } catch (\Exception $ex) {
+            Log::error('Error verificando registro', [
+                'imagen' => $nombreImagen,
+                'error' => $ex->getMessage()
+            ]);
+
+            return 0;
+        }
+    }
 }
