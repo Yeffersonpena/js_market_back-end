@@ -193,7 +193,7 @@ class ImagenController extends Controller
             $fechaFin      = \Carbon\Carbon::createFromFormat('Y-m-d', $pictureEnd)->format('Y-m-d');
             
             $campanaFlyer = new PDVOutCampanasFlyers();
-            $campanaFlyer->nombre_campaña = $pictureName;
+            $campanaFlyer->nombre_campaña = $nameFilePicture;
             $campanaFlyer->foto_esquema = $nameFilePicture;
             $campanaFlyer->fecha_inicio = $fechaInicio;
             $campanaFlyer->fecha_fin = $fechaFin;
