@@ -25,7 +25,7 @@ class PP2025N0 extends Model
         'VENTAS',
         'MONTO_RECARGADO',
         'ENTIDAD_ACTIVACION',
-        'FECHA_RECARGA',
+        'MIN_FECHA_RECARGA',
         'x_socio',
         'TELEFONO'
     ];
@@ -51,12 +51,12 @@ class PP2025N0 extends Model
     public static function getDatosByPeriodoN($dniVendedor, $periodoN, $fechaCarga)
     {
         return DB::select("
-            SELECT TELEFONO, MONTO_RECARGADO, FECHA_RECARGA, PERIODO_EVALUACION, VENTAS
+            SELECT TELEFONO, MONTO_RECARGADO, MIN_FECHA_RECARGA, PERIODO_EVALUACION, VENTAS
             FROM BD_PLANIFICACION.dbo.PP2025_N0 
             WHERE DNI_VENDEDOR = ? 
             AND PERIODO_EVALUACION = ?
             AND FECHA_CARGA = ?
-            ORDER BY FECHA_RECARGA DESC
+            ORDER BY MIN_FECHA_RECARGA DESC
         ", [$dniVendedor, $periodoN, $fechaCarga]);
     }
 
@@ -93,7 +93,7 @@ class PP2025N0 extends Model
         $telefonosString = implode(',', $telefonos);
         
         return DB::select("
-            SELECT TELEFONO, MONTO_RECARGADO, FECHA_RECARGA, VENTAS
+            SELECT TELEFONO, MONTO_RECARGADO, MIN_FECHA_RECARGA, VENTAS
             FROM BD_PLANIFICACION.dbo.PP2025_N0 
             WHERE TELEFONO IN ($telefonosString)
             AND PERIODO_EVALUACION = ?
