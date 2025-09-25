@@ -95,7 +95,7 @@ class VentasRecargasController extends Controller
                     'telefono' => $telefono->TELEFONO,
                     'fechaVenta' => $telefono->FECHA,
                     'montoRecarga' => (float)$datoRecarga->MONTO_RECARGADO,
-                    'fechaRecarga' => $datoRecarga->FECHA_RECARGA,
+                    'fechaRecarga' => $datoRecarga->MIN_FECHA_RECARGA,
                     'ventas' => $datoRecarga->VENTAS
                 ];
                 $montoTotalRecargas += (float)$datoRecarga->MONTO_RECARGADO;
