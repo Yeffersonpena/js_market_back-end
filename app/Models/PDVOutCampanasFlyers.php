@@ -22,12 +22,18 @@ class PDVOutCampanasFlyers extends Model
         'criterio_filtro',
         'zonales',
         'activa',
-        'fecha_creacion'
+        'fecha_creacion',
+        'todos',
+        'comunicado',
+        'archivo_comunicacion',
+        'fecha_comunicacion'
     ];
 
     // 👇 Quitar casts de fechas para no romper el formato
     protected $casts = [
-        'activa' => 'boolean'
+        'activa' => 'boolean',
+        'todos' => 'boolean',
+        'comunicado' => 'boolean'
     ];
 
     public $timestamps = false;

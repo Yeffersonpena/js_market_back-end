@@ -157,7 +157,8 @@ class ImagenController extends Controller
                 'modo'        => 'required|string',
                 'namePicture' => 'required|string',
                 'group'       => 'nullable|integer|min:0|max:4',
-                'zonal'       => 'nullable|string|max:500' // Cambiado a string para manejar zonas concatenadas
+                'zonal'       => 'nullable|string|max:500', // Cambiado a string para manejar zonas concatenadas
+                'todos'       => 'required|string|in:0,1' // Nuevo campo: "0" o "1"
             ]);
 
             $pictureAnio     = (int) $request->input('año');
@@ -166,22 +167,34 @@ class ImagenController extends Controller
             $pictureEnd      = $request->input('dateEnd');  // 'Y-m-d'
             $pictureType     = (string) $request->input('type');
             $pictureModo     = (string) $request->input('modo');
+            $todos           = (string) $request->input('todos'); // "0" o "1"
 
-            $grupoMapping = [
-                1 => "G1",
-                2 => "G2",
-                3 => "G3",
-                4 => "PDV PREMIUM"
-            ];
-            $grupoNumber = (int) ($request->input('group') ?? 0);
-            $pictureGroup = $grupoMapping[$grupoNumber] ?? '';
-
-            $pictureZonal = $request->input('zonal', '');
+            // Cuando todos = "1", los campos se envían vacíos desde el frontend
+            if ($todos === "1") {
+                $pictureGroup = null; // NULL es mejor que string vacío para BD
+                $pictureZonal = null; // NULL es mejor que string vacío para BD
+                $pictureModo = null;  // NULL es mejor que string vacío para BD
+            } else {
+                // Lógica normal cuando todos = "0"
+                $grupoMapping = [
+                    1 => "G1",
+                    2 => "G2",
+                    3 => "G3",
+                    4 => "PDV PREMIUM"
+                ];
+                $grupoNumber = (int) ($request->input('group') ?? 0);
+                $pictureGroup = $grupoMapping[$grupoNumber] ?? null;
+                $pictureZonal = $request->input('zonal') ?: null; // Convertir string vacío a NULL
+            }
 
             $pictureFile     = $request->file('image');
             $pictureName     = $request->input('namePicture');
             $extenPicture    = $pictureFile->getClientOriginalExtension();
-            $nameFilePicture = $pictureName . '_' . $pictureDateStar . '_' . $pictureEnd . '_' . $pictureType . '_' . $pictureModo . '_' . $pictureGroup . '.' . $extenPicture;
+            
+            // Generar nombre de archivo manejando valores NULL
+            $modoForFile = $pictureModo ?? 'ALL';
+            $groupForFile = $pictureGroup ?? 'ALL';
+            $nameFilePicture = $pictureName . '_' . $pictureDateStar . '_' . $pictureEnd . '_' . $pictureType . '_' . $modoForFile . '_' . $groupForFile . '.' . $extenPicture;
             $request->file('image')->storeAs('img', $nameFilePicture, 'public');
 
             $historyFlyer = new \App\Models\PDVOutImagen();
@@ -202,6 +215,10 @@ class ImagenController extends Controller
             $campanaFlyer->criterio_filtro = $pictureGroup;
             $campanaFlyer->zonales = $pictureZonal;
             $campanaFlyer->activa = 1;
+            $campanaFlyer->todos = (int) $todos; // Convertir "0"/"1" a int
+            $campanaFlyer->comunicado = 0;
+            $campanaFlyer->archivo_comunicacion = null;
+            $campanaFlyer->fecha_comunicacion = null;
             $campanaFlyer->save();
 
             try {
