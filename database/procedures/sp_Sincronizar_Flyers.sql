@@ -36,7 +36,52 @@ BEGIN
         END
     END
 
-    -- Inserta campañas de PDV
+    -- Inserta campañas con todos = 1 (PDV + MULTIMARCA sin validaciones de modo, criterio_filtro y zonales)
+    INSERT INTO PORTAL_COMERCIAL.dbo.PDV_OUT_FLYERS (
+        año,
+        mes,
+        dni_responsable,
+        zonal,
+        foto_esquema,
+        fecha_inicio,
+        fecha_fin,
+        tipoImg
+    )
+    SELECT DISTINCT
+        YEAR(c.fecha_inicio) AS año,
+        MONTH(c.fecha_inicio) AS mes,
+        CASE 
+            WHEN e.DNI_RESPONSABLE IS NOT NULL THEN CAST(e.DNI_RESPONSABLE AS VARCHAR(50))
+            WHEN e.DNI_VENDEDOR IS NOT NULL THEN CAST(e.DNI_VENDEDOR AS VARCHAR(50))
+        END AS dni_responsable,
+        e.ZONAL,
+        c.foto_esquema,
+        c.fecha_inicio,
+        c.fecha_fin,
+        c.tipoImg
+    FROM PORTAL_COMERCIAL.dbo.PDV_OUT_CAMPAÑAS_FLYERS c
+    INNER JOIN PORTAL_COMERCIAL.dbo.PDV_OUT_ENTREGABLE e ON (
+        (e.DNI_RESPONSABLE IS NOT NULL OR e.DNI_VENDEDOR IS NOT NULL)
+        AND e.ESTADO = 'ACTIVO'
+        AND e.AÑO = @año_real
+        AND e.MES = @mes_real
+    )
+    WHERE
+        c.activa = 1
+        AND c.todos = 1
+        AND YEAR(c.fecha_inicio) = @año
+        AND MONTH(c.fecha_inicio) = @mes
+        AND NOT EXISTS (
+            SELECT 1
+            FROM PORTAL_COMERCIAL.dbo.PDV_OUT_FLYERS f
+            WHERE f.dni_responsable = CASE 
+                WHEN e.DNI_RESPONSABLE IS NOT NULL THEN CAST(e.DNI_RESPONSABLE AS VARCHAR(50))
+                WHEN e.DNI_VENDEDOR IS NOT NULL THEN CAST(e.DNI_VENDEDOR AS VARCHAR(50))
+            END
+              AND f.foto_esquema = c.foto_esquema
+        );
+
+    -- Inserta campañas de PDV (lógica original para todos = 0)
     INSERT INTO PORTAL_COMERCIAL.dbo.PDV_OUT_FLYERS (
         año,
         mes,
@@ -78,6 +123,7 @@ BEGIN
     )
     WHERE
         c.activa = 1
+        AND c.todos = 0
         AND YEAR(c.fecha_inicio) = @año
         AND MONTH(c.fecha_inicio) = @mes
         AND NOT EXISTS (
@@ -87,7 +133,7 @@ BEGIN
               AND f.foto_esquema = c.foto_esquema
         );
 
-    -- Inserta campañas MULTIMARCA
+    -- Inserta campañas MULTIMARCA (lógica original para todos = 0)
     INSERT INTO PORTAL_COMERCIAL.dbo.PDV_OUT_FLYERS (
         año,
         mes,
@@ -126,6 +172,7 @@ BEGIN
     )
     WHERE
         c.activa = 1
+        AND c.todos = 0
         AND YEAR(c.fecha_inicio) = @año
         AND MONTH(c.fecha_inicio) = @mes
         AND NOT EXISTS (
