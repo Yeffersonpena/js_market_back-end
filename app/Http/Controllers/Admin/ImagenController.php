@@ -147,35 +147,58 @@ class ImagenController extends Controller
     public function load(Request $request)
     {
         try {
-            $request->validate([
-                'image'       => 'required|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
-                'año'         => 'required|integer|min:2020|max:2030',
-                'mes'         => 'required|integer|min:1|max:12',
-                'dateStar'    => 'required|date_format:Y-m-d',
-                'dateEnd'     => 'required|date_format:Y-m-d|after_or_equal:dateStar',
-                'type'        => 'required|string',
-                'modo'        => 'required|string',
-                'namePicture' => 'required|string',
-                'group'       => 'nullable|integer|min:0|max:4',
-                'zonal'       => 'nullable|string|max:500', // Cambiado a string para manejar zonas concatenadas
-                'todos'       => 'required|string|in:0,1' // Nuevo campo: "0" o "1"
-            ]);
+            // Validación condicional basada en el campo todos
+            $todos = $request->input('todos');
+            
+            if ($todos === "1") {
+                // Cuando todos = 1, los campos type, modo, group y zonal pueden estar vacíos
+                $request->validate([
+                    'image'       => 'required|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
+                    'año'         => 'required|integer|min:2020|max:2030',
+                    'mes'         => 'required|integer|min:1|max:12',
+                    'dateStar'    => 'required|date_format:Y-m-d',
+                    'dateEnd'     => 'required|date_format:Y-m-d|after_or_equal:dateStar',
+                    'type'        => 'nullable|string',
+                    'modo'        => 'nullable|string',
+                    'namePicture' => 'required|string',
+                    'group'       => 'nullable|integer|min:0|max:4',
+                    'zonal'       => 'nullable|string|max:500',
+                    'todos'       => 'required|string|in:0,1'
+                ]);
+            } else {
+                // Cuando todos = 0, validación normal
+                $request->validate([
+                    'image'       => 'required|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
+                    'año'         => 'required|integer|min:2020|max:2030',
+                    'mes'         => 'required|integer|min:1|max:12',
+                    'dateStar'    => 'required|date_format:Y-m-d',
+                    'dateEnd'     => 'required|date_format:Y-m-d|after_or_equal:dateStar',
+                    'type'        => 'required|string',
+                    'modo'        => 'required|string',
+                    'namePicture' => 'required|string',
+                    'group'       => 'nullable|integer|min:0|max:4',
+                    'zonal'       => 'nullable|string|max:500',
+                    'todos'       => 'required|string|in:0,1'
+                ]);
+            }
 
             $pictureAnio     = (int) $request->input('año');
             $pictureMes      = (int) $request->input('mes');
             $pictureDateStar = $request->input('dateStar'); // 'Y-m-d'
             $pictureEnd      = $request->input('dateEnd');  // 'Y-m-d'
-            $pictureType     = (string) $request->input('type');
-            $pictureModo     = (string) $request->input('modo');
             $todos           = (string) $request->input('todos'); // "0" o "1"
 
             // Cuando todos = "1", los campos se envían vacíos desde el frontend
             if ($todos === "1") {
-                $pictureGroup = null; // NULL es mejor que string vacío para BD
-                $pictureZonal = null; // NULL es mejor que string vacío para BD
-                $pictureModo = null;  // NULL es mejor que string vacío para BD
+                $pictureType = "TODOS";   // Más claro que NULL
+                $pictureModo = "TODOS";   // Más claro que NULL
+                $pictureGroup = "TODOS";  // Más claro que NULL
+                $pictureZonal = "TODOS";  // Más claro que NULL
             } else {
                 // Lógica normal cuando todos = "0"
+                $pictureType = (string) $request->input('type');
+                $pictureModo = (string) $request->input('modo');
+                
                 $grupoMapping = [
                     1 => "G1",
                     2 => "G2",
@@ -191,10 +214,8 @@ class ImagenController extends Controller
             $pictureName     = $request->input('namePicture');
             $extenPicture    = $pictureFile->getClientOriginalExtension();
             
-            // Generar nombre de archivo manejando valores NULL
-            $modoForFile = $pictureModo ?? 'ALL';
-            $groupForFile = $pictureGroup ?? 'ALL';
-            $nameFilePicture = $pictureName . '_' . $pictureDateStar . '_' . $pictureEnd . '_' . $pictureType . '_' . $modoForFile . '_' . $groupForFile . '.' . $extenPicture;
+            // Generar nombre de archivo
+            $nameFilePicture = $pictureName . '_' . $pictureDateStar . '_' . $pictureEnd . '_' . $pictureType . '_' . $pictureModo . '_' . $pictureGroup . '.' . $extenPicture;
             $request->file('image')->storeAs('img', $nameFilePicture, 'public');
 
             $historyFlyer = new \App\Models\PDVOutImagen();
