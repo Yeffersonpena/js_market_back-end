@@ -63,10 +63,11 @@ BEGIN
         AND e.ESTADO = 'ACTIVO'
         AND e.AÑO = @año_real
         AND e.MES = @mes_real
-        -- Validar GRUPO exacto
+        -- Validar GRUPO exacto (soporta grupos concatenados como G1,G2,G3)
         AND (
             e.GRUPO = c.criterio_filtro
             OR (',' + c.criterio_filtro + ',' LIKE '%,' + e.GRUPO + ',%')
+            OR (', ' + c.criterio_filtro + ', ' LIKE '%, ' + e.GRUPO + ', %')
         )
         -- Validar zonales
         AND (
