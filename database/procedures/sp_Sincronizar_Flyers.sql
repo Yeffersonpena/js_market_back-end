@@ -68,7 +68,7 @@ BEGIN
     )
     WHERE
         c.activa = 1
-        AND c.todos = 1
+        AND c.modo = 'TODOS'
         AND YEAR(c.fecha_inicio) = @año
         AND MONTH(c.fecha_inicio) = @mes
         AND NOT EXISTS (
@@ -81,7 +81,7 @@ BEGIN
               AND f.foto_esquema = c.foto_esquema
         );
 
-    -- Inserta campañas de PDV (lógica original para todos = 0)
+    -- Inserta campañas de PDV
     INSERT INTO PORTAL_COMERCIAL.dbo.PDV_OUT_FLYERS (
         año,
         mes,
@@ -123,7 +123,6 @@ BEGIN
     )
     WHERE
         c.activa = 1
-        AND c.todos = 0
         AND YEAR(c.fecha_inicio) = @año
         AND MONTH(c.fecha_inicio) = @mes
         AND NOT EXISTS (
@@ -133,7 +132,7 @@ BEGIN
               AND f.foto_esquema = c.foto_esquema
         );
 
-    -- Inserta campañas MULTIMARCA (lógica original para todos = 0)
+    -- Inserta campañas MULTIMARCA
     INSERT INTO PORTAL_COMERCIAL.dbo.PDV_OUT_FLYERS (
         año,
         mes,
@@ -166,13 +165,12 @@ BEGIN
         -- Validar zonales
         AND (
             (c.zonales IS NULL OR c.zonales = '' OR LTRIM(RTRIM(c.zonales)) = '')
-            OR (LOWER(LTRIM(RTRIM(c.zonales))) = 'todas')
+        OR (LOWER(LTRIM(RTRIM(c.zonales))) = 'todas')
             OR (', ' + c.zonales + ', ' LIKE '%, ' + e.ZONAL + ', %')
         )
     )
     WHERE
         c.activa = 1
-        AND c.todos = 0
         AND YEAR(c.fecha_inicio) = @año
         AND MONTH(c.fecha_inicio) = @mes
         AND NOT EXISTS (
