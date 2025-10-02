@@ -1,5 +1,5 @@
 CREATE TABLE PORTAL_COMERCIAL.dbo.BonoEscala (
-	id int NOT NULL,
+	id int IDENTITY(1,1) NOT NULL,
 	tipo_pdv varchar(30) COLLATE Modern_Spanish_CI_AS NOT NULL,
 	zonal_pattern varchar(50) COLLATE Modern_Spanish_CI_AS NULL,
 	fecha_inicio date NOT NULL,
@@ -10,5 +10,7 @@ CREATE TABLE PORTAL_COMERCIAL.dbo.BonoEscala (
 	bono decimal(18,2) NOT NULL,
 	created_at datetime DEFAULT getdate() NOT NULL,
 	updated_at datetime NULL,
-	cantidad_calidad_min int NULL
+	cantidad_calidad_min int NULL,
+	min_dias_ventas int NULL,
+	CONSTRAINT PK__BonoEsca__3213E83F7C14AEE4 PRIMARY KEY (id)
 );
