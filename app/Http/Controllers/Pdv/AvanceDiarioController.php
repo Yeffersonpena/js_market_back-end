@@ -83,7 +83,8 @@ class AvanceDiarioController extends Controller
                     "cctaBancario" => $infoVendedor->{'CCTA BANCARIA MM'},
                     "levelCalidad" => (float)$infoVendedor->{'CALIDAD_CLUSTER'} ?? 0,
                     "infoUpdateCalidad" => $infoVendedor->{'DATE_UPDATE_CALIDAD'} ?? 0,
-                    "typeUser" => property_exists($infoVendedor, 'typeUser') ? (float) $infoVendedor->{'typeUser'} : 0
+                    "typeUser" => property_exists($infoVendedor, 'typeUser') ? (float) $infoVendedor->{'typeUser'} : 0,
+                    "diasVentas" => (int)$infoVendedor->diasVentas ?? 0
                 ];
                 
                 // Agregar metas desde BonoEscala
