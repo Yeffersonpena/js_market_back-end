@@ -13,6 +13,7 @@ BEGIN
     DECLARE @dniResp INT, @nombre_2 NVARCHAR(255), @NOMBRE_RESPONSABLE NVARCHAR(255);
     declare @numeroCTA nvarchar(255), @banco nvarchar(255);
     DECLARE @ZONAL NVARCHAR(255);
+    DECLARE @DIAS_VENTAS INT;
 	SET @dateStart = DATEFROMPARTS(@ANIO, @MES, 1);
 
     select @numeroCTA = numero_cuenta_bancaria ,@banco=entidad_bancaria
@@ -54,6 +55,14 @@ BEGIN
 					SELECT 1 FROM dbo.PDV_OUT_ENTREGABLE WHERE año = @ANIO AND mes = @MES AND DNI_VENDEDOR = dbo.tbl_venta_log.DNI_VENDEDOR AND DNI_RESPONSABLE = @DNI
 				)
 			  );
+
+        -- Calcular días de ventas como responsable
+        SELECT @DIAS_VENTAS = COUNT(DISTINCT CAST(FECHA AS DATE))
+        FROM PORTAL_COMERCIAL.dbo.VentasLog
+        WHERE YEAR(FECHA) = @ANIO AND MONTH(FECHA) = @MES 
+          AND PRODUCT_NAME = 'Prepago'
+          AND DNI_RESPONSABLE = @DNI
+          AND DNI_RESPONSABLE IS NOT NULL;
         SELECT DISTINCT TOP 1
             E.MES,
             E.NOMBRE_RESPONSABLE,
@@ -75,7 +84,8 @@ BEGIN
             --@calidad_1 + @calidad_2 AS CALIDAD_CLUSTER,
 			@calidadAllNow AS CALIDAD_CLUSTER,
 			@dateUpdateCalidad AS DATE_UPDATE_CALIDAD,
-			@ZONAL AS ZONAL
+			@ZONAL AS ZONAL,
+			@DIAS_VENTAS AS diasVentas
         FROM dbo.PDV_OUT_ENTREGABLE E
         WHERE E.DNI_RESPONSABLE = @DNI
         ORDER BY E.MES DESC;
@@ -116,6 +126,13 @@ BEGIN
             SELECT @AVANCE_PREPAGO = SUM(cantidad) FROM dbo.tbl_venta_log
             WHERE DNI_VENDEDOR = @DNI AND YEAR(FECHA) = @ANIO AND MONTH(FECHA) = @MES AND PRODUCT_NAME = 'Prepago'
 
+            -- Calcular días de ventas basándose en el responsable
+            SELECT @DIAS_VENTAS = COUNT(DISTINCT CAST(FECHA AS DATE))
+            FROM PORTAL_COMERCIAL.dbo.VentasLog
+            WHERE YEAR(FECHA) = @ANIO AND MONTH(FECHA) = @MES 
+              AND PRODUCT_NAME = 'Prepago'
+              AND DNI_RESPONSABLE = @DNI
+              AND DNI_RESPONSABLE IS NOT NULL;
 
             SELECT DISTINCT TOP 1
                 E.MES,
@@ -138,7 +155,8 @@ BEGIN
                 --@calidad_1 + @calidad_2 AS CALIDAD_CLUSTER,
                 @calidadAllNow AS CALIDAD_CLUSTER,
                 @dateUpdateCalidad AS DATE_UPDATE_CALIDAD,
-                @ZONAL AS ZONAL
+                @ZONAL AS ZONAL,
+                @DIAS_VENTAS AS diasVentas
             FROM dbo.PDV_OUT_ENTREGABLE E
             WHERE E.DNI_VENDEDOR = @DNI
             ORDER BY E.MES DESC;
@@ -155,6 +173,14 @@ BEGIN
 
             SELECT @AVANCE_PREPAGO = SUM(cantidad) FROM dbo.tbl_venta_log
             WHERE DNI_VENDEDOR = @DNI AND YEAR(FECHA) = @ANIO AND MONTH(FECHA) = @MES AND PRODUCT_NAME = 'Prepago'
+
+            -- Calcular días de ventas basándose en el responsable
+            SELECT @DIAS_VENTAS = COUNT(DISTINCT CAST(FECHA AS DATE))
+            FROM PORTAL_COMERCIAL.dbo.VentasLog
+            WHERE YEAR(FECHA) = @ANIO AND MONTH(FECHA) = @MES 
+              AND PRODUCT_NAME = 'Prepago'
+              AND DNI_RESPONSABLE = @DNI
+              AND DNI_RESPONSABLE IS NOT NULL;
 
             SELECT top 1 @nombre_2=DNI_RESPONSABLE, @NOMBRE_RESPONSABLE=NOMBRE_RESPONSABLE FROM dbo.PDV_OUT_ENTREGABLE WHERE DNI_RESPONSABLE =@dniResp  AND  AÑO= @ANIO AND MES = @MES
             
@@ -183,7 +209,8 @@ BEGIN
                 @calidadAllNow AS CALIDAD_CLUSTER,
                 @dateUpdateCalidad AS DATE_UPDATE_CALIDAD,
                 1 AS typeUser,
-                @ZONAL AS ZONAL
+                @ZONAL AS ZONAL,
+                @DIAS_VENTAS AS diasVentas
             FROM dbo.PDV_OUT_FUNNEL E
             LEFT JOIN paymentOdo pay ON pay.numero_de_documento = E.DNI_VENDEDOR
             WHERE E.DNI_VENDEDOR = @DNI and SOCIO='JS MARKET' AND ACCION LIKE '%pdv%'
