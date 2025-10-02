@@ -190,7 +190,7 @@ class ImagenController extends Controller
 
             // Cuando todos = "1", los campos se envían vacíos desde el frontend
             if ($todos === "1") {
-                $pictureType = "TODOS";   // Más claro que NULL
+                $pictureType = (string) $request->input('type'); // El tipo real (ESQUEMA, ACELERADOR, INFORMACION)
                 $pictureModo = "TODOS";   // Más claro que NULL
                 $pictureGroup = "TODOS";  // Más claro que NULL
                 $pictureZonal = "TODOS";  // Más claro que NULL
