@@ -13,17 +13,9 @@ BEGIN
 	DECLARE @precioPortaPrePago DECIMAL(10,2);
 	DECLARE @precioPortaPostPago DECIMAL(10,2);
 	
-	-- Asignar valores según el periodo
-	IF (@año = 2025 AND @mes >= 9) OR @año > 2025
-	BEGIN
-	    SET @precioPortaPrePago = 40.00;
-	    SET @precioPortaPostPago = 40.00;
-	END
-	ELSE
-	BEGIN
-	    SET @precioPortaPrePago = 20.00;
-	    SET @precioPortaPostPago = 35.00;
-	END
+	-- Obtener precios de portabilidad desde tabla de parámetros
+	SET @precioPortaPrePago = dbo.fn_PrecioPortabilidadMM(@año, @mes, 'PREPAGO');
+	SET @precioPortaPostPago = dbo.fn_PrecioPortabilidadMM(@año, @mes, 'POSTPAGO');
     select @dateCalFunnel=max(FECHA_CARGA) from BD_PLANIFICACION.dbo.PP2025_N0
     where year(FECHA_CARGA)=@año and month(FECHA_CARGA)=@mes; 
 	
