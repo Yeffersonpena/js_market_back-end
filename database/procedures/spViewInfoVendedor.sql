@@ -12,11 +12,17 @@ BEGIN
 	DECLARE @AVANCE_PREPAGO INT;
     DECLARE @dniResp INT, @nombre_2 NVARCHAR(255), @NOMBRE_RESPONSABLE NVARCHAR(255);
     declare @numeroCTA nvarchar(255), @banco nvarchar(255);
+    DECLARE @ZONAL NVARCHAR(255);
 	SET @dateStart = DATEFROMPARTS(@ANIO, @MES, 1);
 
     select @numeroCTA = numero_cuenta_bancaria ,@banco=entidad_bancaria
 	from PORTAL_COMERCIAL.dbo.tblpagos_datos_odoo 
 	where CAST(numero_de_documento  AS BIGINT)=@DNI;
+
+    -- Obtener ZONAL basado en DNI_RESPONSABLE
+    SELECT TOP 1 @ZONAL = ZONAL 
+    FROM dbo.PDV_OUT_ENTREGABLE 
+    WHERE DNI_RESPONSABLE = @DNI AND AÑO = @ANIO AND MES = @MES;
     IF EXISTS (
         SELECT 1 FROM dbo.PDV_OUT_ENTREGABLE WHERE DNI_RESPONSABLE = @DNI AND  AÑO= @ANIO AND MES = @MES
     )
@@ -68,7 +74,8 @@ BEGIN
             @banco as [ENTIDAD BANCARIA MM],
             --@calidad_1 + @calidad_2 AS CALIDAD_CLUSTER,
 			@calidadAllNow AS CALIDAD_CLUSTER,
-			@dateUpdateCalidad AS DATE_UPDATE_CALIDAD
+			@dateUpdateCalidad AS DATE_UPDATE_CALIDAD,
+			@ZONAL AS ZONAL
         FROM dbo.PDV_OUT_ENTREGABLE E
         WHERE E.DNI_RESPONSABLE = @DNI
         ORDER BY E.MES DESC;
@@ -130,7 +137,8 @@ BEGIN
             	@banco as [ENTIDAD BANCARIA MM],
                 --@calidad_1 + @calidad_2 AS CALIDAD_CLUSTER,
                 @calidadAllNow AS CALIDAD_CLUSTER,
-                @dateUpdateCalidad AS DATE_UPDATE_CALIDAD
+                @dateUpdateCalidad AS DATE_UPDATE_CALIDAD,
+                @ZONAL AS ZONAL
             FROM dbo.PDV_OUT_ENTREGABLE E
             WHERE E.DNI_VENDEDOR = @DNI
             ORDER BY E.MES DESC;
@@ -174,7 +182,8 @@ BEGIN
             	@banco as [ENTIDAD BANCARIA MM],
                 @calidadAllNow AS CALIDAD_CLUSTER,
                 @dateUpdateCalidad AS DATE_UPDATE_CALIDAD,
-                1 AS typeUser
+                1 AS typeUser,
+                @ZONAL AS ZONAL
             FROM dbo.PDV_OUT_FUNNEL E
             LEFT JOIN paymentOdo pay ON pay.numero_de_documento = E.DNI_VENDEDOR
             WHERE E.DNI_VENDEDOR = @DNI and SOCIO='JS MARKET' AND ACCION LIKE '%pdv%'
