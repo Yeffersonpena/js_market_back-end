@@ -214,8 +214,10 @@ class ImagenController extends Controller
             $pictureName     = $request->input('namePicture');
             $extenPicture    = $pictureFile->getClientOriginalExtension();
             
-            // Generar nombre de archivo
-            $nameFilePicture = $pictureName . '_' . $pictureDateStar . '_' . $pictureEnd . '_' . $pictureType . '_' . $pictureModo . '_' . $pictureGroup . '.' . $extenPicture;
+            // Generar nombre de archivo con hash único para evitar duplicados
+            $baseName = $pictureName . '_' . $pictureDateStar . '_' . $pictureEnd . '_' . $pictureType . '_' . $pictureModo . '_' . $pictureGroup;
+            $uniqueHash = substr(md5(uniqid(rand(), true)), 0, 8); // Hash de 8 caracteres
+            $nameFilePicture = $baseName . '_' . $uniqueHash . '.' . $extenPicture;
             $request->file('image')->storeAs('img', $nameFilePicture, 'public');
 
             $historyFlyer = new \App\Models\PDVOutImagen();
