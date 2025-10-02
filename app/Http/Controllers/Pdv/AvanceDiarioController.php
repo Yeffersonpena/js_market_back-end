@@ -72,6 +72,7 @@ class AvanceDiarioController extends Controller
                     "vendedor" => $infoVendedor->NOMBRE_VENDEDOR1,
                     "celularVendedor" => $infoVendedor->CELULAR_VENDEDOR != 0 ? $infoVendedor->CELULAR_VENDEDOR : "",
                     "canal" => $infoVendedor->ACCION,
+                    "zonal" => $infoVendedor->ZONAL,
                     "cluster" => $infoVendedor->CLUSTER_PDV_REGULAR,
                     "cuotaPrepago" => (float)$infoVendedor->CUOTA_PREPAGO,
                     "avancePrepago" => (float)$infoVendedor->{'AVANCE PREPAGO'},
@@ -85,8 +86,13 @@ class AvanceDiarioController extends Controller
                     "typeUser" => property_exists($infoVendedor, 'typeUser') ? (float) $infoVendedor->{'typeUser'} : 0
                 ];
                 
-                // Agregar metas manuales
-                $metas = $this->getMetasManuales($anio, $mes, $infoVendedor->ZONAL ?? '');
+                // Agregar metas desde BonoEscala
+                $metas = $this->getMetasFromBonoEscala(
+                    $anio, 
+                    $mes, 
+                    $infoVendedor['zonal'] ?? '', 
+                    $infoVendedor['canal'] ?? ''
+                );
                 $infoVendedor['metaPre'] = $metas['pre'];
                 $infoVendedor['metaCalidad'] = $metas['calidad'];
                 
@@ -97,6 +103,41 @@ class AvanceDiarioController extends Controller
         } catch (\Exception $ex) {
             return response()->json(["status" => Response::HTTP_BAD_REQUEST, "message" => $ex->getMessage()], Response::HTTP_BAD_REQUEST);
         }
+    }
+
+    private function getMetasFromBonoEscala(int $anio, int $mes, string $zonal, string $tipoPdv): array
+    {
+        $fechaPeriodo = Carbon::create($anio, $mes, 1);
+        
+        // Mapear zona: solo LIMA SUR es específico, todo lo demás es REGIONES
+        $zonalPattern = ($zonal === 'LIMA SUR') ? '%LIMA SUR%' : 'REGIONES';
+        
+        // Para PDV REGULAR usar 'TODAS' como zona
+        if ($tipoPdv === 'PDV REGULAR') {
+            $zonalPattern = 'TODAS';
+        }
+        
+        $metas = DB::table('BonoEscala')
+            ->where('tipo_pdv', $tipoPdv)
+            ->where('fecha_inicio', '<=', $fechaPeriodo)
+            ->where(function($query) use ($fechaPeriodo) {
+                $query->whereNull('fecha_fin')
+                      ->orWhere('fecha_fin', '>=', $fechaPeriodo);
+            })
+            ->where(function($query) use ($zonalPattern) {
+                if ($zonalPattern === '%LIMA SUR%') {
+                    $query->where('zonal_pattern', 'LIKE', $zonalPattern);
+                } else {
+                    $query->where('zonal_pattern', $zonalPattern);
+                }
+            })
+            ->orderBy('rango_min', 'asc') // Tomar el rango mínimo como meta
+            ->first();
+        
+        return $metas ? [
+            'pre' => $metas->rango_min,
+            'calidad' => $metas->cantidad_calidad_min ?? 0
+        ] : ['pre' => 0, 'calidad' => 0];
     }
 
     private function getMetasManuales(int $anio, int $mes, string $zonal): array
