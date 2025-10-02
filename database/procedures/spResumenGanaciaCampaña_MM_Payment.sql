@@ -29,21 +29,13 @@ BEGIN
 	
 	SET @dateStart = DATEFROMPARTS(@año, @mes, 1);
 	
-	/*COMENTADO POR JC 20-08 select @ventaLog=count(*) from dbo.tbl_ventas_prepago_MM 
-	where dni_vendedor=@dni AND YEAR(fecha)=@año and month(fecha)=@mes;*/
-	
 	select @ventaLog= count(DISTINCT FECHA)  from PORTAL_COMERCIAL.dbo.PDV_OUT_FUNNEL where DNI_VENDEDOR =@dni
 	and year(fecha)=@año and month(fecha)=@mes and PRODUCTO ='PREPAGO';
 	
 	select @dateUpdateCalidad=valor from dbo.parametros where tipo=4;
 	select @recargaTotal =sum(RECARGA_TOTAL) FROM dbo.PDV_OUT_FUNNEL_RESUMEN_MM WHERE DNI_VENDEDOR = @dni and ANIO=@año and MES=@mes 
-	SET @precioCalidad = CASE 
-		WHEN @mes BETWEEN 1 AND 6 THEN 10
-		WHEN @mes = 7 THEN 8
-		when @mes=8 then 5
-		when @mes=9 then dbo.fn_UnitarioCalidadMM(@dni,@dateStart,@dateUpdateCalidad)
-		ELSE 0
-	END;
+	-- Usar nueva función que maneja todos los casos desde tabla de parámetros
+	SET @precioCalidad = dbo.fn_UnitarioCalidadMM(@dni, @dateStart, @dateUpdateCalidad);
     -- 
 	IF @mes = 6
         begin
@@ -88,21 +80,6 @@ BEGIN
             AND FECHA_CARGA = @dateCalFunnel
         GROUP BY PERIODO_EVALUACION
     ),
-    /*funnel AS (
-        SELECT 
-            f.DNI_VENDEDOR,
-            ISNULL(SUM(CASE WHEN f.PRODUCTOORIGEN = 'PREPAGO' AND f.PRODUCTO_WEB = 'PORT M4 NO DIR' THEN 1.00 ELSE 0.00 END), 0) AS cantidadPortaPostOPre,
-            ISNULL(MAX(CASE WHEN f.PRODUCTOORIGEN = 'PREPAGO' AND f.PRODUCTO_WEB = 'PORT M4 NO DIR' THEN 20.00 ELSE 0.00 END), 0) AS precioPortaPostOPre,
-            ISNULL(SUM(CASE WHEN f.PRODUCTOORIGEN = 'POSTPAGO' AND f.PRODUCTO_WEB = 'PORT M4 NO DIR' THEN 1.00 ELSE 0.00 END), 0) AS cantidadPortaPostOPost,
-            ISNULL(MAX(CASE WHEN f.PRODUCTOORIGEN = 'POSTPAGO' AND f.PRODUCTO_WEB = 'PORT M4 NO DIR' THEN 35.00 ELSE 0.00 END), 0) AS precioPortaPostOPost,
-            ISNULL(SUM(CASE WHEN f.PRODUCTOORIGEN = 'PREPAGO' AND f.PRODUCTO_WEB = 'PORT M4 NO DIR' THEN 20.00 ELSE 0.00 END), 0) AS bonoPortaPostOPre,
-            ISNULL(SUM(CASE WHEN f.PRODUCTOORIGEN = 'POSTPAGO' AND f.PRODUCTO_WEB = 'PORT M4 NO DIR' THEN 35.00 ELSE 0.00 END), 0) AS bonoPortaPostOPost
-        FROM dbo.PDV_OUT_FUNNEL f 
-        WHERE YEAR(f.fecha) = @año 
-            AND MONTH(f.fecha) = @mes 
-            AND f.DNI_VENDEDOR = @dni
-        GROUP BY f.DNI_VENDEDOR
-    ),*/
     funnel AS (
 	    SELECT 
 	        f.DNI_VENDEDOR,
@@ -118,7 +95,6 @@ BEGIN
 	        AND f.DNI_VENDEDOR = @dni
 	    GROUP BY f.DNI_VENDEDOR
 	),
-    -- CTE para generar filas base independientemente de los datos
     base_data AS (
         SELECT 
             @dni AS dni_vendedor,
