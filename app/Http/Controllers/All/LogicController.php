@@ -88,7 +88,13 @@ class LogicController extends Controller
     public function getFlyers($dni, $anio, $mes)
     {
         try {
-            $existeAvance = VI_FLYERS::where('DNI_Responsable', $dni)->exists();
+            $existeAvance = VI_FLYERS::where('DNI_Responsable', $dni)
+                ->whereRaw('? BETWEEN MONTH(fecha_inicio) AND MONTH(fecha_fin)', [$mes])
+                ->where(function($query) use ($anio) {
+                    $query->whereYear('fecha_inicio', $anio)
+                          ->orWhereYear('fecha_fin', $anio);
+                })
+                ->exists();
             if(!$existeAvance){
                 // Primero: buscar por año y mes específicos
                 $getDniResp = DB::select("SELECT TOP 1 DNI_RESPONSABLE FROM dbo.PDV_OUT_FUNNEL WHERE DNI_VENDEDOR = ? AND SOCIO = 'JS MARKET' AND year(fecha) = ? AND month(fecha) = ?", [$dni, $anio, $mes]);
