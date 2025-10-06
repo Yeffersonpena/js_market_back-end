@@ -60,24 +60,34 @@ BEGIN
         -- 
         DELETE FROM dbo.tbl_funnel_resumen_post WHERE year(FECHA)=@año AND MONTH(FECHA)=@mes;
 
+        -- Pre-calcular datos de entregables para optimizar rendimiento
+        WITH EntregablesVendedores AS (
+            SELECT DISTINCT 
+                DNI_VENDEDOR,
+                DNI_RESPONSABLE,
+                CASE 
+                    WHEN DNI_RESPONSABLE IS NOT NULL THEN 1 
+                    ELSE 0 
+                END AS TIENE_ENTREGABLE_CON_RESPONSABLE
+            FROM dbo.PDV_OUT_ENTREGABLE 
+            WHERE año = @año AND mes = @MES
+        )
+
         INSERT INTO dbo.tbl_funnel_resumen_post (DNI_RESPONSABLE, FECHA, ALTA_POSTPAGO, PORTA_POST_O_PRE, PORTA_POST_O_POS)
         SELECT 
-            DNI_RESPONSABLE,
-            CONVERT(DATE, FECHA) AS FECHA,
+            f.DNI_RESPONSABLE,
+            CONVERT(DATE, f.FECHA) AS FECHA,
 			--CONVERT(DATE, DATEADD(DAY, -1, FECHA)) AS FECHA,
-            SUM(CASE WHEN PRODUCTO_WEB = 'POSTPAGO M4' THEN 1 ELSE 0 END) AS ALTA_POSTPAGO,
-            SUM(CASE WHEN PRODUCTOORIGEN = 'PREPAGO' AND PRODUCTO_WEB = 'PORT M4 NO DIR' THEN 1 ELSE 0 END) AS PORTA_POST_O_PRE,
-            SUM(CASE WHEN PRODUCTOORIGEN = 'POSTPAGO' AND PRODUCTO_WEB = 'PORT M4 NO DIR' THEN 1 ELSE 0 END) AS PORTA_POST_O_POS
-        FROM dbo.PDV_OUT_FUNNEL where DNI_RESPONSABLE is not null and year(FECHA)=@año AND MONTH(FECHA)=@mes
-		AND (
-			NOT EXISTS (
-					SELECT 1 FROM dbo.PDV_OUT_ENTREGABLE WHERE año = @año AND mes = @MES AND DNI_VENDEDOR = dbo.PDV_OUT_FUNNEL.DNI_VENDEDOR
-				)
-				OR EXISTS (
-					SELECT 1 FROM dbo.PDV_OUT_ENTREGABLE WHERE año = @año AND mes = @MES AND DNI_VENDEDOR = dbo.PDV_OUT_FUNNEL.DNI_VENDEDOR AND DNI_RESPONSABLE = dbo.PDV_OUT_FUNNEL.DNI_RESPONSABLE 
-				)
-			  )
-        GROUP BY DNI_RESPONSABLE, CONVERT(DATE, FECHA);
+            SUM(CASE WHEN f.PRODUCTO_WEB = 'POSTPAGO M4' THEN 1 ELSE 0 END) AS ALTA_POSTPAGO,
+            SUM(CASE WHEN f.PRODUCTOORIGEN = 'PREPAGO' AND f.PRODUCTO_WEB = 'PORT M4 NO DIR' THEN 1 ELSE 0 END) AS PORTA_POST_O_PRE,
+            SUM(CASE WHEN f.PRODUCTOORIGEN = 'POSTPAGO' AND f.PRODUCTO_WEB = 'PORT M4 NO DIR' THEN 1 ELSE 0 END) AS PORTA_POST_O_POS
+        FROM dbo.PDV_OUT_FUNNEL f
+        LEFT JOIN EntregablesVendedores ev ON ev.DNI_VENDEDOR = f.DNI_VENDEDOR
+        WHERE f.DNI_RESPONSABLE IS NOT NULL 
+          AND year(f.FECHA) = @año 
+          AND MONTH(f.FECHA) = @mes
+          AND (ev.DNI_VENDEDOR IS NULL OR ev.TIENE_ENTREGABLE_CON_RESPONSABLE = 1)
+        GROUP BY f.DNI_RESPONSABLE, CONVERT(DATE, f.FECHA);
 ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
         /**/
