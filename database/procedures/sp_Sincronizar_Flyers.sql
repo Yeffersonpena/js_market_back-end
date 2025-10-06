@@ -51,8 +51,8 @@ BEGIN
         YEAR(c.fecha_inicio) AS año,
         MONTH(c.fecha_inicio) AS mes,
         CASE 
-            WHEN e.DNI_RESPONSABLE IS NOT NULL THEN CAST(e.DNI_RESPONSABLE AS VARCHAR(50))
-            WHEN e.DNI_VENDEDOR IS NOT NULL THEN CAST(e.DNI_VENDEDOR AS VARCHAR(50))
+            WHEN e.ACCION_1 = 'MULTIMARCA' THEN CAST(e.DNI_VENDEDOR AS VARCHAR(50))
+            ELSE CAST(e.DNI_RESPONSABLE AS VARCHAR(50))
         END AS dni_responsable,
         e.ZONAL,
         c.foto_esquema,
@@ -75,8 +75,8 @@ BEGIN
             SELECT 1
             FROM PORTAL_COMERCIAL.dbo.PDV_OUT_FLYERS f
             WHERE f.dni_responsable = CASE 
-                WHEN e.DNI_RESPONSABLE IS NOT NULL THEN CAST(e.DNI_RESPONSABLE AS VARCHAR(50))
-                WHEN e.DNI_VENDEDOR IS NOT NULL THEN CAST(e.DNI_VENDEDOR AS VARCHAR(50))
+                WHEN e.ACCION_1 = 'MULTIMARCA' THEN CAST(e.DNI_VENDEDOR AS VARCHAR(50))
+                ELSE CAST(e.DNI_RESPONSABLE AS VARCHAR(50))
             END
               AND f.foto_esquema = c.foto_esquema
         );
