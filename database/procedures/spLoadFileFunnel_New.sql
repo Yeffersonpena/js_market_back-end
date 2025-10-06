@@ -111,27 +111,34 @@ BEGIN
         
 		DELETE FROM dbo.PDV_OUT_FUNNEL_RESUMEN_MM WHERE ANIO = @año AND MES = @mes AND FECHA BETWEEN @fechaInicio AND @fechaFin;
 
+		-- Pre-calcular recargas quincenales por vendedor para optimizar rendimiento
+		WITH RecargasQuincenales AS (
+			SELECT 
+				DNI_VENDEDOR,
+				COUNT(CASE WHEN [RECARGAS>5] = 1 AND PRODUCTO_WEB IN ('PREPAGO M7','PORT PREPAGO M7') THEN FECHA END) AS RECARGA_QUINCENAL_TOTAL
+			FROM dbo.PDV_OUT_FUNNEL 
+			WHERE FECHA BETWEEN @fechaInicio AND @fechaFin
+			  AND DNI_VENDEDOR IS NOT NULL
+			GROUP BY DNI_VENDEDOR
+		)
+
 		INSERT INTO dbo.PDV_OUT_FUNNEL_RESUMEN_MM (DNI_RESPONSABLE, DNI_VENDEDOR, ANIO, MES, ULTIMA_FECHA, RECARGA_TOTAL, RECARGA_QUINCENAL_TOTAL, FECHA)
 		SELECT 
-			DNI_RESPONSABLE,
-			DNI_VENDEDOR,
-			YEAR(FECHA) AS ANIO,
-			MONTH(FECHA) AS MES,
+			f.DNI_RESPONSABLE,
+			f.DNI_VENDEDOR,
+			YEAR(f.FECHA) AS ANIO,
+			MONTH(f.FECHA) AS MES,
 			@fechaFin AS ULTIMA_FECHA,  
-			COUNT(CASE WHEN RECARGA_SI_NO =1 and [RECARGAS>5] = 1 AND PRODUCTO_WEB IN ('PREPAGO M7','PORT PREPAGO M7') THEN FECHA END) AS RECARGA_TOTAL,
-			(
-				SELECT COUNT(CASE WHEN [RECARGAS>5] = 1 AND PRODUCTO_WEB IN ('PREPAGO M7','PORT PREPAGO M7') THEN FECHA END)
-				FROM dbo.PDV_OUT_FUNNEL AS sub 
-				WHERE sub.DNI_VENDEDOR = PDV_OUT_FUNNEL.DNI_VENDEDOR 
-				  AND sub.FECHA BETWEEN @fechaInicio AND @fechaFin
-			) AS RECARGA_QUINCENAL_TOTAL,
-			FECHA
-		FROM dbo.PDV_OUT_FUNNEL
-		WHERE YEAR(FECHA) = @año 
-		  AND MONTH(FECHA) = @mes
-		  AND FECHA BETWEEN @fechaInicio AND @fechaFin
-		  AND DNI_VENDEDOR IS NOT NULL
-		GROUP BY DNI_RESPONSABLE, DNI_VENDEDOR, YEAR(FECHA), MONTH(FECHA), FECHA;
+			COUNT(CASE WHEN f.RECARGA_SI_NO = 1 AND f.[RECARGAS>5] = 1 AND f.PRODUCTO_WEB IN ('PREPAGO M7','PORT PREPAGO M7') THEN f.FECHA END) AS RECARGA_TOTAL,
+			ISNULL(rq.RECARGA_QUINCENAL_TOTAL, 0) AS RECARGA_QUINCENAL_TOTAL,
+			f.FECHA
+		FROM dbo.PDV_OUT_FUNNEL f
+		LEFT JOIN RecargasQuincenales rq ON rq.DNI_VENDEDOR = f.DNI_VENDEDOR
+		WHERE YEAR(f.FECHA) = @año 
+		  AND MONTH(f.FECHA) = @mes
+		  AND f.FECHA BETWEEN @fechaInicio AND @fechaFin
+		  AND f.DNI_VENDEDOR IS NOT NULL
+		GROUP BY f.DNI_RESPONSABLE, f.DNI_VENDEDOR, YEAR(f.FECHA), MONTH(f.FECHA), f.FECHA, rq.RECARGA_QUINCENAL_TOTAL;
 ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
         DELETE FROM dbo.tbl_funnel_resumen_post_MM WHERE year(FECHA)=@año AND MONTH(FECHA)=@mes
