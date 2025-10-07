@@ -128,8 +128,8 @@ class AvanceDiarioController extends Controller
             $zonalPattern = 'TODAS';
         }
         
-        // Buscar la meta correcta según el ratio de recarga
-        // Ejemplo: Si vendedor tiene ratio 40%, busca meta con ratio_min <= 40%
+        // Buscar las metas base (sin filtro de ratio)
+        // Las metas son fijas según período y tipo de PDV
         $metas = DB::table('BonoEscala')
             ->where('tipo_pdv', $tipoPdv)
             ->where('fecha_inicio', '<=', $fechaPeriodo)
@@ -144,32 +144,9 @@ class AvanceDiarioController extends Controller
                     $query->where('zonal_pattern', $zonalPattern);
                 }
             })
-            ->where('ratio_min', '<=', $ratioRecarga) // Solo considerar ratios que el vendedor puede alcanzar
             ->orderBy('rango_min', 'asc') // Tomar el rango mínimo como meta
-            ->orderBy('ratio_min', 'desc') // Priorizar el ratio más alto que puede alcanzar
+            ->orderBy('ratio_min', 'asc') // Tomar el ratio más bajo disponible
             ->first();
-        
-        // Si no encuentra ninguna meta con el ratio actual, buscar la meta base (ratio más bajo)
-        // Esto es para mostrar las metas reales aunque el vendedor no las esté cumpliendo
-        if (!$metas) {
-            $metas = DB::table('BonoEscala')
-                ->where('tipo_pdv', $tipoPdv)
-                ->where('fecha_inicio', '<=', $fechaPeriodo)
-                ->where(function($query) use ($fechaPeriodo) {
-                    $query->whereNull('fecha_fin')
-                          ->orWhere('fecha_fin', '>=', $fechaPeriodo);
-                })
-                ->where(function($query) use ($zonalPattern) {
-                    if ($zonalPattern === '%LIMA SUR%') {
-                        $query->where('zonal_pattern', 'LIKE', $zonalPattern);
-                    } else {
-                        $query->where('zonal_pattern', $zonalPattern);
-                    }
-                })
-                ->orderBy('rango_min', 'asc') // Tomar el rango mínimo como meta
-                ->orderBy('ratio_min', 'asc') // Tomar el ratio más bajo disponible
-                ->first();
-        }
         
         if (!$metas) {
             return ['pre' => 0, 'calidad' => 0, 'ratio_min' => 0, 'bono' => 0];
