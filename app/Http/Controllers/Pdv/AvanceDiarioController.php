@@ -129,6 +129,7 @@ class AvanceDiarioController extends Controller
         }
         
         // Buscar la meta correcta según el ratio de recarga
+        // Ejemplo: Si vendedor tiene ratio 40%, busca meta con ratio_min <= 40%
         $metas = DB::table('BonoEscala')
             ->where('tipo_pdv', $tipoPdv)
             ->where('fecha_inicio', '<=', $fechaPeriodo)
@@ -167,6 +168,12 @@ class AvanceDiarioController extends Controller
                 ->orderBy('rango_min', 'asc') // Tomar el rango mínimo como meta
                 ->orderBy('ratio_min', 'asc') // Tomar el ratio más bajo disponible
                 ->first();
+        }
+        
+        // Si aún no encuentra meta, significa que el vendedor no cumple el ratio mínimo
+        // Para PDV REGULAR en octubre, el ratio mínimo es 30%
+        if (!$metas) {
+            return ['pre' => 0, 'calidad' => 0, 'ratio_min' => 0, 'bono' => 0];
         }
         
         return $metas ? [
