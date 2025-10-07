@@ -106,7 +106,6 @@ class AvanceDiarioController extends Controller
                 $infoVendedor['ratioRecarga'] = $ratioRecarga;
                 $infoVendedor['ratioMinMeta'] = $metas['ratio_min'];
                 $infoVendedor['bonoUnitario'] = $metas['bono'];
-                $infoVendedor['cumpleMeta'] = $metas['cumple_meta'];
                 
                 return response()->json(["status" => Response::HTTP_OK, "message" => "Información", "data" => $infoVendedor], Response::HTTP_OK);
             } else {
@@ -173,18 +172,14 @@ class AvanceDiarioController extends Controller
         }
         
         if (!$metas) {
-            return ['pre' => 0, 'calidad' => 0, 'ratio_min' => 0, 'bono' => 0, 'cumple_meta' => false];
+            return ['pre' => 0, 'calidad' => 0, 'ratio_min' => 0, 'bono' => 0];
         }
-        
-        // Determinar si el vendedor cumple la meta según su ratio actual
-        $cumpleMeta = $ratioRecarga >= $metas->ratio_min;
         
         return [
             'pre' => $metas->rango_min,
             'calidad' => $metas->cantidad_calidad_min ?? 0,
             'ratio_min' => $metas->ratio_min,
-            'bono' => $metas->bono,
-            'cumple_meta' => $cumpleMeta
+            'bono' => $metas->bono
         ];
     }
 
