@@ -149,14 +149,28 @@ class AvanceDiarioController extends Controller
             ->first();
         
         if (!$metas) {
-            return ['pre' => 0, 'calidad' => 0, 'ratio_min' => 0, 'bono' => 0];
+            return [
+                'pre' => 0, 
+                'calidad' => 0, 
+                'ratio_min' => 0, 
+                'bono' => 0,
+                'debug_tipoPdv' => $tipoPdv,
+                'debug_zonalPattern' => $zonalPattern,
+                'debug_fechaPeriodo' => $fechaPeriodo->toDateString(),
+                'debug_ratioRecarga' => $ratioRecarga
+            ];
         }
         
         return [
             'pre' => $metas->rango_min,
             'calidad' => $metas->cantidad_calidad_min ?? 0,
             'ratio_min' => $metas->ratio_min,
-            'bono' => $metas->bono
+            'bono' => $metas->bono,
+            'debug_tipoPdv' => $tipoPdv,
+            'debug_zonalPattern' => $zonalPattern,
+            'debug_fechaPeriodo' => $fechaPeriodo->toDateString(),
+            'debug_ratioRecarga' => $ratioRecarga,
+            'debug_metas_found' => true
         ];
     }
 
