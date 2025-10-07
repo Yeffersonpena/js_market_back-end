@@ -93,12 +93,18 @@ class AvanceDiarioController extends Controller
                     $ratioRecarga = round(($infoVendedor['recargasTotales'] / $infoVendedor['avancePrepago']) * 100, 0);
                 }
                 
+                // Mapear levelPdv al tipo correcto para BonoEscala
+                $tipoPdv = $infoVendedor['levelPdv'] ?? '';
+                if (str_contains($tipoPdv, 'PDV PREMIUM')) {
+                    $tipoPdv = 'PDV PREMIUM';
+                }
+                
                 // Agregar metas desde BonoEscala
                 $metas = $this->getMetasFromBonoEscala(
                     $anio, 
                     $mes, 
                     $infoVendedor['zonal'] ?? '', 
-                    $infoVendedor['levelPdv'] ?? '',
+                    $tipoPdv,
                     $ratioRecarga
                 );
                 $infoVendedor['metaPre'] = $metas['pre'];
