@@ -135,7 +135,7 @@ SELECT
     -- Columnas de totales y cálculos finales
     m.TOTAL_VENTAS, m.TOTAL_RECARGAS, m.TOTAL_VCALIDAD,
     COALESCE((CAST(m.TOTAL_RECARGAS AS DECIMAL(10,2)) * 100) / NULLIF(m.TOTAL_VENTAS, 0), 0) AS RATIO_EQUIPO,
-    dbo.fn_CalcularBonoUnitario(
+    dbo.fn_CalcularBonoUnitario_PDV(
         'PDV REGULAR',
         m.ZONAL,
         m.TOTAL_VENTAS,
