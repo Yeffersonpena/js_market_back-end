@@ -87,15 +87,25 @@ class AvanceDiarioController extends Controller
                     "diasVentas" => (int)$infoVendedor->diasVentas ?? 0
                 ];
                 
+                // Calcular ratio de recarga para determinar meta correcta
+                $ratioRecarga = 0;
+                if ($infoVendedor['avancePrepago'] > 0) {
+                    $ratioRecarga = round(($infoVendedor['recargasTotales'] / $infoVendedor['avancePrepago']) * 100, 0);
+                }
+                
                 // Agregar metas desde BonoEscala
                 $metas = $this->getMetasFromBonoEscala(
                     $anio, 
                     $mes, 
                     $infoVendedor['zonal'] ?? '', 
-                    $infoVendedor['canal'] ?? ''
+                    $infoVendedor['canal'] ?? '',
+                    $ratioRecarga
                 );
                 $infoVendedor['metaPre'] = $metas['pre'];
                 $infoVendedor['metaCalidad'] = $metas['calidad'];
+                $infoVendedor['ratioRecarga'] = $ratioRecarga;
+                $infoVendedor['ratioMinMeta'] = $metas['ratio_min'];
+                $infoVendedor['bonoUnitario'] = $metas['bono'];
                 
                 return response()->json(["status" => Response::HTTP_OK, "message" => "Información", "data" => $infoVendedor], Response::HTTP_OK);
             } else {
@@ -106,7 +116,7 @@ class AvanceDiarioController extends Controller
         }
     }
 
-    private function getMetasFromBonoEscala(int $anio, int $mes, string $zonal, string $tipoPdv): array
+    private function getMetasFromBonoEscala(int $anio, int $mes, string $zonal, string $tipoPdv, float $ratioRecarga = 0): array
     {
         $fechaPeriodo = Carbon::create($anio, $mes, 1);
         
@@ -118,6 +128,7 @@ class AvanceDiarioController extends Controller
             $zonalPattern = 'TODAS';
         }
         
+        // Buscar la meta correcta según el ratio de recarga
         $metas = DB::table('BonoEscala')
             ->where('tipo_pdv', $tipoPdv)
             ->where('fecha_inicio', '<=', $fechaPeriodo)
@@ -132,13 +143,38 @@ class AvanceDiarioController extends Controller
                     $query->where('zonal_pattern', $zonalPattern);
                 }
             })
+            ->where('ratio_min', '<=', $ratioRecarga) // Solo considerar ratios que el vendedor puede alcanzar
             ->orderBy('rango_min', 'asc') // Tomar el rango mínimo como meta
+            ->orderBy('ratio_min', 'desc') // Priorizar el ratio más alto que puede alcanzar
             ->first();
+        
+        // Si no encuentra ninguna meta con el ratio actual, buscar la meta base (ratio más bajo)
+        if (!$metas) {
+            $metas = DB::table('BonoEscala')
+                ->where('tipo_pdv', $tipoPdv)
+                ->where('fecha_inicio', '<=', $fechaPeriodo)
+                ->where(function($query) use ($fechaPeriodo) {
+                    $query->whereNull('fecha_fin')
+                          ->orWhere('fecha_fin', '>=', $fechaPeriodo);
+                })
+                ->where(function($query) use ($zonalPattern) {
+                    if ($zonalPattern === '%LIMA SUR%') {
+                        $query->where('zonal_pattern', 'LIKE', $zonalPattern);
+                    } else {
+                        $query->where('zonal_pattern', $zonalPattern);
+                    }
+                })
+                ->orderBy('rango_min', 'asc') // Tomar el rango mínimo como meta
+                ->orderBy('ratio_min', 'asc') // Tomar el ratio más bajo disponible
+                ->first();
+        }
         
         return $metas ? [
             'pre' => $metas->rango_min,
-            'calidad' => $metas->cantidad_calidad_min ?? 0
-        ] : ['pre' => 0, 'calidad' => 0];
+            'calidad' => $metas->cantidad_calidad_min ?? 0,
+            'ratio_min' => $metas->ratio_min,
+            'bono' => $metas->bono
+        ] : ['pre' => 0, 'calidad' => 0, 'ratio_min' => 0, 'bono' => 0];
     }
 
     private function getMetasManuales(int $anio, int $mes, string $zonal): array
