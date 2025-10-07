@@ -107,13 +107,6 @@ class AvanceDiarioController extends Controller
                 $infoVendedor['ratioMin_Meta'] = $metas['ratio_min'];
                 $infoVendedor['bonoUnitario'] = $metas['bono'];
                 
-                // DEBUG TEMPORAL
-                $infoVendedor['debug_tipoPdv'] = $infoVendedor['levelPdv'] ?? '';
-                $infoVendedor['debug_zonal'] = $infoVendedor['zonal'] ?? '';
-                $infoVendedor['debug_anio'] = $anio;
-                $infoVendedor['debug_mes'] = $mes;
-                $infoVendedor['debug_ratioRecarga'] = $ratioRecarga;
-                $infoVendedor['debug_metas_array'] = $metas;
                 
                 return response()->json(["status" => Response::HTTP_OK, "message" => "Información", "data" => $infoVendedor], Response::HTTP_OK);
             } else {
@@ -157,28 +150,14 @@ class AvanceDiarioController extends Controller
             ->first();
         
         if (!$metas) {
-            return [
-                'pre' => 0, 
-                'calidad' => 0, 
-                'ratio_min' => 0, 
-                'bono' => 0,
-                'debug_tipoPdv' => $tipoPdv,
-                'debug_zonalPattern' => $zonalPattern,
-                'debug_fechaPeriodo' => $fechaPeriodo->toDateString(),
-                'debug_ratioRecarga' => $ratioRecarga
-            ];
+            return ['pre' => 0, 'calidad' => 0, 'ratio_min' => 0, 'bono' => 0];
         }
         
         return [
             'pre' => $metas->rango_min,
             'calidad' => $metas->cantidad_calidad_min ?? 0,
             'ratio_min' => $metas->ratio_min,
-            'bono' => $metas->bono,
-            'debug_tipoPdv' => $tipoPdv,
-            'debug_zonalPattern' => $zonalPattern,
-            'debug_fechaPeriodo' => $fechaPeriodo->toDateString(),
-            'debug_ratioRecarga' => $ratioRecarga,
-            'debug_metas_found' => true
+            'bono' => $metas->bono
         ];
     }
 
