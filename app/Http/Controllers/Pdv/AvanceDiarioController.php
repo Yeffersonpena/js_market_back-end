@@ -107,6 +107,14 @@ class AvanceDiarioController extends Controller
                 $infoVendedor['ratioMin_Meta'] = $metas['ratio_min'];
                 $infoVendedor['bonoUnitario'] = $metas['bono'];
                 
+                // DEBUG TEMPORAL
+                $infoVendedor['debug_tipoPdv'] = $infoVendedor['canal'] ?? '';
+                $infoVendedor['debug_zonal'] = $infoVendedor['zonal'] ?? '';
+                $infoVendedor['debug_anio'] = $anio;
+                $infoVendedor['debug_mes'] = $mes;
+                $infoVendedor['debug_ratioRecarga'] = $ratioRecarga;
+                $infoVendedor['debug_metas_array'] = $metas;
+                
                 return response()->json(["status" => Response::HTTP_OK, "message" => "Información", "data" => $infoVendedor], Response::HTTP_OK);
             } else {
                 return response()->json(["status" => Response::HTTP_OK, "message" => "No hay información", "data" => []], Response::HTTP_OK);
