@@ -19,13 +19,33 @@ BEGIN
     SELECT TOP 1
         @tipoPDV = ACCION_2,
         @zonal = zonal,
-        @precioUniTypePdv = CASE WHEN ACCION_1 = 'PDV REGULAR' THEN 2.00 WHEN ACCION_1 LIKE 'PDV PREMIUM%' THEN 3.00 ELSE 0.00 END,
-        @maxVenta = CASE WHEN ACCION_1 = 'PDV REGULAR' THEN 100 WHEN ACCION_1 LIKE 'PDV PREMIUM%' THEN 400 ELSE 0 END
+        @precioUniTypePdv = CASE WHEN ACCION_1 = 'PDV REGULAR' THEN 2.00 WHEN ACCION_1 LIKE 'PDV PREMIUM%' THEN 3.00 ELSE 0.00 END
     FROM dbo.PDV_OUT_ENTREGABLE
     WHERE 
         (@existResp = 1 AND DNI_RESPONSABLE = @dni AND AÑO = @año AND MES = @mes) OR
         (@existResp = 0 AND DNI_VENDEDOR = @dni AND AÑO = @año)
     ORDER BY mes DESC;
+
+    -- Calcular @maxVenta dinámicamente desde BonoEscala
+    DECLARE @fechaPeriodo DATE = DATEFROMPARTS(@año, @mes, 1);
+    DECLARE @zonalPattern VARCHAR(50);
+    
+    -- Mapear zona para BonoEscala
+    SET @zonalPattern = CASE 
+        WHEN @zonal LIKE '%LIMA SUR%' THEN '%LIMA SUR%'
+        WHEN @tipoPDV = 'PDV REGULAR' THEN 'TODAS'
+        ELSE 'REGIONES'
+    END;
+    
+    -- Obtener el rango máximo desde BonoEscala
+    SELECT @maxVenta = ISNULL(MAX(rango_max), 0)
+    FROM dbo.BonoEscala
+    WHERE tipo_pdv = @tipoPDV
+    AND (
+        (@zonalPattern = '%LIMA SUR%' AND zonal_pattern LIKE @zonalPattern) OR
+        (@zonalPattern != '%LIMA SUR%' AND zonal_pattern = @zonalPattern)
+    )
+    AND @fechaPeriodo BETWEEN fecha_inicio AND ISNULL(fecha_fin, @fechaPeriodo);
 
     -- 2. CTE mejorado para traer todos los datos necesarios para la salida
     WITH CalculosBase AS (
