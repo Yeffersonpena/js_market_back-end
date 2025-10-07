@@ -98,7 +98,7 @@ class AvanceDiarioController extends Controller
                     $anio, 
                     $mes, 
                     $infoVendedor['zonal'] ?? '', 
-                    $infoVendedor['canal'] ?? '',
+                    $infoVendedor['levelPdv'] ?? '',
                     $ratioRecarga
                 );
                 $infoVendedor['metaPre'] = $metas['pre'];
@@ -108,7 +108,7 @@ class AvanceDiarioController extends Controller
                 $infoVendedor['bonoUnitario'] = $metas['bono'];
                 
                 // DEBUG TEMPORAL
-                $infoVendedor['debug_tipoPdv'] = $infoVendedor['canal'] ?? '';
+                $infoVendedor['debug_tipoPdv'] = $infoVendedor['levelPdv'] ?? '';
                 $infoVendedor['debug_zonal'] = $infoVendedor['zonal'] ?? '';
                 $infoVendedor['debug_anio'] = $anio;
                 $infoVendedor['debug_mes'] = $mes;
