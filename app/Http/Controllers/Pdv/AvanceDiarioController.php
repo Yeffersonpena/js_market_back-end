@@ -106,6 +106,7 @@ class AvanceDiarioController extends Controller
                 $infoVendedor['ratioRecarga'] = $ratioRecarga;
                 $infoVendedor['ratioMinMeta'] = $metas['ratio_min'];
                 $infoVendedor['bonoUnitario'] = $metas['bono'];
+                $infoVendedor['cumpleMeta'] = $metas['cumple_meta'];
                 
                 return response()->json(["status" => Response::HTTP_OK, "message" => "Información", "data" => $infoVendedor], Response::HTTP_OK);
             } else {
@@ -150,6 +151,7 @@ class AvanceDiarioController extends Controller
             ->first();
         
         // Si no encuentra ninguna meta con el ratio actual, buscar la meta base (ratio más bajo)
+        // Esto es para mostrar las metas reales aunque el vendedor no las esté cumpliendo
         if (!$metas) {
             $metas = DB::table('BonoEscala')
                 ->where('tipo_pdv', $tipoPdv)
@@ -170,18 +172,20 @@ class AvanceDiarioController extends Controller
                 ->first();
         }
         
-        // Si aún no encuentra meta, significa que el vendedor no cumple el ratio mínimo
-        // Para PDV REGULAR en octubre, el ratio mínimo es 30%
         if (!$metas) {
-            return ['pre' => 0, 'calidad' => 0, 'ratio_min' => 0, 'bono' => 0];
+            return ['pre' => 0, 'calidad' => 0, 'ratio_min' => 0, 'bono' => 0, 'cumple_meta' => false];
         }
         
-        return $metas ? [
+        // Determinar si el vendedor cumple la meta según su ratio actual
+        $cumpleMeta = $ratioRecarga >= $metas->ratio_min;
+        
+        return [
             'pre' => $metas->rango_min,
             'calidad' => $metas->cantidad_calidad_min ?? 0,
             'ratio_min' => $metas->ratio_min,
-            'bono' => $metas->bono
-        ] : ['pre' => 0, 'calidad' => 0, 'ratio_min' => 0, 'bono' => 0];
+            'bono' => $metas->bono,
+            'cumple_meta' => $cumpleMeta
+        ];
     }
 
     private function getMetasManuales(int $anio, int $mes, string $zonal): array
