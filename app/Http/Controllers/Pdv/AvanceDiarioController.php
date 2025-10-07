@@ -104,7 +104,7 @@ class AvanceDiarioController extends Controller
                 $infoVendedor['metaPre'] = $metas['pre'];
                 $infoVendedor['metaCalidad'] = $metas['calidad'];
                 $infoVendedor['ratioRecarga'] = $ratioRecarga;
-                $infoVendedor['ratioMinMeta'] = $metas['ratio_min'];
+                $infoVendedor['ratioMin_Meta'] = $metas['ratio_min'];
                 $infoVendedor['bonoUnitario'] = $metas['bono'];
                 
                 return response()->json(["status" => Response::HTTP_OK, "message" => "Información", "data" => $infoVendedor], Response::HTTP_OK);
