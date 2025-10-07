@@ -16,6 +16,15 @@ BEGIN
                  WHEN @tipoPDV LIKE 'PDV PREMIUM%' THEN 'PDV PREMIUM'
                  ELSE @tipoPDV 
                END;
+    
+    -- Mapear zona para BonoEscala (igual que en spCalculoPayment_9)
+    DECLARE @zonalPattern VARCHAR(50);
+    SET @zonalPattern = CASE 
+        WHEN @zonal LIKE '%LIMA SUR%' THEN '%LIMA SUR%'
+        WHEN @tipoPDV = 'PDV REGULAR' THEN 'TODAS'
+        ELSE 'REGIONES'
+    END;
+    
     SET @bonoUnitario = 
         CASE
             WHEN ISNULL(@tipoPDV, '') = 'PDV REGULAR' THEN 
@@ -23,7 +32,7 @@ BEGIN
                     SELECT TOP 1 b.bono
                     FROM dbo.BonoEscala b
                     WHERE b.tipo_pdv = 'PDV REGULAR'
-                      AND b.zonal_pattern = 'TODAS'
+                      AND b.zonal_pattern = @zonalPattern
                       AND @fechaPeriodo BETWEEN b.fecha_inicio AND ISNULL(b.fecha_fin, @fechaPeriodo)
                       AND @venta_avance BETWEEN b.rango_min AND b.rango_max
                       AND @ratio >= b.ratio_min
@@ -33,12 +42,12 @@ BEGIN
             WHEN ISNULL(@tipoPDV, '') LIKE 'PDV PREMIUM%' THEN
                 CASE
                     -- Lógica estricta por rango de ventas para LIMA SUR
-                    WHEN ISNULL(@zonal, '') LIKE '%LIMA SUR%' THEN
+                    WHEN @zonalPattern = '%LIMA SUR%' THEN
                         ISNULL((
                             SELECT TOP 1 b.bono
                             FROM dbo.BonoEscala b
                             WHERE b.tipo_pdv = @tipoPDV
-                              AND ISNULL(@zonal, '') LIKE b.zonal_pattern
+                              AND b.zonal_pattern LIKE @zonalPattern
                               AND @fechaPeriodo BETWEEN b.fecha_inicio AND ISNULL(b.fecha_fin, @fechaPeriodo)
                               AND @venta_avance BETWEEN b.rango_min AND b.rango_max
                               AND @ratio >= b.ratio_min
@@ -51,13 +60,13 @@ BEGIN
                             SELECT TOP 1 b.bono
                             FROM dbo.BonoEscala b
                             WHERE b.tipo_pdv = @tipoPDV
-                              AND b.zonal_pattern = 'REGIONES'
+                              AND b.zonal_pattern = @zonalPattern
                               AND @fechaPeriodo BETWEEN b.fecha_inicio AND ISNULL(b.fecha_fin, @fechaPeriodo)
                               AND @venta_avance >= (
                                   SELECT MIN(b2.rango_min) 
                                   FROM dbo.BonoEscala b2 
                                   WHERE b2.tipo_pdv = @tipoPDV 
-                                    AND b2.zonal_pattern = 'REGIONES'
+                                    AND b2.zonal_pattern = @zonalPattern
                                     AND @fechaPeriodo BETWEEN b2.fecha_inicio AND ISNULL(b2.fecha_fin, @fechaPeriodo)
                               )
                               AND @cantidadCalidad >= ISNULL(b.cantidad_calidad_min, 0)
