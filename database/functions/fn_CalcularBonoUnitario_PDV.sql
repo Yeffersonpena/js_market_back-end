@@ -34,10 +34,14 @@ BEGIN
                     WHERE b.tipo_pdv = 'PDV REGULAR'
                       AND b.zonal_pattern = @zonalPattern
                       AND @fechaPeriodo BETWEEN b.fecha_inicio AND ISNULL(b.fecha_fin, @fechaPeriodo)
-                      AND @venta_avance BETWEEN b.rango_min AND b.rango_max
+                      AND @venta_avance >= b.rango_min
                       AND @ratio >= b.ratio_min
                       AND @cantidadCalidad >= ISNULL(b.cantidad_calidad_min, 0)
-                    ORDER BY b.ratio_min DESC, b.bono DESC
+                    ORDER BY 
+                        CASE WHEN @venta_avance <= b.rango_max THEN 0 ELSE 1 END,
+                        b.rango_max DESC,
+                        b.ratio_min DESC, 
+                        b.bono DESC
                 ), 0)
             WHEN ISNULL(@tipoPDV, '') LIKE 'PDV PREMIUM%' THEN
                 CASE
@@ -49,10 +53,14 @@ BEGIN
                             WHERE b.tipo_pdv = @tipoPDV
                               AND b.zonal_pattern LIKE @zonalPattern
                               AND @fechaPeriodo BETWEEN b.fecha_inicio AND ISNULL(b.fecha_fin, @fechaPeriodo)
-                              AND @venta_avance BETWEEN b.rango_min AND b.rango_max
+                              AND @venta_avance >= b.rango_min
                               AND @ratio >= b.ratio_min
                               AND @cantidadCalidad >= ISNULL(b.cantidad_calidad_min, 0)
-                            ORDER BY b.ratio_min DESC, b.bono DESC
+                            ORDER BY 
+                                CASE WHEN @venta_avance <= b.rango_max THEN 0 ELSE 1 END,
+                                b.rango_max DESC,
+                                b.ratio_min DESC, 
+                                b.bono DESC
                         ), 0)
                     -- Lógica "la calidad manda" para REGIONES (corregida sin CTE)
                     ELSE
