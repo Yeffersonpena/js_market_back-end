@@ -40,7 +40,7 @@ BEGIN
     -- Obtener el rango máximo desde BonoEscala
     SELECT @maxVenta = ISNULL(MAX(rango_max), 0)
     FROM dbo.BonoEscala
-    WHERE tipo_pdv = @tipoPDV
+    WHERE tipo_pdv = CASE WHEN @tipoPDV LIKE 'PDV PREMIUM%' THEN 'PDV PREMIUM' ELSE @tipoPDV END
     AND (
         (@zonalPattern = '%LIMA SUR%' AND zonal_pattern LIKE @zonalPattern) OR
         (@zonalPattern != '%LIMA SUR%' AND zonal_pattern = @zonalPattern)
