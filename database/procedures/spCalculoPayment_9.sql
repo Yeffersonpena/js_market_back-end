@@ -48,18 +48,33 @@ BEGIN
     )
     AND @fechaPeriodo BETWEEN fecha_inicio AND ISNULL(fecha_fin, @fechaPeriodo);
 
-    -- 2. CTE mejorado para traer todos los datos necesarios para la salida
-    WITH CalculosBase AS (
+    -- 2. CTE optimizado para traer todos los datos necesarios para la salida
+    WITH PostpagoData AS (
+        SELECT 
+            COUNT(CASE WHEN f.PRODUCTO_WEB = 'POSTPAGO M4' THEN 1 END) AS cantidadAltaPost,
+            COUNT(CASE WHEN f.PRODUCTOORIGEN = 'POSTPAGO' AND f.PRODUCTO_WEB = 'PORT M4 NO DIR' THEN 1 END) AS cantidadPortaPostOPost,
+            COUNT(CASE WHEN f.PRODUCTOORIGEN = 'PREPAGO' AND f.PRODUCTO_WEB = 'PORT M4 NO DIR' THEN 1 END) AS cantidadPortaPostOPre
+        FROM dbo.PDV_OUT_FUNNEL f
+        WHERE @existResp = 1 
+          AND f.DNI_RESPONSABLE = @dni 
+          AND YEAR(f.FECHA) = @año 
+          AND MONTH(f.FECHA) = @mes 
+          AND f.ACCION = @accion1
+          AND (
+              f.PRODUCTO_WEB = 'POSTPAGO M4' 
+              OR (f.PRODUCTO_WEB = 'PORT M4 NO DIR' AND f.PRODUCTOORIGEN IN ('PREPAGO', 'POSTPAGO'))
+          )
+    ),
+    CalculosBase AS (
         SELECT
             ISNULL((SELECT SUM(cantidad) FROM dbo.tbl_venta_log v WHERE ((@existResp = 1 AND v.DNI_RESPONSABLE = @dni) OR (@existResp = 0 AND v.DNI_VENDEDOR = @dni)) AND YEAR(v.FECHA) = @año AND MONTH(v.FECHA) = @mes AND v.PRODUCT_NAME = 'Prepago'), 0) AS VENTA_AVANCE_PREPAGO,
             ISNULL((SELECT count(*) FROM dbo.PDV_OUT_FUNNEL f WHERE ((@existResp = 1 AND f.DNI_RESPONSABLE = @dni) OR (@existResp = 0 AND f.DNI_VENDEDOR = @dni)) AND YEAR(f.fecha) = @año AND MONTH(f.fecha) = @mes AND f.CALIDAD_CLUSTER IN ('Cluster 1: IMEI nuevo', 'Cluster 2: IMEI reutilizado') AND f.ACCION = @accion1), 0) AS cantidadCalidad,
             ISNULL((SELECT COUNT(*) FROM dbo.PDV_OUT_FUNNEL f WHERE ((@existResp = 1 AND f.DNI_RESPONSABLE = @dni) OR (@existResp = 0 AND f.DNI_VENDEDOR = @dni)) AND YEAR(f.fecha) = @año AND MONTH(f.fecha) = @mes AND f.RECARGA_SI_NO = 1 AND f.[RECARGAS>5] = 1 AND f.PRODUCTO_WEB IN ('PREPAGO M7','PORT PREPAGO M7') AND f.ACCION = @accion1), 0) AS RECARGA_TOTAL,
             ISNULL((SELECT sum(PORTA_PREPAGO) FROM dbo.tbl_ventas_prepago_new p WHERE ((@existResp = 1 AND p.DNI_RESPONSABLE = @dni) OR (@existResp = 0 AND p.DNI_VENDEDOR = @dni)) AND YEAR(p.FECHA) = @año AND MONTH(p.FECHA) = @mes), 0) AS cantPrepagoPorta,
-            
-            -- Cantidades y bonos Postpago (replicando la lógica original)
-            ISNULL((SELECT SUM(f.ALTA_POSTPAGO) FROM dbo.tbl_funnel_resumen_post f WHERE @existResp = 1 AND f.DNI_RESPONSABLE = @dni AND YEAR(f.FECHA) = @año AND MONTH(f.FECHA) = @mes), 0) AS cantidadAltaPost,
-            ISNULL((SELECT SUM(f.PORTA_POST_O_POS) FROM dbo.tbl_funnel_resumen_post f WHERE @existResp = 1 AND f.DNI_RESPONSABLE = @dni AND YEAR(f.FECHA) = @año AND MONTH(f.FECHA) = @mes), 0) AS cantidadPortaPostOPost,
-            ISNULL((SELECT SUM(f.PORTA_POST_O_PRE) FROM dbo.tbl_funnel_resumen_post f WHERE @existResp = 1 AND f.DNI_RESPONSABLE = @dni AND YEAR(f.FECHA) = @año AND MONTH(f.FECHA) = @mes), 0) AS cantidadPortaPostOPre
+            ISNULL(pd.cantidadAltaPost, 0) AS cantidadAltaPost,
+            ISNULL(pd.cantidadPortaPostOPost, 0) AS cantidadPortaPostOPost,
+            ISNULL(pd.cantidadPortaPostOPre, 0) AS cantidadPortaPostOPre
+        FROM PostpagoData pd
     ),
     CalculosFinales AS (
         SELECT
