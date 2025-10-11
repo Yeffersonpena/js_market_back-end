@@ -79,7 +79,19 @@ BEGIN
                               )
                               AND @cantidadCalidad >= ISNULL(b.cantidad_calidad_min, 0)
                               AND @ratio >= b.ratio_min
-                            ORDER BY b.cantidad_calidad_min DESC, b.ratio_min DESC
+                            ORDER BY 
+                                CASE 
+                                    WHEN b.cantidad_calidad_min = (
+                                        SELECT MAX(b3.cantidad_calidad_min)
+                                        FROM dbo.BonoEscala b3
+                                        WHERE b3.tipo_pdv = @tipoPDV
+                                          AND b3.zonal_pattern = @zonalPattern
+                                          AND @fechaPeriodo BETWEEN b3.fecha_inicio AND ISNULL(b3.fecha_fin, @fechaPeriodo)
+                                          AND @cantidadCalidad >= ISNULL(b3.cantidad_calidad_min, 0)
+                                    ) THEN 1 ELSE 0 END DESC,
+                                b.cantidad_calidad_min DESC,
+                                b.ratio_min DESC,
+                                b.bono DESC
                         ), 0)
                 END
             ELSE 0
