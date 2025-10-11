@@ -9,7 +9,7 @@ BEGIN
 
     -- 1. Determinar rol y parámetros clave (sin cambios)
     DECLARE @existResp BIT;
-    DECLARE @tipoPDV VARCHAR(30), @zonal VARCHAR(30), @maxVenta INT, @precioUniTypePdv DECIMAL(10,2);
+    DECLARE @tipoPDV VARCHAR(30), @zonal VARCHAR(30), @maxVenta INT, @precioUniTypePdv DECIMAL(10,2), @accion1 VARCHAR(50);
 
     IF EXISTS (SELECT 1 FROM dbo.PDV_OUT_ENTREGABLE WHERE DNI_RESPONSABLE = @dni AND AÑO = @año AND MES = @mes)
         SET @existResp = 1;
@@ -19,6 +19,7 @@ BEGIN
     SELECT TOP 1
         @tipoPDV = ACCION_2,
         @zonal = zonal,
+        @accion1 = ACCION_1,
         @precioUniTypePdv = CASE WHEN ACCION_1 = 'PDV REGULAR' THEN 2.00 WHEN ACCION_1 LIKE 'PDV PREMIUM%' THEN 3.00 ELSE 0.00 END
     FROM dbo.PDV_OUT_ENTREGABLE
     WHERE 
@@ -51,7 +52,7 @@ BEGIN
     WITH CalculosBase AS (
         SELECT
             ISNULL((SELECT SUM(cantidad) FROM dbo.tbl_venta_log v WHERE ((@existResp = 1 AND v.DNI_RESPONSABLE = @dni) OR (@existResp = 0 AND v.DNI_VENDEDOR = @dni)) AND YEAR(v.FECHA) = @año AND MONTH(v.FECHA) = @mes AND v.PRODUCT_NAME = 'Prepago'), 0) AS VENTA_AVANCE_PREPAGO,
-            ISNULL((SELECT count(*) FROM dbo.PDV_OUT_FUNNEL f WHERE ((@existResp = 1 AND f.DNI_RESPONSABLE = @dni) OR (@existResp = 0 AND f.DNI_VENDEDOR = @dni)) AND YEAR(f.fecha) = @año AND MONTH(f.fecha) = @mes AND f.CALIDAD_CLUSTER IN ('Cluster 1: IMEI nuevo', 'Cluster 2: IMEI reutilizado')), 0) AS cantidadCalidad,
+            ISNULL((SELECT count(*) FROM dbo.PDV_OUT_FUNNEL f WHERE ((@existResp = 1 AND f.DNI_RESPONSABLE = @dni) OR (@existResp = 0 AND f.DNI_VENDEDOR = @dni)) AND YEAR(f.fecha) = @año AND MONTH(f.fecha) = @mes AND f.CALIDAD_CLUSTER IN ('Cluster 1: IMEI nuevo', 'Cluster 2: IMEI reutilizado') AND f.ACCION = @accion1), 0) AS cantidadCalidad,
             ISNULL((SELECT sum(RECARGA_TOTAL) FROM dbo.PDV_OUT_FUNNEL_RESUMEN r WHERE ((@existResp = 1 AND r.DNI_RESPONSABLE = @dni) OR (@existResp = 0 AND r.DNI_VENDEDOR = @dni)) AND r.ANIO = @año AND r.MES = @mes), 0) AS RECARGA_TOTAL,
             ISNULL((SELECT sum(PORTA_PREPAGO) FROM dbo.tbl_ventas_prepago_new p WHERE ((@existResp = 1 AND p.DNI_RESPONSABLE = @dni) OR (@existResp = 0 AND p.DNI_VENDEDOR = @dni)) AND YEAR(p.FECHA) = @año AND MONTH(p.FECHA) = @mes), 0) AS cantPrepagoPorta,
             
