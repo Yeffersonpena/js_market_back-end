@@ -8,14 +8,22 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Http\JsonResponse;
 use App\Models\PDVOutImagen;
 use App\Models\PDVOutCampanasFlyers;
+use App\Services\CampanaComunicacionService;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Validation\ValidationException;
 use Symfony\Component\HttpFoundation\Response;
 
 class ImagenController extends Controller
 {
+    private CampanaComunicacionService $comunicacionService;
+
+    public function __construct(CampanaComunicacionService $comunicacionService)
+    {
+        $this->comunicacionService = $comunicacionService;
+    }
     public function getPaginatedData(Request $request)
     {
         try {
@@ -309,6 +317,135 @@ class ImagenController extends Controller
                 "status" => Response::HTTP_BAD_REQUEST,
                 "message" => $ex->getMessage()
             ], Response::HTTP_BAD_REQUEST);
+        }
+    }
+
+    /**
+     * Actualiza la comunicación del acelerador
+     * Actualiza el estado de comunicación, fecha y permite subir archivo Excel
+     */
+    public function updateComunicacionAcelerador(Request $request, $id): JsonResponse
+    {
+        try {
+            // Validar que la campaña existe
+            $campana = PDVOutCampanasFlyers::find($id);
+            if (!$campana) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Campaña no encontrada'
+                ], 404);
+            }
+
+            // Validar que se proporcione archivo (obligatorio)
+            if (!$request->hasFile('archivo_comunicacion')) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'El archivo de comunicación es obligatorio'
+                ], 400);
+            }
+
+            $request->validate([
+                'archivo_comunicacion' => 'required|file|mimes:xlsx,xls|max:10240'
+            ]);
+
+            // Procesar actualización usando el servicio
+            $result = $this->comunicacionService->processComunicacionUpdate(
+                $campana, 
+                $request->file('archivo_comunicacion')
+            );
+
+            if (!$result['success']) {
+                $statusCode = isset($result['errors']) && 
+                    in_array('Esta funcionalidad solo está disponible para campañas de tipo ACELERADOR', $result['errors']) 
+                    ? 400 : 422;
+
+                return response()->json([
+                    'success' => false,
+                    'message' => implode(', ', $result['errors'])
+                ], $statusCode);
+            }
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Comunicación del acelerador actualizada exitosamente',
+                'data' => $result['data']
+            ]);
+
+        } catch (ValidationException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Datos de validación incorrectos',
+                'errors' => $e->errors()
+            ], 422);
+        } catch (\Exception $e) {
+            Log::error('Error actualizando comunicación de acelerador', [
+                'campana_id' => $id,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Error al actualizar la comunicación: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+
+    /**
+     * Descarga segura de archivo privado de comunicación
+     */
+    public function downloadSecureFile($fileName)
+    {
+        try {
+            // Buscar la campaña que tiene este archivo
+            $campana = PDVOutCampanasFlyers::where('archivo_comunicacion', $fileName)->first();
+            
+            if (!$campana) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Archivo no encontrado o no autorizado'
+                ], 404);
+            }
+
+            // Verificar que el archivo existe en almacenamiento privado
+            $filePath = 'comunicaciones/' . $fileName;
+            
+            if (!Storage::disk('local')->exists($filePath)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'El archivo no existe en el servidor'
+                ], 404);
+            }
+
+            // Obtener información del archivo
+            $fileSize = Storage::disk('local')->size($filePath);
+            $fullPath = Storage::disk('local')->path($filePath);
+
+            // Log de descarga
+            Log::info('Descarga segura de archivo de comunicación', [
+                'file_name' => $fileName,
+                'campana_id' => $campana->id,
+                'file_size' => $fileSize,
+                'file_path' => $fullPath
+            ]);
+
+            // Retornar el archivo como descarga usando response()->download()
+            return response()->download($fullPath, $fileName, [
+                'Content-Disposition' => 'attachment; filename="' . $fileName . '"'
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Error en descarga segura de archivo', [
+                'file_name' => $fileName,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Error al descargar el archivo: ' . $e->getMessage()
+            ], 500);
         }
     }
 
