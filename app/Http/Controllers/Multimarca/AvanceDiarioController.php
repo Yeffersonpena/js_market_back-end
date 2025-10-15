@@ -279,140 +279,88 @@ class AvanceDiarioController extends Controller
         }
     }
 
-    private function fetchBaseData(int $dni, int $anio, int $mes): ?object
-    {
-        $result = DB::select('EXEC spResumenGanancia_MM_Base_Payment @dni=?, @año=?, @mes=?', [$dni, $anio, $mes]);
-        
-        return !empty($result) ? $result[0] : null;
-    }
-
-    private function fetchPeriodsData(int $dni, int $anio, int $mes): array
-    {
-        return DB::select('EXEC spResumenGanancia_MM_Periodos_Payment @dni=?, @año=?, @mes=?', [$dni, $anio, $mes]);
-    }
-
-    private function buildOptimizedPaymentData(object $baseData, array $periodsData, int $mes, int $anio): array
-    {
-        if ($mes === 6) {
-            return $this->buildMes6Data($baseData, $periodsData, $mes, $anio);
-        }
-        
-        return $this->buildOtherMonthsData($baseData, $periodsData, $mes, $anio);
-    }
-
-    private function buildMes6Data(object $baseData, array $periodsData, int $mes, int $anio): array
-    {
-        $periodo = collect($periodsData)->first();
-        
-        // Validación para agosto 2025: si ventasLog < 10, establecer ganancias y bono en 0
-        $gananciaPorRecarga = (float) ($periodo->ganaciaPorRecarga ?? 0);
-        $bonoRecargaNxVendedor = $gananciaPorRecarga;
-        
-        if ($mes === 8 && $anio === 2025 && ($baseData->ventasLog ?? 0) < 10) {
-            $gananciaPorRecarga = 0.0;
-            $bonoRecargaNxVendedor = 0.0;
-        }
-        
-        return array_merge(
-            [
-                'dni_vendedor'          => $baseData->dni_vendedor,
-                'ventasLog'             => (float) $baseData->ventasLog,
-                'cantidadCalidad'       => (float) $baseData->cantidadCalidad,
-                'pagoUniCalidad'        => (float) $baseData->pagoUniCalidad,
-                'bonoRecargaNxVendedor' => $bonoRecargaNxVendedor,
-                'bonoCalidad'           => (float) $baseData->bonoCalidad,
-                'bonoTotal'             => (float) ($baseData->bonoTotal + $gananciaPorRecarga),
-                'cantidadPortaPostOPre' => (float) $baseData->cantidadPortaPostOPre,
-                'precioPortaPostOPre'   => (float) $baseData->precioPortaPostOPre,
-                'cantidadPortaPostOPost' => (float) $baseData->cantidadPortaPostOPost,
-                'precioPortaPostOPost'  => (float) $baseData->precioPortaPostOPost,
-                'bonoPortaPostOPre'     => (float) $baseData->bonoPortaPostOPre,
-                'bonoPortaPostOPost'    => (float) $baseData->bonoPortaPostOPost,
-            ],
-            self::ZERO_DEFAULTS,
-            ['mes_6' => $gananciaPorRecarga]
-        );
-    }
-
-    private function buildOtherMonthsData(object $baseData, array $periodsData, int $mes, int $anio): array
-    {
-        $fechaMaxima = DB::table('parametros')
-            ->where('tipo', 1)
-            ->value('valor');
-        
-        $mesReferencia = $fechaMaxima ? (int) date('n', strtotime($fechaMaxima)) : (int) date('n');
-        
-        // Validación para agosto 2025: si ventasLog < 10, establecer bonoRecargaNxVendedor en 0
-        $bonoRecargaNxVendedor = (float) $baseData->bonoRecargaNxVendedorSubTotal;
-        if ($mes === 8 && $anio === 2025 && ($baseData->ventasLog ?? 0) < 10) {
-            $bonoRecargaNxVendedor = 0.0;
-        }
-
-        $result = array_merge(
-            [
-                'dni_vendedor'          => $baseData->dni_vendedor,
-                'ventasLog'             => (float) $baseData->ventasLog,
-                'cantidadCalidad'       => (float) $baseData->cantidadCalidad,
-                'pagoUniCalidad'        => (float) $baseData->pagoUniCalidad,
-                'bonoRecargaNxVendedor' => $bonoRecargaNxVendedor,
-                'bonoCalidad'           => (float) $baseData->bonoCalidad,
-                'bonoTotal'             => (float) $baseData->bonoTotal,
-                'cantidadPortaPostOPre' => (float) $baseData->cantidadPortaPostOPre,
-                'precioPortaPostOPre'   => (float) $baseData->precioPortaPostOPre,
-                'cantidadPortaPostOPost' => (float) $baseData->cantidadPortaPostOPost,
-                'precioPortaPostOPost'  => (float) $baseData->precioPortaPostOPost,
-                'bonoPortaPostOPre'     => (float) $baseData->bonoPortaPostOPre,
-                'bonoPortaPostOPost'    => (float) $baseData->bonoPortaPostOPost,
-            ],
-            self::ZERO_DEFAULTS
-        );
-        
-        foreach ($periodsData as $periodo) {
-            $n = (int) str_replace('N', '', $periodo->PERIODO_EVALUACION);
-            $mesDestino = $mesReferencia - $n;
-            
-            if ($mesDestino >= 1 && $mesDestino <= 12) {
-                // Validación para agosto 2025: si ventasLog < 10, establecer ganancias en 0
-                $gananciaPorRecarga = (float) $periodo->ganaciaPorRecarga;
-                if ($mes === 8 && $anio === 2025 && ($baseData->ventasLog ?? 0) < 10) {
-                    $gananciaPorRecarga = 0.0;
-                }
-                $result['mes_' . $mesDestino] = $gananciaPorRecarga;
-            }
-        }
-        
-        return $result;
-    }
-
-    public function getOptimizedPayment(int $dni, int $anio, int $mes, int $typeQuincena)
+    public function getResumenBase(int $dni, int $anio, int $mes)
     {
         try {
-            if ($anio === 2025 && $mes > 0 && $mes < 6) {
-                $typeQuincena = 2;
-            }
-
-            if ($typeQuincena !== 0) {
-                return $this->fetchAuxiliaryData($dni, $anio, $mes);
-            }
-
-            $baseData = $this->fetchBaseData($dni, $anio, $mes);
-            $periodsData = $this->fetchPeriodsData($dni, $anio, $mes);
-
-            if (!$baseData) {
-                $data = $this->fetchAuxiliaryData($dni, $anio, $mes);
-                $msg = 'No hay pagos';
+            $result = DB::select('EXEC spResumenBaseMultimarca @dni=?, @año=?, @mes=?', [$dni, $anio, $mes]);
+            
+            if (!empty($result)) {
+                $data = $result[0];
+                $response = [
+                    'dni_vendedor' => $data->dni_vendedor,
+                    'ventasLog' => (float) $data->ventasLog,
+                    'cantidadCalidad' => (float) $data->cantidadCalidad,
+                    'pagoUniCalidad' => (float) $data->pagoUniCalidad,
+                    'bonoCalidad' => (float) $data->bonoCalidad,
+                    'cantidadPortaPostOPre' => (float) $data->cantidadPortaPostOPre,
+                    'precioPortaPostOPre' => (float) $data->precioPortaPostOPre,
+                    'cantidadPortaPostOPost' => (float) $data->cantidadPortaPostOPost,
+                    'precioPortaPostOPost' => (float) $data->precioPortaPostOPost,
+                    'bonoPortaPostOPre' => (float) $data->bonoPortaPostOPre,
+                    'bonoPortaPostOPost' => (float) $data->bonoPortaPostOPost,
+                    'bonoTotalBase' => (float) $data->bonoTotalBase
+                ];
+                
+                return response()->json([
+                    'status' => Response::HTTP_OK,
+                    'message' => 'Datos base obtenidos correctamente',
+                    'data' => $response
+                ], Response::HTTP_OK);
             } else {
-                $data = $this->buildOptimizedPaymentData($baseData, $periodsData, $mes, $anio);
-                $msg = 'Hay pago para el vendedor Multimarca';
+                return response()->json([
+                    'status' => Response::HTTP_OK,
+                    'message' => 'No hay datos base para el vendedor',
+                    'data' => null
+                ], Response::HTTP_OK);
             }
-
-            $status = Response::HTTP_OK;
-            return response()->json(compact('status', 'msg', 'data'), $status);
         } catch (\Exception $ex) {
             return response()->json([
-                'status'  => Response::HTTP_BAD_REQUEST,
-                'message' => $ex->getMessage(),
+                'status' => Response::HTTP_BAD_REQUEST,
+                'message' => $ex->getMessage()
             ], Response::HTTP_BAD_REQUEST);
         }
     }
+
+    public function getRecargasPorPeriodo(int $dni, int $anio, int $mes)
+    {
+        try {
+            $result = DB::select('EXEC spRecargasPorPeriodoMultimarca @dni=?, @año=?, @mes=?', [$dni, $anio, $mes]);
+            
+            if (!empty($result)) {
+                $data = array_map(function ($item) {
+                    return [
+                        'dni_vendedor' => $item->dni_vendedor,
+                        'periodo_evaluacion' => $item->PERIODO_EVALUACION,
+                        'monto_recargado' => (float) $item->MONTO_RECARGADO,
+                        'ganancia_por_recarga' => (float) $item->ganaciaPorRecarga
+                    ];
+                }, $result);
+                
+                // Calcular el total de bonos por recargas
+                $totalBonoRecargas = array_sum(array_column($data, 'ganancia_por_recarga'));
+                
+                return response()->json([
+                    'status' => Response::HTTP_OK,
+                    'message' => 'Datos de recargas por período obtenidos correctamente',
+                    'data' => $data,
+                    'total_periodos' => count($data),
+                    'total_bono_recargas' => $totalBonoRecargas
+                ], Response::HTTP_OK);
+            } else {
+                return response()->json([
+                    'status' => Response::HTTP_OK,
+                    'message' => 'No hay datos de recargas para el vendedor',
+                    'data' => [],
+                    'total_periodos' => 0,
+                    'total_bono_recargas' => 0.0
+                ], Response::HTTP_OK);
+            }
+        } catch (\Exception $ex) {
+            return response()->json([
+                'status' => Response::HTTP_BAD_REQUEST,
+                'message' => $ex->getMessage()
+            ], Response::HTTP_BAD_REQUEST);
+        }
+    }
+
 }
