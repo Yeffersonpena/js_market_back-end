@@ -28,6 +28,24 @@ DiasVentasResponsable AS (
     GROUP BY DNI_RESPONSABLE
 ),
 
+-- CTE para calcular ventas del mes anterior
+VentasMesAnterior AS (
+    SELECT 
+        DNI_RESPONSABLE,
+        COUNT(*) AS VENTAS_MES_ANTERIOR
+    FROM PORTAL_COMERCIAL.dbo.VentasLog
+    WHERE (
+        -- Caso normal: mes anterior del mismo año
+        (@mes > 1 AND YEAR(FECHA) = @año AND MONTH(FECHA) = @mes - 1)
+        OR 
+        -- Caso especial: enero toma diciembre del año anterior
+        (@mes = 1 AND YEAR(FECHA) = @año - 1 AND MONTH(FECHA) = 12)
+    )
+      AND PRODUCT_NAME = 'Prepago'
+      AND DNI_RESPONSABLE IS NOT NULL
+    GROUP BY DNI_RESPONSABLE
+),
+
 EventosCombinados AS (
     -- Ventas
     SELECT DNI_RESPONSABLE, DNI_VENDEDOR AS DNI_EJECUTOR, 'VENTA' AS TIPO_EVENTO
@@ -113,6 +131,9 @@ MetricasAgregadas AS (
         -- >>> NUEVO: DÍAS DE VENTAS DEL RESPONSABLE (EQUIPO COMPLETO) <<<
         COALESCE(d.DIAS_VENTAS_RESPONSABLE, 0) AS DIAS_VENTAS_RESPONSABLE,
         
+        -- >>> VENTAS DEL MES ANTERIOR <<<
+        COALESCE(v.VENTAS_MES_ANTERIOR, 0) AS VENTAS_MES_ANTERIOR,
+        
         -- Totales de equipo
         SUM(CASE WHEN e.TIPO_EVENTO = 'VENTA' THEN 1 ELSE 0 END) AS TOTAL_VENTAS,
         SUM(CASE WHEN e.TIPO_EVENTO = 'RECARGA' THEN 1 ELSE 0 END) AS TOTAL_RECARGAS,
@@ -120,6 +141,7 @@ MetricasAgregadas AS (
 
     FROM EventosDistribuidos e
     LEFT JOIN DiasVentasResponsable d ON e.DNI_RESPONSABLE = d.DNI_RESPONSABLE
+    LEFT JOIN VentasMesAnterior v ON e.DNI_RESPONSABLE = v.DNI_RESPONSABLE
     GROUP BY e.DNI_RESPONSABLE,
         e.NOMBRE_RESPONSABLE,
         e.DNI_VENDEDOR,
@@ -127,7 +149,8 @@ MetricasAgregadas AS (
         e.DNI_VENDEDOR2,
         e.NOMBRE_VENDEDOR2,
         e.ZONAL,
-        d.DIAS_VENTAS_RESPONSABLE
+        d.DIAS_VENTAS_RESPONSABLE,
+        v.VENTAS_MES_ANTERIOR
 )
 SELECT
     m.DNI_RESPONSABLE,m.NOMBRE_RESPONSABLE, m.VVDD1,m.NOMBRE_VENDEDOR, 
@@ -143,6 +166,9 @@ SELECT
     
     -- >>> NUEVO: DÍAS DE VENTAS DEL RESPONSABLE (EQUIPO COMPLETO) <<<
     m.DIAS_VENTAS_RESPONSABLE,
+    
+    -- >>> VENTAS DEL MES ANTERIOR <<<
+    m.VENTAS_MES_ANTERIOR,
     
     -- Columnas de totales y cálculos finales
     m.TOTAL_VENTAS, m.TOTAL_RECARGAS, m.TOTAL_VCALIDAD,
