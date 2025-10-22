@@ -62,7 +62,7 @@ BEGIN
     FROM PORTAL_COMERCIAL.dbo.PDV_OUT_CAMPAÑAS_FLYERS c
     INNER JOIN PORTAL_COMERCIAL.dbo.PDV_OUT_ENTREGABLE e ON (
         (e.DNI_RESPONSABLE IS NOT NULL OR e.DNI_VENDEDOR IS NOT NULL)
-        AND e.ESTADO = 'ACTIVO'
+        -- AND e.ESTADO = 'ACTIVO'
         AND e.AÑO = @año_real
         AND e.MES = @mes_real
     )
@@ -105,7 +105,7 @@ BEGIN
     INNER JOIN PORTAL_COMERCIAL.dbo.PDV_OUT_ENTREGABLE e ON (
         c.modo = 'PDV'
         AND e.DNI_RESPONSABLE IS NOT NULL
-        AND e.ESTADO = 'ACTIVO'
+        -- AND e.ESTADO = 'ACTIVO'
         AND e.AÑO = @año_real
         AND e.MES = @mes_real
         -- Validar GRUPO exacto (soporta grupos concatenados como G1,G2,G3)
@@ -156,7 +156,7 @@ BEGIN
     INNER JOIN PORTAL_COMERCIAL.dbo.PDV_OUT_ENTREGABLE e ON (
         c.modo = 'MULTIMARCA'
         AND e.DNI_VENDEDOR IS NOT NULL
-        AND e.ESTADO = 'ACTIVO'
+        -- AND e.ESTADO = 'ACTIVO'
         AND e.ACCION_1 = 'MULTIMARCA'
         AND e.AÑO = @año_real
         AND e.MES = @mes_real
