@@ -3,6 +3,10 @@ UPDATE PORTAL_COMERCIAL.dbo.users
 SET estado = 0
 WHERE estado IS NULL OR estado != 0;
 
+UPDATE PORTAL_COMERCIAL.dbo.users 
+SET estado = 1
+where [user] in ('admin');
+
 -- Activar responsables PDV REGULAR (Octubre 2025)
 UPDATE u 
 SET estado = 1

@@ -6,45 +6,6 @@ BEGIN
 	DECLARE @AñoActual INT;
     DECLARE @MesActual INT;
     
-    -- Insertar nuevos usuarios que no existen en la tabla users
-    /*INSERT INTO users ([user], zonal, idPerfil, created_at, created_by)
-    SELECT
-        datos.dni,
-        datos.ZONAL,
-        datos.perfil,
-        GETDATE() AS fecha,
-        'admin' AS creado_por
-    FROM (
-        SELECT
-            CONVERT(VARCHAR(20), 
-                CASE
-                    WHEN e.DNI_VENDEDOR IS NULL THEN e.DNI_RESPONSABLE
-                    ELSE e.DNI_VENDEDOR
-                END
-            ) AS dni,
-            e.ZONAL,
-            CASE
-                WHEN e.ACCION_1 LIKE 'PDV%' THEN 2
-                WHEN e.ACCION_1 LIKE 'MULTIMARCA%' THEN 3
-                ELSE NULL
-            END AS perfil
-        FROM dbo.PDV_OUT_ENTREGABLE e
-        WHERE e.DNI_RESPONSABLE IS NOT NULL OR e.DNI_VENDEDOR IS NOT NULL
-        GROUP BY
-            CASE
-                WHEN e.DNI_VENDEDOR IS NULL THEN e.DNI_RESPONSABLE
-                ELSE e.DNI_VENDEDOR
-            END,
-            e.ZONAL,
-            CASE
-                WHEN e.ACCION_1 LIKE 'PDV%' THEN 2
-                WHEN e.ACCION_1 LIKE 'MULTIMARCA%' THEN 3
-                ELSE NULL
-            END
-    ) AS datos
-    LEFT JOIN dbo.users u ON u.[user] = datos.dni
-    WHERE u.[user] IS NULL;*/
-
 -- Query 1: Insertar Responsables de PDV (perfil 2)
 WITH ResponsablesPDV AS (
     SELECT
