@@ -30,7 +30,8 @@ BEGIN
             ISNULL([N0], 0) AS N0,
             ISNULL([N1], 0) AS N1,
             ISNULL([N2], 0) AS N2,
-            ISNULL([N3], 0) AS N3
+            ISNULL([N3], 0) AS N3,
+            ISNULL([N4], 0) AS N4
         FROM (
             SELECT
                 DNI_VENDEDOR,
@@ -41,7 +42,7 @@ BEGIN
             WHERE
                 SOCIO = 'JS MARKET'
                 AND ACCION = 'MULTIMARCA'
-                AND PERIODO_EVALUACION IN ('N0', 'N1', 'N2','N3')
+                AND PERIODO_EVALUACION IN ('N0', 'N1', 'N2','N3','N4')
                 AND FECHA_CARGA = (
                     SELECT MAX(FECHA_CARGA)
                     FROM BD_PLANIFICACION.dbo.PP2025_N0
@@ -53,7 +54,7 @@ BEGIN
         ) AS src
         PIVOT (
             SUM(MONTO_TOTAL)
-            FOR PERIODO_EVALUACION IN ([N0], [N1], [N2],[N3])
+            FOR PERIODO_EVALUACION IN ([N0], [N1], [N2],[N3],[N4])
         ) AS pvt
     ),
     EventosAgregados AS (
@@ -129,6 +130,7 @@ BEGIN
         ISNULL(rp.N1, 0) AS N1,
         ISNULL(rp.N2, 0) AS N2,
         ISNULL(rp.N3, 0) AS N3,
+        ISNULL(rp.N4, 0) AS N4,
         ISNULL(ep.VENTAS_BC, 0) AS VENTAS_BC,
         -- ==================================================================
     -- REEMPLAZO DE LA FUNCIÓN ESCALAR
