@@ -75,7 +75,16 @@ BEGIN
             *,
             CASE WHEN VENTA_AVANCE_PREPAGO > @maxVenta THEN @maxVenta ELSE VENTA_AVANCE_PREPAGO END AS VentaPrepagoLimitada,
             FLOOR((CAST(RECARGA_TOTAL AS DECIMAL(10,2)) / NULLIF(CAST(VENTA_AVANCE_PREPAGO AS DECIMAL(10,2)), 0) * 100)) AS ratio,
-            FLOOR((CAST(cantidadCalidad AS DECIMAL(10,2)) / NULLIF(CAST(VENTA_AVANCE_PREPAGO AS DECIMAL(10,2)), 0) * 100)) AS ratioCalidad
+            FLOOR((CAST(cantidadCalidad AS DECIMAL(10,2)) / NULLIF(CAST(VENTA_AVANCE_PREPAGO AS DECIMAL(10,2)), 0) * 100)) AS ratioCalidad,
+            -- Calcular nivel_rango para usar en bonoDevolucionChips
+            (SELECT TOP 1 nivel_rango
+             FROM dbo.BonoEscala
+             WHERE tipo_pdv = CASE WHEN @tipoPDV LIKE 'PDV PREMIUM%' THEN 'PDV PREMIUM' ELSE @tipoPDV END
+               AND zonal_pattern = @zonalPattern
+               AND @fechaPeriodo BETWEEN fecha_inicio AND ISNULL(fecha_fin, @fechaPeriodo)
+               AND (CASE WHEN VENTA_AVANCE_PREPAGO > @maxVenta THEN @maxVenta ELSE VENTA_AVANCE_PREPAGO END) >= rango_min
+               AND (CASE WHEN VENTA_AVANCE_PREPAGO > @maxVenta THEN @maxVenta ELSE VENTA_AVANCE_PREPAGO END) <= rango_max
+             ORDER BY nivel_rango DESC) AS nivel_rango
         FROM CalculosBase
     ),
     CalculosConFunciones AS (
@@ -92,12 +101,17 @@ BEGIN
                 @año, 
                 @mes
             ) AS precioUniSchema,
-            -- NOVIEMBRE 2025: Calculamos una sola vez la función fn_CalcularDevolucionChip
-            -- PDV PREMIUM se calcula como PDV REGULAR (mismas reglas)
-            dbo.fn_CalcularDevolucionChip(
-                CASE WHEN @tipoPDV LIKE 'PDV PREMIUM%' THEN 'PDV REGULAR' ELSE @tipoPDV END, 
-                VentaPrepagoLimitada
-            ) AS bonoDevolucionChips,
+            -- NOVIEMBRE 2025: bonoDevolucionChips cambia la lógica - solo se paga si nivel_rango >= 2
+            -- Para otros períodos usa la función fn_CalcularDevolucionChip
+            CASE 
+                WHEN @año = 2025 AND @mes = 11 THEN
+                    CASE WHEN nivel_rango >= 2 THEN VentaPrepagoLimitada ELSE 0 END
+                ELSE
+                    dbo.fn_CalcularDevolucionChip(
+                        CASE WHEN @tipoPDV LIKE 'PDV PREMIUM%' THEN 'PDV REGULAR' ELSE @tipoPDV END, 
+                        VentaPrepagoLimitada
+                    )
+            END AS bonoDevolucionChips,
             -- NOVIEMBRE 2025: Calculamos una sola vez el precio unitario de calidad adicional (Bono C1+C2)
             -- Ambos tipos (PDV REGULAR y PDV PREMIUM) usan las mismas reglas
             (CASE 
