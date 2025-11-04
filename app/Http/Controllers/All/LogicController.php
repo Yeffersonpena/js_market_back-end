@@ -263,6 +263,7 @@ class LogicController extends Controller
                     "bonoCalidad" => 0.00,
                     "zonal" => "",
                     "nivel_rango" => 0,
+                    "pago_chips" => 0.00,
                 ];
 
                 foreach ($spPayment as $item) {
@@ -296,7 +297,14 @@ class LogicController extends Controller
                     $acumuladorPayment["cantidadCalidad"] = property_exists($item, 'cantidadCalidad') ? (float) $item->cantidadCalidad : 0;
                     $acumuladorPayment["bonoCalidad"] = property_exists($item, 'bonoCalidad') ? (float) $item->bonoCalidad : 0;
                     $acumuladorPayment["zonal"] = property_exists($item, 'zonal') ? $item->zonal : "";
-                    $acumuladorPayment["nivel_rango"] = property_exists($item, 'nivel_rango') ? (int) $item->nivel_rango : 0;
+                    $nivelRango = property_exists($item, 'nivel_rango') ? (int) $item->nivel_rango : 0;
+                    $acumuladorPayment["nivel_rango"] = $nivelRango;
+                    // pago_chips: Para noviembre 2025 solo se paga si nivel_rango >= 2, para otros períodos es igual a bonoChips
+                    if ($anio == 2025 && $mes == 11) {
+                        $acumuladorPayment["pago_chips"] += ($nivelRango >= 2 && $item->bonoChips) ? (float) $item->bonoChips : 0.0;
+                    } else {
+                        $acumuladorPayment["pago_chips"] += $item->bonoChips ? (float) $item->bonoChips : 0.0;
+                    }
                 }
                 // $payment= $spPayment;
                 $payment = $acumuladorPayment;
