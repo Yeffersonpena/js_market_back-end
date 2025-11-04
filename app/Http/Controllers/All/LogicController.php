@@ -263,6 +263,11 @@ class LogicController extends Controller
                     "bonoCalidad" => 0.00,
                     "zonal" => "",
                     "nivel_rango" => 0,
+                    // Nuevos campos para bonos por rango
+                    "ventas_mes_anterior" => 0,
+                    "rango_mes_anterior" => 0,
+                    "tipo_bono" => null,
+                    "monto_bono" => 0.00,
                 ];
 
                 foreach ($spPayment as $item) {
@@ -297,6 +302,11 @@ class LogicController extends Controller
                     $acumuladorPayment["bonoCalidad"] = property_exists($item, 'bonoCalidad') ? (float) $item->bonoCalidad : 0;
                     $acumuladorPayment["zonal"] = property_exists($item, 'zonal') ? $item->zonal : "";
                     $acumuladorPayment["nivel_rango"] = property_exists($item, 'nivel_rango') ? (int) $item->nivel_rango : 0;
+                    // Nuevos campos para bonos por rango
+                    $acumuladorPayment["ventas_mes_anterior"] = property_exists($item, 'ventas_mes_anterior') ? (int) $item->ventas_mes_anterior : 0;
+                    $acumuladorPayment["rango_mes_anterior"] = property_exists($item, 'rango_mes_anterior') ? (int) $item->rango_mes_anterior : 0;
+                    $acumuladorPayment["tipo_bono"] = property_exists($item, 'tipo_bono') ? $item->tipo_bono : null;
+                    $acumuladorPayment["monto_bono"] = property_exists($item, 'monto_bono') ? (float) $item->monto_bono : 0.00;
                 }
                 // $payment= $spPayment;
                 $payment = $acumuladorPayment;
