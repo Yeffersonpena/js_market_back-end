@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Incidencia;
 use App\Models\PDV_ABONOS;
 use App\Models\PDV_AVANCES_DIARIOS_MM;
+use App\Models\PDV_VENTAS_BONOS;
 use App\Models\VI_AVANCES_DIARIOS;
 use App\Models\VI_FLYERS;
 use App\Models\VI_PDV_PAYMENT;
@@ -261,6 +262,7 @@ class LogicController extends Controller
                     "cantidadCalidad" => 0.00,
                     "bonoCalidad" => 0.00,
                     "zonal" => "",
+                    "nivel_rango" => 0,
                 ];
 
                 foreach ($spPayment as $item) {
@@ -294,6 +296,7 @@ class LogicController extends Controller
                     $acumuladorPayment["cantidadCalidad"] = property_exists($item, 'cantidadCalidad') ? (float) $item->cantidadCalidad : 0;
                     $acumuladorPayment["bonoCalidad"] = property_exists($item, 'bonoCalidad') ? (float) $item->bonoCalidad : 0;
                     $acumuladorPayment["zonal"] = property_exists($item, 'zonal') ? $item->zonal : "";
+                    $acumuladorPayment["nivel_rango"] = property_exists($item, 'nivel_rango') ? (int) $item->nivel_rango : 0;
                 }
                 // $payment= $spPayment;
                 $payment = $acumuladorPayment;
@@ -305,6 +308,74 @@ class LogicController extends Controller
             return response()->json(["status" => Response::HTTP_BAD_REQUEST, "message" => $ex->getMessage()], Response::HTTP_BAD_REQUEST);
         }
     }
+
+    /**
+     * Nueva función optimizada que consulta la tabla PDV_VENTAS_BONOS
+     * Mantiene la misma estructura de respuesta que getPayment para compatibilidad con el frontend
+     */
+    function getPaymentOptimized($dni, $anio, $mes)
+    {
+        try {
+            // Consultar directamente la tabla PDV_VENTAS_BONOS
+            $paymentData = PDV_VENTAS_BONOS::where('DNI_RESPONSABLE', $dni)
+                ->where('AÑO', $anio)
+                ->where('MES', $mes)
+                ->first();
+
+            if ($paymentData) {
+                // Mapear los datos de la tabla a la estructura esperada por el frontend
+                $payment = [
+                    "bonoPre" => (float) $paymentData->bonoPre,
+                    "bonoRecargaPre" => (float) $paymentData->bonoRecargaPre,
+                    "bonoPortaPre" => (float) $paymentData->bonoPortaPre,
+                    "bonoAltaPost" => (float) $paymentData->bonoAltaPost,
+                    "bonoPortaPostOPost" => (float) $paymentData->bonoPortaPostOPost,
+                    "bonoPortaPostOPre" => (float) $paymentData->bonoPortaPostOPre,
+                    "bonoChips" => (float) $paymentData->VENTA_AVANCE_PREPAGO, // Equivale a bonoChips del SP original
+                    "bonoTotalEfectivo" => (float) $paymentData->bonoTotalEfectivo,
+                    "bonoTotal" => (float) $paymentData->bonoTotal,
+                    "ventaTotal" => (float) $paymentData->VENTA_AVANCE_PREPAGO, // Ventas totales del mes
+                    
+                    // Campos adicionales para compatibilidad
+                    "faltaVenta" => (float) $paymentData->faltaVenta,
+                    "cantidadPortaPre" => (float) $paymentData->cantidadPortaPre,
+                    "precioUniPortaPre" => 4.00, // Precio fijo para portabilidad prepago
+                    "cantidadAltaPost" => (float) $paymentData->cantidadAltaPost,
+                    "precioUniAltaPost" => 10.00, // Precio fijo para alta postpago
+                    "cantidadPortaPostOPost" => (float) $paymentData->cantidadPortaPostOPost,
+                    "precioPortaPostOPost" => 35.00, // Precio fijo para portabilidad postpago origen postpago
+                    "cantidadPortaPostOPre" => (float) $paymentData->cantidadPortaPostOPre,
+                    "precioPortaPostOPre" => 20.00, // Precio fijo para portabilidad postpago origen prepago
+                    "precioUniSchema" => (float) $paymentData->unitarioPrepago, // Precio unitario según BonoEscala
+                    "levelUser" => (float) $paymentData->unitarioRecargas, // Precio unitario por tipo PDV
+                    "cantidadRecarga" => (float) $paymentData->cantidadRecarga,
+                    "bonoDevolucionChips" => (float) $paymentData->bonoDevolucionChips,
+                    "precioUniCalidadAdi" => (float) $paymentData->precioUniCalidadAdi,
+                    "cantidadCalidad" => (float) $paymentData->cantidadCalidad,
+                    "bonoCalidad" => (float) $paymentData->bonoCalidad,
+                    "zonal" => $paymentData->ZONAL ?? "",
+                ];
+
+                return response()->json([
+                    "status" => Response::HTTP_OK, 
+                    "message" => "Hay pago para el vendedor PDV del mes de " . $mes, 
+                    "data" => $payment
+                ], Response::HTTP_OK);
+            } else {
+                return response()->json([
+                    "status" => Response::HTTP_OK, 
+                    "message" => "No hay pagos", 
+                    "data" => []
+                ], Response::HTTP_OK);
+            }
+        } catch (\Exception $ex) {
+            return response()->json([
+                "status" => Response::HTTP_BAD_REQUEST, 
+                "message" => $ex->getMessage()
+            ], Response::HTTP_BAD_REQUEST);
+        }
+    }
+
     function getIncidencia($dni, $anio, $mes)
     {
         try {
