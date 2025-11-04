@@ -59,6 +59,21 @@ BEGIN
               OR (f.PRODUCTO_WEB = 'PORT M4 NO DIR' AND f.PRODUCTOORIGEN IN ('PREPAGO', 'POSTPAGO'))
           )
     ),
+    VentasMesAnterior AS (
+        -- Obtener ventas del mes anterior para comparación de rangos
+        SELECT 
+            ISNULL((SELECT SUM(cantidad) 
+                    FROM dbo.tbl_venta_log v 
+                    WHERE ((@existResp = 1 AND v.DNI_RESPONSABLE = @dni) OR (@existResp = 0 AND v.DNI_VENDEDOR = @dni)) 
+                      AND (
+                          -- Caso normal: mes anterior del mismo año
+                          (@mes > 1 AND YEAR(v.FECHA) = @año AND MONTH(v.FECHA) = @mes - 1)
+                          OR 
+                          -- Caso especial: enero toma diciembre del año anterior
+                          (@mes = 1 AND YEAR(v.FECHA) = @año - 1 AND MONTH(v.FECHA) = 12)
+                      )
+                      AND v.PRODUCT_NAME = 'Prepago'), 0) AS VENTA_AVANCE_PREPAGO_MES_ANTERIOR
+    ),
     CalculosBase AS (
         SELECT
             ISNULL((SELECT SUM(cantidad) FROM dbo.tbl_venta_log v WHERE ((@existResp = 1 AND v.DNI_RESPONSABLE = @dni) OR (@existResp = 0 AND v.DNI_VENDEDOR = @dni)) AND YEAR(v.FECHA) = @año AND MONTH(v.FECHA) = @mes AND v.PRODUCT_NAME = 'Prepago'), 0) AS VENTA_AVANCE_PREPAGO,
@@ -89,15 +104,16 @@ BEGIN
     ),
     CalculosConFunciones AS (
         SELECT
-            *,
+            c.*,
+            vma.VENTA_AVANCE_PREPAGO_MES_ANTERIOR,
             -- NOVIEMBRE 2025: Calculamos una sola vez la función fn_CalcularBonoUnitario
             -- PDV PREMIUM se calcula como PDV REGULAR (mismas reglas)
             dbo.fn_CalcularBonoUnitario_PDV(
                 CASE WHEN @tipoPDV LIKE 'PDV PREMIUM%' THEN 'PDV REGULAR' ELSE @tipoPDV END, 
                 @zonal, 
-                VentaPrepagoLimitada, 
-                ratio, 
-                cantidadCalidad, 
+                c.VentaPrepagoLimitada, 
+                c.ratio, 
+                c.cantidadCalidad, 
                 @año, 
                 @mes
             ) AS precioUniSchema,
@@ -105,21 +121,41 @@ BEGIN
             -- Para otros períodos usa la función fn_CalcularDevolucionChip
             CASE 
                 WHEN @año = 2025 AND @mes = 11 THEN
-                    CASE WHEN nivel_rango >= 2 THEN VentaPrepagoLimitada ELSE 0 END
+                    CASE WHEN c.nivel_rango >= 2 THEN c.VentaPrepagoLimitada ELSE 0 END
                 ELSE
                     dbo.fn_CalcularDevolucionChip(
                         CASE WHEN @tipoPDV LIKE 'PDV PREMIUM%' THEN 'PDV REGULAR' ELSE @tipoPDV END, 
-                        VentaPrepagoLimitada
+                        c.VentaPrepagoLimitada
                     )
             END AS bonoDevolucionChips,
             -- NOVIEMBRE 2025: Calculamos una sola vez el precio unitario de calidad adicional (Bono C1+C2)
             -- Ambos tipos (PDV REGULAR y PDV PREMIUM) usan las mismas reglas
             (CASE 
-                WHEN VentaPrepagoLimitada BETWEEN 50 AND 150 AND ratioCalidad >= 50 THEN 1.5 
-                WHEN VentaPrepagoLimitada BETWEEN 5 AND 49 AND ratioCalidad >= 50 THEN 1.0
+                WHEN c.VentaPrepagoLimitada BETWEEN 50 AND 150 AND c.ratioCalidad >= 50 THEN 1.5 
+                WHEN c.VentaPrepagoLimitada BETWEEN 5 AND 49 AND c.ratioCalidad >= 50 THEN 1.0
                 ELSE 0 
             END) AS precioUniCalidadAdi
-        FROM CalculosFinales
+        FROM CalculosFinales c
+        CROSS JOIN VentasMesAnterior vma
+    ),
+    CalculosConBonoRango AS (
+        SELECT
+            c.*,
+            -- Calcular bono por rango usando la función especializada
+            -- Alta cohesión: toda la lógica está en fn_CalcularBonoRango
+            br.ventas_mes_anterior,
+            br.rango_mes_anterior,
+            br.rango_actual,
+            br.tipo_bono,
+            br.monto_bono
+        FROM CalculosConFunciones c
+        CROSS APPLY dbo.fn_CalcularBonoRango(
+            c.VentaPrepagoLimitada,  -- Ventas del mes actual (limitadas)
+            c.VENTA_AVANCE_PREPAGO_MES_ANTERIOR,  -- Ventas del mes anterior
+            c.nivel_rango,  -- Rango actual
+            @año,  -- Año actual
+            @mes   -- Mes actual
+        ) br
     )
     -- 3. SELECT final, usando los valores precalculados
     SELECT
@@ -161,7 +197,8 @@ BEGIN
             ISNULL((c.cantPrepagoPorta * 4), 0) +
             ISNULL((c.cantidadPortaPostOPost * 35), 0) +
             ISNULL((c.cantidadPortaPostOPre * 20), 0) +
-            ISNULL((c.cantidadCalidad * c.precioUniCalidadAdi), 0)
+            ISNULL((c.cantidadCalidad * c.precioUniCalidadAdi), 0) +
+            ISNULL(c.monto_bono, 0)  -- Incluir bono por rango en efectivo
         ) AS bonoTotalEfectivo,
         (
             ISNULL((c.precioUniSchema * c.VentaPrepagoLimitada), 0) +
@@ -170,18 +207,18 @@ BEGIN
             ISNULL((c.cantidadPortaPostOPost * 35), 0) +
             ISNULL((c.cantidadPortaPostOPre * 20), 0) +
             ISNULL((c.cantidadCalidad * c.precioUniCalidadAdi), 0) +
-            ISNULL(c.bonoDevolucionChips, 0)
+            ISNULL(c.bonoDevolucionChips, 0) +
+            ISNULL(c.monto_bono, 0)  -- Incluir bono por rango en total
         ) AS bonoTotal,
         @tipoPDV as tipo,
-        (SELECT TOP 1 nivel_rango
-         FROM dbo.BonoEscala
-         WHERE tipo_pdv = CASE WHEN @tipoPDV LIKE 'PDV PREMIUM%' THEN 'PDV PREMIUM' ELSE @tipoPDV END
-           AND zonal_pattern = @zonalPattern
-           AND @fechaPeriodo BETWEEN fecha_inicio AND ISNULL(fecha_fin, @fechaPeriodo)
-           AND c.VentaPrepagoLimitada >= rango_min
-           AND c.VentaPrepagoLimitada <= rango_max
-         ORDER BY nivel_rango DESC) AS nivel_rango
+        c.nivel_rango,
+        
+        -- Campos nuevos para bonos por rango
+        c.ventas_mes_anterior,
+        c.rango_mes_anterior,
+        c.tipo_bono,
+        c.monto_bono
 
-    FROM CalculosConFunciones c;
+    FROM CalculosConBonoRango c;
 END;
 
