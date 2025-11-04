@@ -158,7 +158,15 @@ BEGIN
             ISNULL((c.cantidadCalidad * c.precioUniCalidadAdi), 0) +
             ISNULL(c.bonoDevolucionChips, 0)
         ) AS bonoTotal,
-        @tipoPDV as tipo
+        @tipoPDV as tipo,
+        (SELECT TOP 1 nivel_rango
+         FROM dbo.BonoEscala
+         WHERE tipo_pdv = CASE WHEN @tipoPDV LIKE 'PDV PREMIUM%' THEN 'PDV PREMIUM' ELSE @tipoPDV END
+           AND zonal_pattern = @zonalPattern
+           AND @fechaPeriodo BETWEEN fecha_inicio AND ISNULL(fecha_fin, @fechaPeriodo)
+           AND c.VentaPrepagoLimitada >= rango_min
+           AND c.VentaPrepagoLimitada <= rango_max
+         ORDER BY nivel_rango DESC) AS nivel_rango
 
     FROM CalculosConFunciones c;
 END;
