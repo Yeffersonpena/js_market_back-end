@@ -226,7 +226,22 @@ class ImagenController extends Controller
             $baseName = $pictureName . '_' . $pictureDateStar . '_' . $pictureEnd . '_' . $pictureType . '_' . $pictureModo . '_' . $pictureGroup;
             $uniqueHash = substr(md5(uniqid(rand(), true)), 0, 8); // Hash de 8 caracteres
             $nameFilePicture = $baseName . '_' . $uniqueHash . '.' . $extenPicture;
-            $request->file('image')->storeAs('img', $nameFilePicture, 'public');
+            
+            // Intentar guardar el archivo
+            try {
+                $path = $request->file('image')->storeAs('img', $nameFilePicture, 'public');
+                if (!$path) {
+                    throw new \Exception('No se pudo guardar el archivo. Verifique permisos en: ' . storage_path('app/public/img'));
+                }
+            } catch (\Exception $fileEx) {
+                Log::error('Error al guardar archivo flyer', [
+                    'error' => $fileEx->getMessage(),
+                    'path' => storage_path('app/public/img'),
+                    'file' => $nameFilePicture,
+                    'trace' => $fileEx->getTraceAsString()
+                ]);
+                throw new \Exception('Error al guardar archivo: ' . $fileEx->getMessage());
+            }
 
             $historyFlyer = new \App\Models\PDVOutImagen();
             $historyFlyer->nombre_imagen = $nameFilePicture;
