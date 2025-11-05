@@ -227,24 +227,10 @@ class ImagenController extends Controller
             $uniqueHash = substr(md5(uniqid(rand(), true)), 0, 8); // Hash de 8 caracteres
             $nameFilePicture = $baseName . '_' . $uniqueHash . '.' . $extenPicture;
             
-            // Intentar guardar el archivo
-            try {
-                $path = $request->file('image')->storeAs('img', $nameFilePicture, 'public');
-                if (!$path) {
-                    throw new \Exception('No se pudo guardar el archivo. Verifique permisos en: ' . storage_path('app/public/img'));
-                }
-            } catch (\Exception $fileEx) {
-                // Intentar loggear pero no fallar si no se puede
-                try {
-                    Log::error('Error al guardar archivo flyer', [
-                        'error' => $fileEx->getMessage(),
-                        'path' => storage_path('app/public/img'),
-                        'file' => $nameFilePicture
-                    ]);
-                } catch (\Exception $logEx) {
-                    // Ignorar errores de logging
-                }
-                throw new \Exception('Error al guardar archivo: ' . $fileEx->getMessage());
+            // Guardar el archivo
+            $path = $request->file('image')->storeAs('img', $nameFilePicture, 'public');
+            if (!$path) {
+                throw new \Exception('No se pudo guardar el archivo. Verifique permisos en: ' . storage_path('app/public/img'));
             }
 
             $historyFlyer = new \App\Models\PDVOutImagen();
@@ -273,23 +259,8 @@ class ImagenController extends Controller
 
             try {
                 DB::statement('exec dbo.sp_Sincronizar_Flyers ?, ?', [$pictureAnio, $pictureMes]);
-                // Intentar loggear pero no fallar si no se puede
-                try {
-                    Log::info('SP sp_Sincronizar_Flyers ejecutado correctamente', ['año' => $pictureAnio, 'mes' => $pictureMes]);
-                } catch (\Exception $logEx) {
-                    // Ignorar errores de logging
-                }
             } catch (\Exception $spEx) {
-                // Intentar loggear pero no fallar si no se puede
-                try {
-                    Log::error('Error ejecutando SP sp_Sincronizar_Flyers', [
-                        'año' => $pictureAnio,
-                        'mes' => $pictureMes,
-                        'error' => $spEx->getMessage()
-                    ]);
-                } catch (\Exception $logEx) {
-                    // Ignorar errores de logging
-                }
+                // Error al ejecutar SP - se registra en el catch general si es necesario
             }
             $registrosCount = $this->verificarRegistrosCreados($nameFilePicture);
 
@@ -301,20 +272,8 @@ class ImagenController extends Controller
                 "registrosCreados" => $registrosCount
             ], Response::HTTP_OK);
         } catch (\PDOException $pdoEx) {
-            // Intentar loggear pero no fallar si no se puede
-            try {
-                Log::error('PDOException en load', ['message' => $pdoEx->getMessage()]);
-            } catch (\Exception $logEx) {
-                // Ignorar errores de logging
-            }
             return response()->json(["status" => Response::HTTP_BAD_REQUEST, "message" => $pdoEx->getMessage()], Response::HTTP_BAD_REQUEST);
         } catch (\Exception $ex) {
-            // Intentar loggear pero no fallar si no se puede
-            try {
-                Log::error('Exception en load', ['message' => $ex->getMessage()]);
-            } catch (\Exception $logEx) {
-                // Ignorar errores de logging
-            }
             return response()->json(["status" => Response::HTTP_BAD_REQUEST, "message" => $ex->getMessage()], Response::HTTP_BAD_REQUEST);
         }
     }
@@ -417,12 +376,6 @@ class ImagenController extends Controller
                 'errors' => $e->errors()
             ], 422);
         } catch (\Exception $e) {
-            Log::error('Error actualizando comunicación de acelerador', [
-                'campana_id' => $id,
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
-            ]);
-
             return response()->json([
                 'success' => false,
                 'message' => 'Error al actualizar la comunicación: ' . $e->getMessage()
@@ -461,13 +414,6 @@ class ImagenController extends Controller
             $fileSize = Storage::disk('local')->size($filePath);
             $fullPath = Storage::disk('local')->path($filePath);
 
-            // Log de descarga
-            Log::info('Descarga segura de archivo de comunicación', [
-                'file_name' => $fileName,
-                'campana_id' => $campana->id,
-                'file_size' => $fileSize,
-                'file_path' => $fullPath
-            ]);
 
             // Retornar el archivo como descarga usando response()->download()
             return response()->download($fullPath, $fileName, [
@@ -475,12 +421,6 @@ class ImagenController extends Controller
             ]);
 
         } catch (\Exception $e) {
-            Log::error('Error en descarga segura de archivo', [
-                'file_name' => $fileName,
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
-            ]);
-
             return response()->json([
                 'success' => false,
                 'message' => 'Error al descargar el archivo: ' . $e->getMessage()
@@ -498,20 +438,8 @@ class ImagenController extends Controller
     {
         try {
             $result = DB::select('SELECT COUNT(*) as total FROM PORTAL_COMERCIAL.dbo.PDV_OUT_FLYERS WHERE foto_esquema = ?', [$nombreImagen]);
-            $registrosCount = $result[0]->total ?? 0;
-
-            Log::info('Verificación de registro exitosa', [
-                'imagen' => $nombreImagen,
-                'registros' => $registrosCount
-            ]);
-
-            return $registrosCount;
+            return $result[0]->total ?? 0;
         } catch (\Exception $ex) {
-            Log::error('Error verificando registro', [
-                'imagen' => $nombreImagen,
-                'error' => $ex->getMessage()
-            ]);
-
             return 0;
         }
     }
