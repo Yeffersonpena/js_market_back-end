@@ -234,12 +234,16 @@ class ImagenController extends Controller
                     throw new \Exception('No se pudo guardar el archivo. Verifique permisos en: ' . storage_path('app/public/img'));
                 }
             } catch (\Exception $fileEx) {
-                Log::error('Error al guardar archivo flyer', [
-                    'error' => $fileEx->getMessage(),
-                    'path' => storage_path('app/public/img'),
-                    'file' => $nameFilePicture,
-                    'trace' => $fileEx->getTraceAsString()
-                ]);
+                // Intentar loggear pero no fallar si no se puede
+                try {
+                    Log::error('Error al guardar archivo flyer', [
+                        'error' => $fileEx->getMessage(),
+                        'path' => storage_path('app/public/img'),
+                        'file' => $nameFilePicture
+                    ]);
+                } catch (\Exception $logEx) {
+                    // Ignorar errores de logging
+                }
                 throw new \Exception('Error al guardar archivo: ' . $fileEx->getMessage());
             }
 
@@ -269,13 +273,23 @@ class ImagenController extends Controller
 
             try {
                 DB::statement('exec dbo.sp_Sincronizar_Flyers ?, ?', [$pictureAnio, $pictureMes]);
-                Log::info('SP sp_Sincronizar_Flyers ejecutado correctamente', ['año' => $pictureAnio, 'mes' => $pictureMes]);
+                // Intentar loggear pero no fallar si no se puede
+                try {
+                    Log::info('SP sp_Sincronizar_Flyers ejecutado correctamente', ['año' => $pictureAnio, 'mes' => $pictureMes]);
+                } catch (\Exception $logEx) {
+                    // Ignorar errores de logging
+                }
             } catch (\Exception $spEx) {
-                Log::error('Error ejecutando SP sp_Sincronizar_Flyers', [
-                    'año' => $pictureAnio,
-                    'mes' => $pictureMes,
-                    'error' => $spEx->getMessage()
-                ]);
+                // Intentar loggear pero no fallar si no se puede
+                try {
+                    Log::error('Error ejecutando SP sp_Sincronizar_Flyers', [
+                        'año' => $pictureAnio,
+                        'mes' => $pictureMes,
+                        'error' => $spEx->getMessage()
+                    ]);
+                } catch (\Exception $logEx) {
+                    // Ignorar errores de logging
+                }
             }
             $registrosCount = $this->verificarRegistrosCreados($nameFilePicture);
 
@@ -287,10 +301,20 @@ class ImagenController extends Controller
                 "registrosCreados" => $registrosCount
             ], Response::HTTP_OK);
         } catch (\PDOException $pdoEx) {
-            Log::error('PDOException en load', ['message' => $pdoEx->getMessage(), 'trace' => $pdoEx->getTraceAsString()]);
+            // Intentar loggear pero no fallar si no se puede
+            try {
+                Log::error('PDOException en load', ['message' => $pdoEx->getMessage()]);
+            } catch (\Exception $logEx) {
+                // Ignorar errores de logging
+            }
             return response()->json(["status" => Response::HTTP_BAD_REQUEST, "message" => $pdoEx->getMessage()], Response::HTTP_BAD_REQUEST);
         } catch (\Exception $ex) {
-            Log::error('Exception en load', ['message' => $ex->getMessage(), 'trace' => $ex->getTraceAsString()]);
+            // Intentar loggear pero no fallar si no se puede
+            try {
+                Log::error('Exception en load', ['message' => $ex->getMessage()]);
+            } catch (\Exception $logEx) {
+                // Ignorar errores de logging
+            }
             return response()->json(["status" => Response::HTTP_BAD_REQUEST, "message" => $ex->getMessage()], Response::HTTP_BAD_REQUEST);
         }
     }
