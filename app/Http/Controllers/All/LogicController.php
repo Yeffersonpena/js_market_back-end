@@ -267,6 +267,7 @@ class LogicController extends Controller
                     "rango_mes_anterior" => 0,
                     "tipo_bono" => null,
                     "bono_rango" => 0.00,
+                    "ratio_min_requerido" => 0.00,
                 ];
 
                 foreach ($spPayment as $item) {
@@ -305,6 +306,7 @@ class LogicController extends Controller
                     $acumuladorPayment["rango_mes_anterior"] = property_exists($item, 'rango_mes_anterior') ? (int) $item->rango_mes_anterior : 0;
                     $acumuladorPayment["tipo_bono"] = property_exists($item, 'tipo_bono') ? $item->tipo_bono : null;
                     $acumuladorPayment["bono_rango"] = property_exists($item, 'bono_rango') ? (float) $item->bono_rango : 0.00;
+                    $acumuladorPayment["ratio_min_requerido"] = property_exists($item, 'ratio_min_requerido') ? (float) $item->ratio_min_requerido : 0.00;
                 }
                 // $payment= $spPayment;
                 $payment = $acumuladorPayment;
@@ -362,6 +364,12 @@ class LogicController extends Controller
                     "cantidadCalidad" => (float) $paymentData->cantidadCalidad,
                     "bonoCalidad" => (float) $paymentData->bonoCalidad,
                     "zonal" => $paymentData->ZONAL ?? "",
+                    // Campos para bonos por rango (si existen en la tabla)
+                    "nivel_rango" => property_exists($paymentData, 'nivel_rango') ? (int) $paymentData->nivel_rango : 0,
+                    "rango_mes_anterior" => property_exists($paymentData, 'rango_mes_anterior') ? (int) $paymentData->rango_mes_anterior : 0,
+                    "tipo_bono" => property_exists($paymentData, 'tipo_bono') ? $paymentData->tipo_bono : null,
+                    "bono_rango" => property_exists($paymentData, 'bono_rango') ? (float) $paymentData->bono_rango : 0.00,
+                    "ratio_min_requerido" => property_exists($paymentData, 'ratio_min_requerido') ? (float) $paymentData->ratio_min_requerido : 0.00,
                 ];
 
                 return response()->json([
