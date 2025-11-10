@@ -1,57 +1,38 @@
 -- Función para calcular el bono por rango (sube/mantiene)
--- Retorna una tabla con: ventas_mes_anterior, rango_mes_anterior, rango_actual, tipo_bono, monto_bono
+-- Retorna una tabla con: rango_mes_anterior, rango_actual, tipo_bono, bono_rango
 -- Alta cohesión: toda la lógica de cálculo de bono por rango está aquí
 -- Bajo acoplamiento: no depende de lógica específica del SP, solo recibe parámetros
+-- El rango del mes anterior viene directamente de PDV_OUT_ENTREGABLE.RANGO
 
 CREATE FUNCTION dbo.fn_CalcularBonoRango(
-    @ventasMesActual INT,
-    @ventasMesAnterior INT,
-    @rangoActual INT,
-    @añoActual INT,
-    @mesActual INT
+    @rangoMesAnterior INT,  -- Rango del mes anterior desde PDV_OUT_ENTREGABLE
+    @rangoActual INT,       -- Rango actual calculado en base a ventas
+    @añoActual INT,         -- Año actual para consultar BonoRango
+    @mesActual INT          -- Mes actual para consultar BonoRango
 )
 RETURNS TABLE
 AS
 RETURN
 (
-    WITH MaxVentaPeriodo AS (
-        -- Obtener el límite máximo de ventas del período actual
-        SELECT ISNULL(MAX(rango_max), 150) AS max_venta
-        FROM dbo.BonoEscala
-        WHERE DATEFROMPARTS(@añoActual, @mesActual, 1) BETWEEN fecha_inicio AND ISNULL(fecha_fin, DATEFROMPARTS(@añoActual, @mesActual, 1))
-    ),
-    CalculoRangoAnterior AS (
-        -- Calcular el rango del mes anterior usando la escala del mes actual
-        -- Esto es clave: las ventas de octubre se mapean a la escala de noviembre
+    WITH ComparacionRangos AS (
         SELECT 
-            dbo.fn_ObtenerNivelRango(
-                CASE WHEN @ventasMesAnterior > mv.max_venta THEN mv.max_venta ELSE @ventasMesAnterior END,
-                @añoActual,  -- Usar el año del mes actual
-                @mesActual   -- Usar el mes actual para consultar su escala
-            ) AS rango_mes_anterior
-        FROM MaxVentaPeriodo mv
-    ),
-    ComparacionRangos AS (
-        SELECT 
-            @ventasMesAnterior AS ventas_mes_anterior,
-            r.rango_mes_anterior,
+            ISNULL(@rangoMesAnterior, 0) AS rango_mes_anterior,
             @rangoActual AS rango_actual,
             CASE 
-                WHEN @rangoActual > r.rango_mes_anterior THEN 'sube'
-                WHEN @rangoActual = r.rango_mes_anterior AND @rangoActual > 0 THEN 'mantiene'
+                WHEN @rangoActual > ISNULL(@rangoMesAnterior, 0) THEN 'sube'
+                WHEN @rangoActual = ISNULL(@rangoMesAnterior, 0) AND @rangoActual > 0 THEN 'mantiene'
                 ELSE NULL
             END AS tipo_bono,
             CASE 
-                WHEN @rangoActual > r.rango_mes_anterior THEN @rangoActual  -- Para consultar bono "sube"
-                WHEN @rangoActual = r.rango_mes_anterior AND @rangoActual > 0 THEN @rangoActual  -- Para consultar bono "mantiene"
+                WHEN @rangoActual > ISNULL(@rangoMesAnterior, 0) THEN @rangoActual  -- Para consultar bono "sube"
+                WHEN @rangoActual = ISNULL(@rangoMesAnterior, 0) AND @rangoActual > 0 THEN @rangoActual  -- Para consultar bono "mantiene"
                 ELSE NULL
             END AS nivel_rango_para_bono
-        FROM CalculoRangoAnterior r
     ),
     BonoObtenido AS (
         SELECT 
             c.*,
-            ISNULL(br.bono, 0) AS monto_bono
+            ISNULL(br.bono, 0) AS bono_rango
         FROM ComparacionRangos c
         LEFT JOIN dbo.BonoRango br ON 
             br.nivel_rango = c.nivel_rango_para_bono
@@ -59,11 +40,10 @@ RETURN
             AND DATEFROMPARTS(@añoActual, @mesActual, 1) BETWEEN br.fecha_inicio AND ISNULL(br.fecha_fin, DATEFROMPARTS(@añoActual, @mesActual, 1))
     )
     SELECT 
-        ventas_mes_anterior,
         rango_mes_anterior,
         rango_actual,
         tipo_bono,
-        monto_bono
+        bono_rango
     FROM BonoObtenido
 );
 
