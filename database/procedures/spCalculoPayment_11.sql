@@ -11,6 +11,7 @@ BEGIN
     DECLARE @existResp BIT;
     DECLARE @tipoPDV VARCHAR(30), @zonal VARCHAR(30), @maxVenta INT, @precioUniTypePdv DECIMAL(10,2), @accion1 VARCHAR(50);
     DECLARE @rangoMesAnterior INT = 0;  -- Nuevo: rango del mes anterior desde PDV_OUT_ENTREGABLE
+    DECLARE @maxDateCalidad DATE;  -- Fecha máxima de calidad para alinear cálculos
 
     IF EXISTS (SELECT 1 FROM dbo.PDV_OUT_ENTREGABLE WHERE DNI_RESPONSABLE = @dni AND AÑO = @año AND MES = @mes)
         SET @existResp = 1;
@@ -48,6 +49,15 @@ BEGIN
     AND zonal_pattern = @zonalPattern
     AND @fechaPeriodo BETWEEN fecha_inicio AND ISNULL(fecha_fin, @fechaPeriodo);
 
+    -- Obtener fecha máxima de calidad desde parámetros para alinear cálculos
+    SELECT @maxDateCalidad = TRY_CAST(valor AS DATE)
+    FROM dbo.parametros
+    WHERE tipo = 4;
+    
+    -- Si no hay fecha máxima de calidad, usar el último día del mes
+    IF @maxDateCalidad IS NULL
+        SET @maxDateCalidad = EOMONTH(@fechaPeriodo);
+
     -- 2. CTE optimizado para traer todos los datos necesarios para la salida
     WITH PostpagoData AS (
         SELECT 
@@ -68,7 +78,10 @@ BEGIN
     CalculosBase AS (
         SELECT
             ISNULL((SELECT SUM(cantidad) FROM dbo.tbl_venta_log v WHERE ((@existResp = 1 AND v.DNI_RESPONSABLE = @dni) OR (@existResp = 0 AND v.DNI_VENDEDOR = @dni)) AND YEAR(v.FECHA) = @año AND MONTH(v.FECHA) = @mes AND v.PRODUCT_NAME = 'Prepago'), 0) AS VENTA_AVANCE_PREPAGO,
-            ISNULL((SELECT count(*) FROM dbo.PDV_OUT_FUNNEL f WHERE ((@existResp = 1 AND f.DNI_RESPONSABLE = @dni) OR (@existResp = 0 AND f.DNI_VENDEDOR = @dni)) AND YEAR(f.fecha) = @año AND MONTH(f.fecha) = @mes AND f.CALIDAD_CLUSTER IN ('Cluster 1: IMEI nuevo', 'Cluster 2: IMEI reutilizado') AND f.ACCION = @accion1), 0) AS cantidadCalidad,
+            -- VENTA_PREPAGO_CALIDAD: ventas prepago hasta la fecha máxima de calidad para alinear con cantidadCalidad
+            ISNULL((SELECT SUM(cantidad) FROM dbo.tbl_venta_log v WHERE ((@existResp = 1 AND v.DNI_RESPONSABLE = @dni) OR (@existResp = 0 AND v.DNI_VENDEDOR = @dni)) AND YEAR(v.FECHA) = @año AND MONTH(v.FECHA) = @mes AND v.FECHA <= @maxDateCalidad AND v.PRODUCT_NAME = 'Prepago'), 0) AS VENTA_PREPAGO_CALIDAD,
+            -- cantidadCalidad: solo hasta la fecha máxima de calidad para alinear con ventas prepago
+            ISNULL((SELECT count(*) FROM dbo.PDV_OUT_FUNNEL f WHERE ((@existResp = 1 AND f.DNI_RESPONSABLE = @dni) OR (@existResp = 0 AND f.DNI_VENDEDOR = @dni)) AND YEAR(f.fecha) = @año AND MONTH(f.fecha) = @mes AND f.fecha <= @maxDateCalidad AND f.CALIDAD_CLUSTER IN ('Cluster 1: IMEI nuevo', 'Cluster 2: IMEI reutilizado') AND f.ACCION = @accion1), 0) AS cantidadCalidad,
             ISNULL((SELECT COUNT(*) FROM dbo.PDV_OUT_FUNNEL f WHERE ((@existResp = 1 AND f.DNI_RESPONSABLE = @dni) OR (@existResp = 0 AND f.DNI_VENDEDOR = @dni)) AND YEAR(f.fecha) = @año AND MONTH(f.fecha) = @mes AND f.RECARGA_SI_NO = 1 AND f.[RECARGAS>5] = 1 AND f.PRODUCTO_WEB IN ('PREPAGO M7','PORT PREPAGO M7') AND f.ACCION = @accion1), 0) AS RECARGA_TOTAL,
             ISNULL((SELECT sum(PORTA_PREPAGO) FROM dbo.tbl_ventas_prepago_new p WHERE ((@existResp = 1 AND p.DNI_RESPONSABLE = @dni) OR (@existResp = 0 AND p.DNI_VENDEDOR = @dni)) AND YEAR(p.FECHA) = @año AND MONTH(p.FECHA) = @mes), 0) AS cantPrepagoPorta,
             ISNULL(pd.cantidadAltaPost, 0) AS cantidadAltaPost,
@@ -80,8 +93,11 @@ BEGIN
         SELECT
             *,
             CASE WHEN VENTA_AVANCE_PREPAGO > @maxVenta THEN @maxVenta ELSE VENTA_AVANCE_PREPAGO END AS VentaPrepagoLimitada,
+            -- VentaPrepagoCalidadLimitada: ventas prepago limitadas hasta fecha máxima de calidad para cálculos de calidad
+            CASE WHEN VENTA_PREPAGO_CALIDAD > @maxVenta THEN @maxVenta ELSE VENTA_PREPAGO_CALIDAD END AS VentaPrepagoCalidadLimitada,
             FLOOR((CAST(RECARGA_TOTAL AS DECIMAL(10,2)) / NULLIF(CAST(VENTA_AVANCE_PREPAGO AS DECIMAL(10,2)), 0) * 100)) AS ratio,
-            FLOOR((CAST(cantidadCalidad AS DECIMAL(10,2)) / NULLIF(CAST(VENTA_AVANCE_PREPAGO AS DECIMAL(10,2)), 0) * 100)) AS ratioCalidad,
+            -- ratioCalidad: usar VENTA_PREPAGO_CALIDAD para alinear con cantidadCalidad
+            FLOOR((CAST(cantidadCalidad AS DECIMAL(10,2)) / NULLIF(CAST(VENTA_PREPAGO_CALIDAD AS DECIMAL(10,2)), 0) * 100)) AS ratioCalidad,
             -- Calcular nivel_rango para usar en bonoDevolucionChips
             (SELECT TOP 1 nivel_rango
              FROM dbo.BonoEscala
@@ -120,9 +136,10 @@ BEGIN
             END AS bonoDevolucionChips,
             -- NOVIEMBRE 2025: Calculamos una sola vez el precio unitario de calidad adicional (Bono C1+C2)
             -- Ambos tipos (PDV REGULAR y PDV PREMIUM) usan las mismas reglas
+            -- Usar VentaPrepagoCalidadLimitada para alinear con cantidadCalidad y ratioCalidad
             (CASE 
-                WHEN c.VentaPrepagoLimitada BETWEEN 50 AND 150 AND c.ratioCalidad >= 50 THEN 1.5 
-                WHEN c.VentaPrepagoLimitada BETWEEN 5 AND 49 AND c.ratioCalidad >= 50 THEN 1.0
+                WHEN c.VentaPrepagoCalidadLimitada BETWEEN 50 AND 150 AND c.ratioCalidad >= 50 THEN 1.5 
+                WHEN c.VentaPrepagoCalidadLimitada BETWEEN 5 AND 49 AND c.ratioCalidad >= 50 THEN 1.0
                 ELSE 0 
             END) AS precioUniCalidadAdi
         FROM CalculosFinales c
