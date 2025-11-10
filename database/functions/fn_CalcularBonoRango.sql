@@ -3,18 +3,27 @@
 -- Alta cohesión: toda la lógica de cálculo de bono por rango está aquí
 -- Bajo acoplamiento: no depende de lógica específica del SP, solo recibe parámetros
 -- El rango del mes anterior viene directamente de PDV_OUT_ENTREGABLE.RANGO
+-- NOVIEMBRE 2025: Se valida ratio_min desde BonoEscala para pagar el bono
 
 CREATE FUNCTION dbo.fn_CalcularBonoRango(
     @rangoMesAnterior INT,  -- Rango del mes anterior desde PDV_OUT_ENTREGABLE
     @rangoActual INT,       -- Rango actual calculado en base a ventas
     @añoActual INT,         -- Año actual para consultar BonoRango
-    @mesActual INT          -- Mes actual para consultar BonoRango
+    @mesActual INT,         -- Mes actual para consultar BonoRango
+    @ratio DECIMAL(5,2)     -- Ratio de recargas para validar ratio_min
 )
 RETURNS TABLE
 AS
 RETURN
 (
-    WITH ComparacionRangos AS (
+    -- Obtener ratio_min del período desde BonoEscala (es el mismo para todos los rangos)
+    WITH RatioMinimo AS (
+        SELECT 
+            ISNULL(MIN(ratio_min), 0) AS ratio_min_periodo
+        FROM dbo.BonoEscala
+        WHERE DATEFROMPARTS(@añoActual, @mesActual, 1) BETWEEN fecha_inicio AND ISNULL(fecha_fin, DATEFROMPARTS(@añoActual, @mesActual, 1))
+    ),
+    ComparacionRangos AS (
         SELECT 
             ISNULL(@rangoMesAnterior, 0) AS rango_mes_anterior,
             @rangoActual AS rango_actual,
@@ -27,12 +36,18 @@ RETURN
                 WHEN @rangoActual > ISNULL(@rangoMesAnterior, 0) THEN @rangoActual  -- Para consultar bono "sube"
                 WHEN @rangoActual = ISNULL(@rangoMesAnterior, 0) AND @rangoActual > 0 THEN @rangoActual  -- Para consultar bono "mantiene"
                 ELSE NULL
-            END AS nivel_rango_para_bono
+            END AS nivel_rango_para_bono,
+            rm.ratio_min_periodo
+        FROM RatioMinimo rm
     ),
     BonoObtenido AS (
         SELECT 
             c.*,
-            ISNULL(br.bono, 0) AS bono_rango
+            -- NOVIEMBRE 2025: Solo pagar bono_rango si cumple con ratio_min
+            CASE 
+                WHEN c.tipo_bono IS NOT NULL AND @ratio >= c.ratio_min_periodo THEN ISNULL(br.bono, 0)
+                ELSE 0
+            END AS bono_rango
         FROM ComparacionRangos c
         LEFT JOIN dbo.BonoRango br ON 
             br.nivel_rango = c.nivel_rango_para_bono

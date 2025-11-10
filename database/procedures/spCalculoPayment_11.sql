@@ -12,6 +12,7 @@ BEGIN
     DECLARE @tipoPDV VARCHAR(30), @zonal VARCHAR(30), @maxVenta INT, @precioUniTypePdv DECIMAL(10,2), @accion1 VARCHAR(50);
     DECLARE @rangoMesAnterior INT = 0;  -- Nuevo: rango del mes anterior desde PDV_OUT_ENTREGABLE
     DECLARE @maxDateCalidad DATE;  -- Fecha máxima de calidad para alinear cálculos
+    DECLARE @ratioMin DECIMAL(5,2);  -- Ratio mínimo requerido para bono_rango
 
     IF EXISTS (SELECT 1 FROM dbo.PDV_OUT_ENTREGABLE WHERE DNI_RESPONSABLE = @dni AND AÑO = @año AND MES = @mes)
         SET @existResp = 1;
@@ -48,6 +49,11 @@ BEGIN
     WHERE tipo_pdv = CASE WHEN @tipoPDV LIKE 'PDV PREMIUM%' THEN 'PDV PREMIUM' ELSE @tipoPDV END
     AND zonal_pattern = @zonalPattern
     AND @fechaPeriodo BETWEEN fecha_inicio AND ISNULL(fecha_fin, @fechaPeriodo);
+
+    -- Obtener ratio_min del período desde BonoEscala (es el mismo para todos los rangos)
+    SELECT @ratioMin = ISNULL(MIN(ratio_min), 0)
+    FROM dbo.BonoEscala
+    WHERE @fechaPeriodo BETWEEN fecha_inicio AND ISNULL(fecha_fin, @fechaPeriodo);
 
     -- Obtener fecha máxima de calidad desde parámetros para alinear cálculos
     SELECT @maxDateCalidad = TRY_CAST(valor AS DATE)
@@ -158,7 +164,8 @@ BEGIN
             @rangoMesAnterior,  -- Rango del mes anterior desde PDV_OUT_ENTREGABLE
             c.nivel_rango,      -- Rango actual calculado en base a ventas
             @año,               -- Año actual
-            @mes                -- Mes actual
+            @mes,               -- Mes actual
+            c.ratio             -- Ratio de recargas para validar ratio_min
         ) br
     )
     -- 3. SELECT final, usando los valores precalculados
@@ -220,7 +227,10 @@ BEGIN
         -- Campos nuevos para bonos por rango
         c.rango_mes_anterior,
         c.tipo_bono,
-        c.bono_rango
+        c.bono_rango,
+        
+        -- Ratio mínimo requerido para bono_rango (para mostrar en frontend)
+        @ratioMin AS ratio_min_requerido
 
     FROM CalculosConBonoRango c;
 END;
