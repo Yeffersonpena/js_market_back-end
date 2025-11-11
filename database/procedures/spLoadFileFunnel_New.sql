@@ -189,7 +189,8 @@ BEGIN
 		HAVING COUNT(*) > 1000
 		) AS subconsulta
 		--print @maxDateCalidad;
-		update dbo.parametros set valor=@maxDateCalidad where tipo=4;
+		IF @maxDateCalidad IS NOT NULL
+			update dbo.parametros set valor=FORMAT(@maxDateCalidad, 'yyyy-MM-dd') where tipo=4;
 		-------
 		exec dbo.paRegistrarUsuariosMasivo;
         insert into dbo.tbl_log_procedimientos values ('spLoadFileEntregable', GETDATE());
