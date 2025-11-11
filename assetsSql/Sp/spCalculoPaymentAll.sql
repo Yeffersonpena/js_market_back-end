@@ -10,7 +10,7 @@ BEGIN
     DECLARE @procName NVARCHAR(255);
     DECLARE @sql NVARCHAR(MAX);
 
-    IF @mes IN (2, 3, 4, 5)
+    IF @mes IN (2, 3, 4, 5, 10, 11)
     BEGIN
         IF @tipoUser = 2
         BEGIN
