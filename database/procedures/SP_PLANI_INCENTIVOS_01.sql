@@ -31,15 +31,15 @@ BEGIN
         ZONAL VARCHAR(50),
         CODIGO_VENDEDOR VARCHAR(50),
         VENDEDOR VARCHAR(100),
-        AÑO INT,
+        Aï¿½O INT,
         MES INT,
         CLUSTER VARCHAR(50)
     );
 
     INSERT INTO #MAESTRA_VENDEDOR
-    SELECT ZONAL, CODIGO_VENDEDOR, VENDEDOR, AÑO, MES, CLUSTER
+    SELECT ZONAL, CODIGO_VENDEDOR, VENDEDOR, Aï¿½O, MES, CLUSTER
     FROM tbl_lista_vendedor
-    WHERE año = YEAR(@FECHA_INICIO)
+    WHERE aï¿½o = YEAR(@FECHA_INICIO)
       AND MES = MONTH(@FECHA_INICIO)
       AND CLUSTER IS NOT NULL;
 
@@ -107,19 +107,31 @@ BEGIN
         MARCA_CANDADO VARCHAR(50)
     );
 
+    ;WITH CANDADO_BASE AS (
+        SELECT
+            NOM_VENDEDOR,
+            NOM_PRODUCTO
+        FROM #VENTA_RANGO
+        WHERE NOM_PRODUCTO LIKE @LLAVE
+    )
     INSERT INTO #CANDADO
     SELECT
-        NOM_VENDEDOR,
-        NOM_PRODUCTO,
+        CB.NOM_VENDEDOR,
+        -- Concatena todas las variantes del producto candado para el vendedor
+        STUFF((
+            SELECT DISTINCT ', ' + CB2.NOM_PRODUCTO
+            FROM CANDADO_BASE CB2
+            WHERE CB2.NOM_VENDEDOR = CB.NOM_VENDEDOR
+            FOR XML PATH(''), TYPE
+        ).value('.', 'NVARCHAR(MAX)'), 1, 2, '') AS NOM_PRODUCTO,
         COUNT(*) AS TOTAL_CANDADO,
         CASE 
             WHEN COUNT(*) >= @MAXIMO_CANDADO THEN 'CANDADO MAXIMO LOGRADO'
             WHEN COUNT(*) >= @MINIMO_CANDADO THEN 'CANDADO MINIMO LOGRADO'
             ELSE 'NO LOGRA CANDADO'
         END
-    FROM #VENTA_RANGO
-    WHERE NOM_PRODUCTO LIKE @LLAVE
-    GROUP BY NOM_VENDEDOR, NOM_PRODUCTO;
+    FROM CANDADO_BASE CB
+    GROUP BY CB.NOM_VENDEDOR;
 
 
     -----------------------------------------------------------
