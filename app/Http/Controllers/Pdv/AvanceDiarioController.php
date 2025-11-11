@@ -84,7 +84,8 @@ class AvanceDiarioController extends Controller
                     "levelCalidad" => (float)$infoVendedor->{'CALIDAD_CLUSTER'} ?? 0,
                     "infoUpdateCalidad" => $infoVendedor->{'DATE_UPDATE_CALIDAD'} ?? 0,
                     "typeUser" => property_exists($infoVendedor, 'typeUser') ? (float) $infoVendedor->{'typeUser'} : 0,
-                    "diasVentas" => (int)$infoVendedor->diasVentas ?? 0
+                    "diasVentas" => (int)$infoVendedor->diasVentas ?? 0,
+                    "rango" => $infoVendedor->RANGO ?? null
                 ];
                 
                 // Calcular ratio de recarga para determinar meta correcta
