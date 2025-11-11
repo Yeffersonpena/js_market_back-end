@@ -8,6 +8,7 @@ BEGIN
     -- 1. DECLARACIÓN DE VARIABLES
     DECLARE @FechaInicio DATE = DATEFROMPARTS(@Anio, @Mes, 1);
     DECLARE @FechaFin DATE = EOMONTH(@FechaInicio);
+    DECLARE @FechaFinEspecial DATE = DATEFROMPARTS(@Anio, @Mes, 21); -- Fecha límite para cálculo hasta día 21
     DECLARE @cantidadCalidad INT = 0;
    
 
@@ -46,8 +47,10 @@ BEGIN
                 AND FECHA_CARGA = (
                     SELECT MAX(FECHA_CARGA)
                     FROM BD_PLANIFICACION.dbo.PP2025_N0
-                    WHERE FECHA_CARGA >= @FechaInicio AND FECHA_CARGA <= @FechaFin
+                    WHERE FECHA_CARGA >= @FechaInicio AND FECHA_CARGA <= @FechaFinEspecial
                 )
+                -- Filtro especial: solo recargas hasta el día 21 del mes
+                AND TRY_CONVERT(DATE, fecha) <= @FechaFinEspecial
             GROUP BY
                 DNI_VENDEDOR,
                 PERIODO_EVALUACION
@@ -66,7 +69,7 @@ BEGIN
         FROM
             PORTAL_COMERCIAL.dbo.PDV_OUT_FUNNEL
         WHERE
-            fecha >= @FechaInicio AND fecha <= @FechaFin
+            fecha >= @FechaInicio AND fecha <= @FechaFinEspecial
         GROUP BY
             DNI_VENDEDOR
     ),
@@ -82,8 +85,8 @@ BEGIN
         FROM 
             PORTAL_COMERCIAL.dbo.PDV_OUT_FUNNEL
         WHERE 
-            -- Usamos las variables del SP para el conteo de calidad del mes actual
-            TRY_CONVERT(DATE, fecha) BETWEEN @FechaInicio AND @FechaFin AND 
+            -- Usamos las variables del SP para el conteo de calidad del mes actual (hasta día 21)
+            TRY_CONVERT(DATE, fecha) BETWEEN @FechaInicio AND @FechaFinEspecial AND 
             CALIDAD_CLUSTER IN ('Cluster 1: IMEI nuevo', 'Cluster 2: IMEI reutilizado')
         GROUP BY
             DNI_VENDEDOR
