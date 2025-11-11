@@ -14,6 +14,7 @@ BEGIN
     declare @numeroCTA nvarchar(255), @banco nvarchar(255);
     DECLARE @ZONAL NVARCHAR(255);
     DECLARE @DIAS_VENTAS INT;
+    DECLARE @RANGO NVARCHAR(255);
 	SET @dateStart = DATEFROMPARTS(@ANIO, @MES, 1);
 
     select @numeroCTA = numero_cuenta_bancaria ,@banco=entidad_bancaria
@@ -85,7 +86,8 @@ BEGIN
 			@calidadAllNow AS CALIDAD_CLUSTER,
 			@dateUpdateCalidad AS DATE_UPDATE_CALIDAD,
 			@ZONAL AS ZONAL,
-			@DIAS_VENTAS AS diasVentas
+			@DIAS_VENTAS AS diasVentas,
+			E.RANGO AS RANGO
         FROM dbo.PDV_OUT_ENTREGABLE E
         WHERE E.DNI_RESPONSABLE = @DNI
         ORDER BY E.MES DESC;
@@ -156,7 +158,8 @@ BEGIN
                 @calidadAllNow AS CALIDAD_CLUSTER,
                 @dateUpdateCalidad AS DATE_UPDATE_CALIDAD,
                 @ZONAL AS ZONAL,
-                @DIAS_VENTAS AS diasVentas
+                @DIAS_VENTAS AS diasVentas,
+                E.RANGO AS RANGO
             FROM dbo.PDV_OUT_ENTREGABLE E
             WHERE E.DNI_VENDEDOR = @DNI
             ORDER BY E.MES DESC;
@@ -182,7 +185,7 @@ BEGIN
               AND DNI_RESPONSABLE = @DNI
               AND DNI_RESPONSABLE IS NOT NULL;
 
-            SELECT top 1 @nombre_2=DNI_RESPONSABLE, @NOMBRE_RESPONSABLE=NOMBRE_RESPONSABLE FROM dbo.PDV_OUT_ENTREGABLE WHERE DNI_RESPONSABLE =@dniResp  AND  AÑO= @ANIO AND MES = @MES
+            SELECT top 1 @nombre_2=DNI_RESPONSABLE, @NOMBRE_RESPONSABLE=NOMBRE_RESPONSABLE, @RANGO=RANGO FROM dbo.PDV_OUT_ENTREGABLE WHERE DNI_RESPONSABLE =@dniResp  AND  AÑO= @ANIO AND MES = @MES
             
             ;WITH paymentOdo AS (
                 select numero_de_documento, nombre_del_vendedor, tipo_plan, entidad_bancaria, numero_cuenta_bancaria from dbo.[tblpagos_datos_odoo] where numero_de_documento=@DNI
@@ -210,7 +213,8 @@ BEGIN
                 @dateUpdateCalidad AS DATE_UPDATE_CALIDAD,
                 1 AS typeUser,
                 @ZONAL AS ZONAL,
-                @DIAS_VENTAS AS diasVentas
+                @DIAS_VENTAS AS diasVentas,
+                @RANGO AS RANGO
             FROM dbo.PDV_OUT_FUNNEL E
             LEFT JOIN paymentOdo pay ON pay.numero_de_documento = E.DNI_VENDEDOR
             WHERE E.DNI_VENDEDOR = @DNI and SOCIO='JS MARKET' AND ACCION LIKE '%pdv%'
