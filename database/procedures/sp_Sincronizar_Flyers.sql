@@ -11,26 +11,26 @@ BEGIN
 
     -- Verificar si existe información para el mes solicitado
     IF NOT EXISTS (
-        SELECT 1 
-        FROM PORTAL_COMERCIAL.dbo.PDV_OUT_ENTREGABLE 
+        SELECT 1
+        FROM PORTAL_COMERCIAL.dbo.PDV_OUT_ENTREGABLE
         WHERE AÑO = @año AND MES = @mes AND ESTADO = 'ACTIVO'
     )
     BEGIN
         -- Si no existe información para el mes solicitado, buscar el último mes disponible para ese año
-        SELECT TOP 1 
+        SELECT TOP 1
             @año_real = AÑO,
             @mes_real = MES
-        FROM PORTAL_COMERCIAL.dbo.PDV_OUT_ENTREGABLE 
+        FROM PORTAL_COMERCIAL.dbo.PDV_OUT_ENTREGABLE
         WHERE AÑO = @año AND ESTADO = 'ACTIVO'
         ORDER BY MES DESC;
 
         -- Si no hay datos para ese año, buscar el último mes disponible en general
         IF @mes_real IS NULL
         BEGIN
-            SELECT TOP 1 
+            SELECT TOP 1
                 @año_real = AÑO,
                 @mes_real = MES
-            FROM PORTAL_COMERCIAL.dbo.PDV_OUT_ENTREGABLE 
+            FROM PORTAL_COMERCIAL.dbo.PDV_OUT_ENTREGABLE
             WHERE ESTADO = 'ACTIVO'
             ORDER BY AÑO DESC, MES DESC;
         END
@@ -50,7 +50,7 @@ BEGIN
     SELECT DISTINCT
         YEAR(c.fecha_inicio) AS año,
         MONTH(c.fecha_inicio) AS mes,
-        CASE 
+        CASE
             WHEN e.ACCION_1 = 'MULTIMARCA' THEN CAST(e.DNI_VENDEDOR AS VARCHAR(50))
             ELSE CAST(e.DNI_RESPONSABLE AS VARCHAR(50))
         END AS dni_responsable,
@@ -74,11 +74,13 @@ BEGIN
         AND NOT EXISTS (
             SELECT 1
             FROM PORTAL_COMERCIAL.dbo.PDV_OUT_FLYERS f
-            WHERE f.dni_responsable = CASE 
+            WHERE f.dni_responsable = CASE
                 WHEN e.ACCION_1 = 'MULTIMARCA' THEN CAST(e.DNI_VENDEDOR AS VARCHAR(50))
                 ELSE CAST(e.DNI_RESPONSABLE AS VARCHAR(50))
             END
               AND f.foto_esquema = c.foto_esquema
+              AND f.fecha_inicio = c.fecha_inicio
+              AND f.fecha_fin = c.fecha_fin
         );
 
     -- Inserta campañas de PDV
@@ -130,6 +132,8 @@ BEGIN
             FROM PORTAL_COMERCIAL.dbo.PDV_OUT_FLYERS f
             WHERE f.dni_responsable = CAST(e.DNI_RESPONSABLE AS VARCHAR(50))
               AND f.foto_esquema = c.foto_esquema
+              AND f.fecha_inicio = c.fecha_inicio
+              AND f.fecha_fin = c.fecha_fin
         );
 
     -- Inserta campañas MULTIMARCA
@@ -178,6 +182,8 @@ BEGIN
             FROM PORTAL_COMERCIAL.dbo.PDV_OUT_FLYERS f
             WHERE f.dni_responsable = CAST(e.DNI_VENDEDOR AS VARCHAR(50))
               AND f.foto_esquema = c.foto_esquema
+              AND f.fecha_inicio = c.fecha_inicio
+              AND f.fecha_fin = c.fecha_fin
         );
 
 END;
