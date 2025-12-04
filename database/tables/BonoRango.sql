@@ -47,3 +47,41 @@ INSERT INTO PORTAL_COMERCIAL.dbo.BonoRango (nivel_rango, tipo_bono, bono, fecha_
 --
 -- 4. Período: 1 al 30 de noviembre 2025
 
+-- Sentencias INSERT para BonoRango - Diciembre 2025
+-- Bonos por mantenimiento o subida de rango comparado con el mes anterior
+
+-- Bonos "Mantienes Rango" (mantiene el mismo rango que el mes anterior)
+INSERT INTO PORTAL_COMERCIAL.dbo.BonoRango (nivel_rango, tipo_bono, bono, fecha_inicio, fecha_fin, created_at, updated_at) VALUES
+	(3, 'mantiene', 15.00, '2025-12-01', '2025-12-31', getdate(), NULL),  -- R3
+	(4, 'mantiene', 20.00, '2025-12-01', '2025-12-31', getdate(), NULL),  -- R4
+	(5, 'mantiene', 25.00, '2025-12-01', '2025-12-31', getdate(), NULL),  -- R5
+	(6, 'mantiene', 30.00, '2025-12-01', '2025-12-31', getdate(), NULL),  -- R6
+	(7, 'mantiene', 35.00, '2025-12-01', '2025-12-31', getdate(), NULL),  -- R7
+	(8, 'mantiene', 40.00, '2025-12-01', '2025-12-31', getdate(), NULL);  -- R8
+
+-- Bonos "Subes de Rango" (sube de rango comparado con el mes anterior)
+INSERT INTO PORTAL_COMERCIAL.dbo.BonoRango (nivel_rango, tipo_bono, bono, fecha_inicio, fecha_fin, created_at, updated_at) VALUES
+	(2, 'sube', 20.00, '2025-12-01', '2025-12-31', getdate(), NULL),  -- R2
+	(3, 'sube', 25.00, '2025-12-01', '2025-12-31', getdate(), NULL),  -- R3
+	(4, 'sube', 30.00, '2025-12-01', '2025-12-31', getdate(), NULL),  -- R4
+	(5, 'sube', 35.00, '2025-12-01', '2025-12-31', getdate(), NULL),  -- R5
+	(6, 'sube', 40.00, '2025-12-01', '2025-12-31', getdate(), NULL),  -- R6
+	(7, 'sube', 45.00, '2025-12-01', '2025-12-31', getdate(), NULL),  -- R7
+	(8, 'sube', 50.00, '2025-12-01', '2025-12-31', getdate(), NULL);  -- R8
+
+-- Notas sobre los datos para Diciembre 2025:
+-- 1. Mantienes Rango: Se otorga cuando el PDV mantiene el mismo nivel de rango del mes anterior
+--    - R1 y R2: No tienen bono por mantener rango
+--    - R3 a R8: Bonos de S/ 15 a S/ 40 según el nivel
+--
+-- 2. Subes de Rango: Se otorga cuando el PDV sube de nivel de rango comparado con el mes anterior
+--    - R1: No tiene bono por subir (ya está en el nivel más bajo)
+--    - R2 a R8: Bonos de S/ 20 a S/ 50 según el nivel alcanzado
+--    - CAMBIO: R8 ahora tiene bono de S/ 50 al subir (no existía en noviembre)
+--
+-- 3. El cálculo se realiza comparando:
+--    - Rango actual (diciembre): Se calcula con las ventas de diciembre usando la escala de diciembre
+--    - Rango anterior (noviembre): Se calcula con las ventas de noviembre pero usando la escala de diciembre
+--
+-- 4. Período: 1 al 31 de diciembre 2025
+
