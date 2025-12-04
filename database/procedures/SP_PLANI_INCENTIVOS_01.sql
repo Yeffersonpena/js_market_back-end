@@ -125,7 +125,7 @@ BEGIN
             FOR XML PATH(''), TYPE
         ).value('.', 'NVARCHAR(MAX)'), 1, 2, '') AS NOM_PRODUCTO,
         COUNT(*) AS TOTAL_CANDADO,
-        CASE 
+        CASE
             WHEN COUNT(*) >= @MAXIMO_CANDADO THEN 'CANDADO MAXIMO LOGRADO'
             WHEN COUNT(*) >= @MINIMO_CANDADO THEN 'CANDADO MINIMO LOGRADO'
             ELSE 'NO LOGRA CANDADO'
@@ -138,7 +138,7 @@ BEGIN
     -- 6. RESULTADO FINAL
     -----------------------------------------------------------
 
-    SELECT 
+    SELECT
         @TIPO_PRODUCTO AS TIPO_PRODUCTO,
         M.*,
         D.DEUDA,
