@@ -77,14 +77,15 @@ Route::middleware(['jwt.apiRest.jsMarket', 'jwt.user.admin'])->group(function ()
     // Route::post('/api/v1/imagenes/allImg', [ImagenController::class, 'updateImg'])->name('updateImg.imagen.api');
     Route::post('/api/v1/imagenes/load', [ImagenController::class, 'load'])->name('load.imagen.api');
     Route::get('/api/v1/imagenes/campanas-flyers/{año}/{mes}', [ImagenController::class, 'getCampanasFlyers'])->name('getCampanasFlyers.imagen.api');
-    
+    Route::post('/api/v1/imagenes/eliminar-flyer', [ImagenController::class, 'eliminarFlyer'])->name('eliminarFlyer.imagen.api');
+
     // Rutas para comunicación de aceleradores
     Route::post('/api/v1/imagenes/campanas/{id}/comunicacion-acelerador', [ImagenController::class, 'updateComunicacionAcelerador'])->name('updateComunicacionAcelerador.imagen.api');
     Route::get('/api/v1/imagenes/campanas/download-secure/{fileName}', [ImagenController::class, 'downloadSecureFile'])->name('downloadSecureFile.imagen.api');
 
     Route::post('/api/v1/admin/updateFileSp', [GestorController::class, 'loadFileSp'])->name('fileSp.carga.api');
     Route::get('/api/v1/admin/validateFileLoad/{typeFile}', [GestorController::class, 'validateLoadFile'])->name('validateLoadFile.carga.api');
-    
+
     // Route::post('/api/v1/admin/updateFunnel', [GestorController::class, 'loadFunnel'])->name('funnel.carga.api');
 
     Route::get('/api/v1/menu-perfil/asignados/{idPerfil}', [MenuPerfilController::class, 'obtenerMenusAsignados']);
@@ -95,7 +96,7 @@ Route::middleware(['jwt.apiRest.jsMarket', 'jwt.user.admin'])->group(function ()
     Route::get('/api/v1/importaciones/hoy', [ImportacionController::class, 'getLogActual']);
     Route::get('/api/v1/admin/historyIngreso/{user}/{fecha}/{zonal}', [GestorController::class, 'historyIngreso'])->name('historyIngreso.admin.api');
     Route::get('/api/v1/admin/getListZonal', [GestorController::class, 'getZonal'])->name('zonal.admin.api');
-    // supervisor 
+    // supervisor
     Route::get('/api/v1/admin/getListGroup', [AdminController::class, 'getListGroup'])->name('getListGroup.supervisor.api');
     Route::get('/api/v1/admin/getListFlyers/{dateStart}', [AdminController::class, 'getListFlyers'])->name('getListFlyers.admin.api');
     // get list two db
@@ -104,8 +105,8 @@ Route::middleware(['jwt.apiRest.jsMarket', 'jwt.user.admin'])->group(function ()
     // manager config de mm
     Route::get('/api/v1/admin/config/getList', [ConfigController::class, 'getListConfig'])->name('getListConfig.admin.api');
     //Route::get('/api/v1/admin/twoDb/getListFunnel/{dni}/{anio}/{mes}', [AdminController::class, 'getListFunnel'])->name('getListFunnel.admin.api');
-    
-    // asesor 
+
+    // asesor
     Route::get('/api/v1/supervisor/getListZonal', [GestorController::class, 'getZonal'])->name('zonal.admin.api');
     Route::get('/api/v1/supervisor/user/getList/{zonal}', [SupervisorController::class, 'getListUser'])->name('getListUser.supervisor.api');
     // Route::get('/api/v1/supervisor/user/getListZonal', [SupervisorController::class, 'getListZonal'])->name('getListZonal.supervisor.api');
@@ -113,21 +114,21 @@ Route::middleware(['jwt.apiRest.jsMarket', 'jwt.user.admin'])->group(function ()
     Route::get('/api/v1/supervisor/user/update', [SupervisorController::class, 'updateUser'])->name('updateUser.supervisor.api');
     // Route::get('/api/v1/supervisor/getListUser', [SupervisorController::class, 'getListUser'])->name('getListUser.supervisor.api');
     // Route::get('/api/v1/supervisor/sendUser/{idUser}', [ConfigController::class, 'getListConfig'])->name('getListConfig.admin.api');
-    
+
     // manager entregable
     Route::get('/api/v1/admin/entregable/getList/{anio}/{mes}/{stateSearchAll}/{dni}', [GestorEntregableController::class, 'getList'])->name('getList.entregable.api');
     Route::post('/api/v1/admin/entregable/post', [GestorEntregableController::class, 'post'])->name('post.entregable.api');
     Route::delete('/api/v1/admin/entregable/delete/{anio}/{mes}/{dniResp}/{dniVen}', [GestorEntregableController::class, 'delete'])->name('delete.entregable.api');
     Route::put('/api/v1/admin/entregable/update/{anio}/{mes}/{dniResp}/{dniVen}', [GestorEntregableController::class, 'update'])->name('update.entregable.api');
 
-    
+
 });
 Route::post('/api/v1/general/incidencia/create', [IncidenciaController::class, 'create'])->name('create.incidencia.api');
 Route::get('/api/v1/general/incidencia/getList/{typeSearch}/{id}', [IncidenciaController::class, 'getList'])->name('getList.incidencia.api');
 Route::put('/api/v1/general/incidencia/update/{id}', [IncidenciaController::class, 'update'])->name('update.incidencia.api');
 Route::delete('/api/v1/general/incidencia/delete/{id}', [IncidenciaController::class, 'delete'])->name('delete.incidencia.api');
-    
-    
+
+
 Route::middleware(['jwt.apiRest.jsMarket', 'jwt.user.pdv'])->group(function () {
     Route::get('/api/v1/pdv/getDataPdv/{dni}/{anio}/{mes}', [AvanceDiarioController::class, 'getDataPdv'])->name('getDataPdv.user.api');
     Route::get('/api/v1/pdv/getAvanceDiario/{dni}/{anio}/{mes}', [LogicController::class, 'getAvanceDiario'])->name('avanceDiarioMM.user.api');
@@ -136,6 +137,7 @@ Route::middleware(['jwt.apiRest.jsMarket', 'jwt.user.pdv'])->group(function () {
     Route::get('/api/v1/pdv/getAllMonto/{dni}/{anio}/{mes}', [AvanceDiarioController::class, 'getAllMonto'])->name('getAllMonto.user.api');
     Route::get('/api/v1/pdv/getFlyers/{dni}/{anio}/{mes}', [LogicController::class, 'getFlyers'])->name('flyers.user.api');
     Route::get('/api/v1/pdv/getPayment/{dni}/{anio}/{mes}', [LogicController::class, 'getPayment'])->name('payment.user.api');
+    Route::get('/api/v1/pdv/getPaymentOptimized/{dni}/{anio}/{mes}', [LogicController::class, 'getPaymentOptimized'])->name('payment.optimized.user.api');
     Route::get('/api/v1/pdv/getIncidencia/{dni}/{anio}/{mes}', [LogicController::class, 'getIncidencia'])->name('incidencia.user.api');
 });
 Route::middleware(['jwt.apiRest.jsMarket', 'jwt.user.multimarca'])->group(function () {
@@ -150,7 +152,7 @@ Route::middleware(['jwt.apiRest.jsMarket', 'jwt.user.multimarca'])->group(functi
     Route::get('/api/v1/multimarca/getResumenBase/{dni}/{anio}/{mes}', [MultimarcaAvanceDiarioController::class, 'getResumenBase'])->name('resumenBaseMM.user.api');
     Route::get('/api/v1/multimarca/getRecargasPorPeriodo/{dni}/{anio}/{mes}', [MultimarcaAvanceDiarioController::class, 'getRecargasPorPeriodo'])->name('recargasPorPeriodoMM.user.api');
     Route::get('/api/v1/multimarca/getIncidencia/{dni}/{anio}/{mes}', [LogicController::class, 'getIncidencia'])->name('incidencia.user.api');
-    
+
     // Rutas para funcionalidad de N's (ventas y recargas)
 
     Route::get('/api/v1/multimarca/getVentasRecargasByN/{dni}/{periodoN}', [VentasRecargasController::class, 'getVentasRecargasByN'])->name('ventasRecargasN.user.api');
