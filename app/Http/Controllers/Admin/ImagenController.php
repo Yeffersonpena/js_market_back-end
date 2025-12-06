@@ -157,9 +157,9 @@ class ImagenController extends Controller
         try {
             // Validación condicional basada en el campo todos
             $todos = $request->input('todos');
-            
+
             if ($todos === "1") {
-                // Cuando todos = 1, los campos type, modo, group y zonal pueden estar vacíos
+                // Cuando todos = 1, los campos type, modo, rango y zonal pueden estar vacíos
                 $request->validate([
                     'image'       => 'required|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
                     'año'         => 'required|integer|min:2020|max:2030',
@@ -169,7 +169,7 @@ class ImagenController extends Controller
                     'type'        => 'nullable|string',
                     'modo'        => 'nullable|string',
                     'namePicture' => 'required|string',
-                    'group'       => 'nullable|integer|min:0|max:4',
+                    'rango'       => 'nullable', // Puede ser integer, array o string
                     'zonal'       => 'nullable|string|max:500',
                     'todos'       => 'required|string|in:0,1'
                 ]);
@@ -184,7 +184,7 @@ class ImagenController extends Controller
                     'type'        => 'required|string',
                     'modo'        => 'required|string',
                     'namePicture' => 'required|string',
-                    'group'       => 'nullable|integer|min:0|max:4',
+                    'rango'       => 'nullable', // Puede ser integer, array o string
                     'zonal'       => 'nullable|string|max:500',
                     'todos'       => 'required|string|in:0,1'
                 ]);
@@ -200,33 +200,65 @@ class ImagenController extends Controller
             if ($todos === "1") {
                 $pictureType = (string) $request->input('type'); // El tipo real (ESQUEMA, ACELERADOR, INFORMACION)
                 $pictureModo = "TODOS";   // Más claro que NULL
-                $pictureGroup = "TODOS";  // Más claro que NULL
+                $pictureRango = "TODOS";  // Más claro que NULL
                 $pictureZonal = "TODOS";  // Más claro que NULL
             } else {
                 // Lógica normal cuando todos = "0"
                 $pictureType = (string) $request->input('type');
                 $pictureModo = (string) $request->input('modo');
-                
-                $grupoMapping = [
-                    1 => "G1",
-                    2 => "G2",
-                    3 => "G3",
-                    4 => "PDV PREMIUM"
+
+                $rangoMapping = [
+                    1 => "RANGO 1",
+                    2 => "RANGO 2",
+                    3 => "RANGO 3",
+                    4 => "RANGO 4",
+                    5 => "RANGO 5",
+                    6 => "RANGO 6",
+                    7 => "RANGO 7",
+                    8 => "RANGO 8"
                 ];
-                $grupoNumber = (int) ($request->input('group') ?? 0);
-                $pictureGroup = $grupoMapping[$grupoNumber] ?? null;
+
+                // Procesar rango(s) - puede venir como integer, array o string
+                $rangoInput = $request->input('rango');
+                $rangosArray = [];
+
+                if ($rangoInput !== null && $rangoInput !== '') {
+                    // Si es array, procesarlo directamente
+                    if (is_array($rangoInput)) {
+                        $rangosArray = array_map('intval', $rangoInput);
+                    }
+                    // Si es string, intentar convertir a array (ej: "1,2,3" o "1, 2, 3")
+                    elseif (is_string($rangoInput)) {
+                        $rangosArray = array_map('intval', array_filter(array_map('trim', explode(',', $rangoInput))));
+                    }
+                    // Si es un solo integer
+                    elseif (is_numeric($rangoInput)) {
+                        $rangosArray = [(int) $rangoInput];
+                    }
+                }
+
+                // Convertir números de rango a strings "RANGO X" y concatenar
+                $rangosString = [];
+                foreach ($rangosArray as $rangoNum) {
+                    if (isset($rangoMapping[$rangoNum]) && $rangoNum >= 1 && $rangoNum <= 8) {
+                        $rangosString[] = $rangoMapping[$rangoNum];
+                    }
+                }
+
+                // Unir los rangos con comas (ej: "RANGO 1,RANGO 2,RANGO 3")
+                $pictureRango = !empty($rangosString) ? implode(',', $rangosString) : null;
                 $pictureZonal = $request->input('zonal') ?: null; // Convertir string vacío a NULL
             }
 
             $pictureFile     = $request->file('image');
             $pictureName     = $request->input('namePicture');
             $extenPicture    = $pictureFile->getClientOriginalExtension();
-            
+
             // Generar nombre de archivo con hash único para evitar duplicados
-            $baseName = $pictureName . '_' . $pictureDateStar . '_' . $pictureEnd . '_' . $pictureType . '_' . $pictureModo . '_' . $pictureGroup;
+            $baseName = $pictureName . '_' . $pictureDateStar . '_' . $pictureEnd . '_' . $pictureType . '_' . $pictureModo . '_' . $pictureRango;
             $uniqueHash = substr(md5(uniqid(rand(), true)), 0, 8); // Hash de 8 caracteres
             $nameFilePicture = $baseName . '_' . $uniqueHash . '.' . $extenPicture;
-            
+
             // Guardar el archivo
             $path = $request->file('image')->storeAs('img', $nameFilePicture, 'public');
             if (!$path) {
@@ -240,7 +272,7 @@ class ImagenController extends Controller
 
             $fechaInicio   = \Carbon\Carbon::createFromFormat('Y-m-d', $pictureDateStar)->format('Y-m-d');
             $fechaFin      = \Carbon\Carbon::createFromFormat('Y-m-d', $pictureEnd)->format('Y-m-d');
-            
+
             $campanaFlyer = new PDVOutCampanasFlyers();
             $campanaFlyer->nombre_campaña = $nameFilePicture;
             $campanaFlyer->foto_esquema = $nameFilePicture;
@@ -248,7 +280,7 @@ class ImagenController extends Controller
             $campanaFlyer->fecha_fin = $fechaFin;
             $campanaFlyer->tipoImg = $pictureType;
             $campanaFlyer->modo = $pictureModo;
-            $campanaFlyer->criterio_filtro = $pictureGroup;
+            $campanaFlyer->criterio_filtro = $pictureRango;
             $campanaFlyer->zonales = $pictureZonal;
             $campanaFlyer->activa = 1;
             $campanaFlyer->todos = (int) $todos; // Convertir "0"/"1" a int
@@ -258,7 +290,7 @@ class ImagenController extends Controller
             $campanaFlyer->save();
 
             try {
-                DB::statement('exec dbo.sp_Sincronizar_Flyers ?, ?', [$pictureAnio, $pictureMes]);
+                DB::statement('exec dbo.sp_Sincronizar_Flyers_Rango ?, ?', [$pictureAnio, $pictureMes]);
             } catch (\Exception $spEx) {
                 // Error al ejecutar SP - se registra en el catch general si es necesario
             }
@@ -305,10 +337,18 @@ class ImagenController extends Controller
                 ->orderBy('fecha_inicio', 'desc')
                 ->get();
 
+            // Formatear criterio_filtro para mostrar "R1,R2" en lugar de "RANGO 1,RANGO 2"
+            $campanasFormateadas = $campanas->map(function ($campana) {
+                if ($campana->criterio_filtro && $campana->criterio_filtro !== 'TODOS') {
+                    $campana->criterio_filtro = preg_replace('/RANGO\s+(\d+)/i', 'R$1', $campana->criterio_filtro);
+                }
+                return $campana;
+            });
+
             return response()->json([
                 "status" => Response::HTTP_OK,
-                "data" => $campanas,
-                "total" => $campanas->count()
+                "data" => $campanasFormateadas,
+                "total" => $campanasFormateadas->count()
             ], Response::HTTP_OK);
         } catch (\Exception $ex) {
             return response()->json([
@@ -348,13 +388,13 @@ class ImagenController extends Controller
 
             // Procesar actualización usando el servicio
             $result = $this->comunicacionService->processComunicacionUpdate(
-                $campana, 
+                $campana,
                 $request->file('archivo_comunicacion')
             );
 
             if (!$result['success']) {
-                $statusCode = isset($result['errors']) && 
-                    in_array('Esta funcionalidad solo está disponible para campañas de tipo ACELERADOR', $result['errors']) 
+                $statusCode = isset($result['errors']) &&
+                    in_array('Esta funcionalidad solo está disponible para campañas de tipo ACELERADOR', $result['errors'])
                     ? 400 : 422;
 
                 return response()->json([
@@ -368,7 +408,6 @@ class ImagenController extends Controller
                 'message' => 'Comunicación del acelerador actualizada exitosamente',
                 'data' => $result['data']
             ]);
-
         } catch (ValidationException $e) {
             return response()->json([
                 'success' => false,
@@ -392,7 +431,7 @@ class ImagenController extends Controller
         try {
             // Buscar la campaña que tiene este archivo
             $campana = PDVOutCampanasFlyers::where('archivo_comunicacion', $fileName)->first();
-            
+
             if (!$campana) {
                 return response()->json([
                     'success' => false,
@@ -402,7 +441,7 @@ class ImagenController extends Controller
 
             // Verificar que el archivo existe en almacenamiento privado
             $filePath = 'comunicaciones/' . $fileName;
-            
+
             if (!Storage::disk('local')->exists($filePath)) {
                 return response()->json([
                     'success' => false,
@@ -419,7 +458,6 @@ class ImagenController extends Controller
             return response()->download($fullPath, $fileName, [
                 'Content-Disposition' => 'attachment; filename="' . $fileName . '"'
             ]);
-
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
@@ -430,7 +468,7 @@ class ImagenController extends Controller
 
     /**
      * Verifica cuántos registros se crearon en PDV_OUT_FLYERS para una imagen específica
-     * 
+     *
      * @param string $nombreImagen Nombre de la imagen a verificar
      * @return int Número de registros encontrados
      */
@@ -441,6 +479,68 @@ class ImagenController extends Controller
             return $result[0]->total ?? 0;
         } catch (\Exception $ex) {
             return 0;
+        }
+    }
+
+    /**
+     * Elimina un flyer y todas sus asignaciones usando el stored procedure
+     *
+     * @param Request $request
+     * @return JsonResponse
+     */
+    public function eliminarFlyer(Request $request): JsonResponse
+    {
+        try {
+            $request->validate([
+                'nombreImagen' => 'required|string|max:200'
+            ]);
+
+            $nombreImagen = $request->input('nombreImagen');
+
+            // Verificar que el flyer existe antes de eliminar
+            $existeCampana = PDVOutCampanasFlyers::where('foto_esquema', $nombreImagen)->exists();
+
+            if (!$existeCampana) {
+                return response()->json([
+                    "status" => Response::HTTP_NOT_FOUND,
+                    "message" => "No se encontró el flyer con el nombre especificado"
+                ], Response::HTTP_NOT_FOUND);
+            }
+
+            // Ejecutar el stored procedure
+            $result = DB::select('EXEC dbo.sp_Eliminar_Flyer ?', [$nombreImagen]);
+
+            if (!empty($result)) {
+                $resultado = $result[0];
+                $asignacionesEliminadas = $resultado->Asignaciones_Eliminadas ?? 0;
+                $campanaEliminada = $resultado->Campaña_Eliminada ?? 0;
+                $estado = $resultado->Estado ?? '';
+
+                return response()->json([
+                    "status" => Response::HTTP_OK,
+                    "message" => $estado,
+                    "data" => [
+                        "flyer_eliminado" => $nombreImagen,
+                        "asignaciones_eliminadas" => $asignacionesEliminadas,
+                        "campana_eliminada" => $campanaEliminada
+                    ]
+                ], Response::HTTP_OK);
+            } else {
+                return response()->json([
+                    "status" => Response::HTTP_BAD_REQUEST,
+                    "message" => "No se pudo eliminar el flyer"
+                ], Response::HTTP_BAD_REQUEST);
+            }
+        } catch (\PDOException $pdoEx) {
+            return response()->json([
+                "status" => Response::HTTP_BAD_REQUEST,
+                "message" => "Error en la base de datos: " . $pdoEx->getMessage()
+            ], Response::HTTP_BAD_REQUEST);
+        } catch (\Exception $ex) {
+            return response()->json([
+                "status" => Response::HTTP_BAD_REQUEST,
+                "message" => $ex->getMessage()
+            ], Response::HTTP_BAD_REQUEST);
         }
     }
 }
