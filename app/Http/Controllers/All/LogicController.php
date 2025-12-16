@@ -7,6 +7,7 @@ use App\Models\Incidencia;
 use App\Models\PDV_ABONOS;
 use App\Models\PDV_AVANCES_DIARIOS_MM;
 use App\Models\PDV_VENTAS_BONOS;
+use App\Models\PDV_OUT_ESQUEMA_RESUMEN;
 use App\Models\VI_AVANCES_DIARIOS;
 use App\Models\VI_FLYERS;
 use App\Models\VI_PDV_PAYMENT;
@@ -91,26 +92,26 @@ class LogicController extends Controller
         try {
             $existeAvance = VI_FLYERS::where('DNI_Responsable', $dni)
                 ->whereRaw('? BETWEEN MONTH(fecha_inicio) AND MONTH(fecha_fin)', [$mes])
-                ->where(function($query) use ($anio) {
+                ->where(function ($query) use ($anio) {
                     $query->whereYear('fecha_inicio', $anio)
-                          ->orWhereYear('fecha_fin', $anio);
+                        ->orWhereYear('fecha_fin', $anio);
                 })
                 ->exists();
-            if(!$existeAvance){
+            if (!$existeAvance) {
                 // Primero: buscar por año y mes específicos
                 $getDniResp = DB::select("SELECT TOP 1 DNI_RESPONSABLE FROM dbo.PDV_OUT_FUNNEL WHERE DNI_VENDEDOR = ? AND SOCIO = 'JS MARKET' AND year(fecha) = ? AND month(fecha) = ?", [$dni, $anio, $mes]);
-                
+
                 // Si no encuentra resultados para el mes/año, buscar la fecha más reciente
                 if (empty($getDniResp)) {
                     // Obtener la fecha máxima en consulta separada
                     $maxFecha = DB::select("SELECT MAX(fecha) as max_fecha FROM dbo.PDV_OUT_FUNNEL WHERE DNI_VENDEDOR = ? AND SOCIO = 'JS MARKET'", [$dni]);
-                    
+
                     if (!empty($maxFecha) && $maxFecha[0]->max_fecha) {
                         // Usar la fecha máxima para obtener el DNI_RESPONSABLE
                         $getDniResp = DB::select("SELECT TOP 1 DNI_RESPONSABLE FROM dbo.PDV_OUT_FUNNEL WHERE DNI_VENDEDOR = ? AND SOCIO = 'JS MARKET' AND fecha = ?", [$dni, $maxFecha[0]->max_fecha]);
                     }
                 }
-                
+
                 $dni = $getDniResp[0]->DNI_RESPONSABLE ?? 0;
             }
             $avances = VI_FLYERS::where('DNI_Responsable', $dni)->whereRaw('? BETWEEN MONTH(fecha_inicio) AND MONTH(fecha_fin)', [$mes])->orderBy('fecha_fin', 'asc')->get();
@@ -244,7 +245,7 @@ class LogicController extends Controller
                     "bonoTotalEfectivo" => 0.00,
                     "bonoTotal" => 0.00,
                     "ventaTotal" => 0.00,
-                    // 
+                    //
                     "faltaVenta" => 0.00,
                     "cantidadPortaPre" => 0.00,
                     "precioUniPortaPre" => 0.00,
@@ -281,7 +282,7 @@ class LogicController extends Controller
                     $acumuladorPayment["bonoChips"] += $item->bonoChips ? (float) $item->bonoChips : 0.0;
                     $acumuladorPayment["bonoTotalEfectivo"] += $item->bonoTotalEfectivo ? (float) $item->bonoTotalEfectivo : 0.0;
                     $acumuladorPayment["bonoTotal"] += $item->bonoTotal ? (float) $item->bonoTotal : 0.0;
-                    // 
+                    //
                     $acumuladorPayment["faltaVenta"] = (float) $item->faltaVenta;
                     $acumuladorPayment["cantidadPortaPre"] = (float) $item->cantidadPortaPre;
                     $acumuladorPayment["precioUniPortaPre"] = (float) $item->precioUniPortaPre;
@@ -320,73 +321,83 @@ class LogicController extends Controller
     }
 
     /**
-     * Nueva función optimizada que consulta la tabla PDV_VENTAS_BONOS
+     * Nueva función optimizada que consulta la tabla PDV_OUT_ESQUEMA_RESUMEN
      * Mantiene la misma estructura de respuesta que getPayment para compatibilidad con el frontend
      */
     function getPaymentOptimized($dni, $anio, $mes)
     {
         try {
-            // Consultar directamente la tabla PDV_VENTAS_BONOS
-            $paymentData = PDV_VENTAS_BONOS::where('DNI_RESPONSABLE', $dni)
+            // Consultar directamente la tabla PDV_OUT_ESQUEMA_RESUMEN
+            $paymentData = PDV_OUT_ESQUEMA_RESUMEN::where('DNI_RESPONSABLE', $dni)
                 ->where('AÑO', $anio)
                 ->where('MES', $mes)
                 ->first();
 
             if ($paymentData) {
-                // Mapear los datos de la tabla a la estructura esperada por el frontend
+                // Valores base para cálculos
+                $ventaAvancePrepago   = (float) $paymentData->VENTA_AVANCE_PREPAGO;
+                $ventaPrepagoLimitada = (float) $paymentData->VentaPrepagoLimitada;
+                $bonoUnitarioEquipo   = (float) $paymentData->BONO_UNITARIO_EQUIPO;
+                $totalRecargas        = (float) $paymentData->TOTAL_RECARGAS;
+                $totalVCalidad        = (float) $paymentData->TOTAL_VCALIDAD;
+                $maxVenta             = (float) $paymentData->MAX_VENTA;
+
+                // Mismo formato que getPayment
                 $payment = [
-                    "bonoPre" => (float) $paymentData->bonoPre,
-                    "bonoRecargaPre" => (float) $paymentData->bonoRecargaPre,
-                    "bonoPortaPre" => (float) $paymentData->bonoPortaPre,
-                    "bonoAltaPost" => (float) $paymentData->bonoAltaPost,
+                    // Bonos principales
+                    "bonoPre"            => $bonoUnitarioEquipo * $ventaPrepagoLimitada,
+                    "bonoRecargaPre"     => (float) $paymentData->bonoRecargaPre,
+                    "bonoPortaPre"       => (float) $paymentData->bonoPortaPre,
+                    "bonoAltaPost"       => 0.00, // Si existe responsable (@existResp = 1), bonoAltaPost = 0
                     "bonoPortaPostOPost" => (float) $paymentData->bonoPortaPostOPost,
-                    "bonoPortaPostOPre" => (float) $paymentData->bonoPortaPostOPre,
-                    "bonoChips" => (float) $paymentData->VENTA_AVANCE_PREPAGO, // Equivale a bonoChips del SP original
-                    "bonoTotalEfectivo" => (float) $paymentData->bonoTotalEfectivo,
-                    "bonoTotal" => (float) $paymentData->bonoTotal,
-                    "ventaTotal" => (float) $paymentData->VENTA_AVANCE_PREPAGO, // Ventas totales del mes
-                    
-                    // Campos adicionales para compatibilidad
-                    "faltaVenta" => (float) $paymentData->faltaVenta,
-                    "cantidadPortaPre" => (float) $paymentData->cantidadPortaPre,
-                    "precioUniPortaPre" => 4.00, // Precio fijo para portabilidad prepago
-                    "cantidadAltaPost" => (float) $paymentData->cantidadAltaPost,
-                    "precioUniAltaPost" => 10.00, // Precio fijo para alta postpago
+                    "bonoPortaPostOPre"  => (float) $paymentData->bonoPortaPostOPre,
+                    "bonoChips"          => (float) $paymentData->bonoChips,
+                    "bonoTotalEfectivo"  => (float) $paymentData->bonoTotalEfectivo,
+                    "bonoTotal"          => (float) $paymentData->bonoTotal,
+                    "ventaTotal"         => $ventaAvancePrepago,
+
+                    // Detalle y métricas
+                    "faltaVenta"         => max(0, $maxVenta - $ventaAvancePrepago),
+                    "cantidadPortaPre"   => (float) $paymentData->cantPrepagoPorta,
+                    "precioUniPortaPre"  => 4.00,
+                    "cantidadAltaPost"   => (float) $paymentData->cantidadAltaPost,
+                    "precioUniAltaPost"  => 0.00, // Si existe responsable (@existResp = 1), precioUniAltaPost = 0
                     "cantidadPortaPostOPost" => (float) $paymentData->cantidadPortaPostOPost,
-                    "precioPortaPostOPost" => 35.00, // Precio fijo para portabilidad postpago origen postpago
-                    "cantidadPortaPostOPre" => (float) $paymentData->cantidadPortaPostOPre,
-                    "precioPortaPostOPre" => 20.00, // Precio fijo para portabilidad postpago origen prepago
-                    "precioUniSchema" => (float) $paymentData->unitarioPrepago, // Precio unitario según BonoEscala
-                    "levelUser" => (float) $paymentData->unitarioRecargas, // Precio unitario por tipo PDV
-                    "cantidadRecarga" => (float) $paymentData->cantidadRecarga,
-                    "bonoDevolucionChips" => (float) $paymentData->bonoDevolucionChips,
-                    "precioUniCalidadAdi" => (float) $paymentData->precioUniCalidadAdi,
-                    "cantidadCalidad" => (float) $paymentData->cantidadCalidad,
-                    "bonoCalidad" => (float) $paymentData->bonoCalidad,
-                    "zonal" => $paymentData->ZONAL ?? "",
-                    // Campos para bonos por rango (si existen en la tabla)
-                    "nivel_rango" => property_exists($paymentData, 'nivel_rango') ? (int) $paymentData->nivel_rango : 0,
-                    "rango_mes_anterior" => property_exists($paymentData, 'rango_mes_anterior') ? (int) $paymentData->rango_mes_anterior : 0,
-                    "tipo_bono" => property_exists($paymentData, 'tipo_bono') ? $paymentData->tipo_bono : null,
-                    "bono_rango" => property_exists($paymentData, 'bono_rango') ? (float) $paymentData->bono_rango : 0.00,
-                    "ratio_min_requerido" => property_exists($paymentData, 'ratio_min_requerido') ? (float) $paymentData->ratio_min_requerido : 0.00,
+                    "precioPortaPostOPost"   => 35.00,
+                    "cantidadPortaPostOPre"  => (float) $paymentData->cantidadPortaPostOPre,
+                    "precioPortaPostOPre"    => 20.00,
+                    "precioUniSchema"        => $bonoUnitarioEquipo,
+                    "levelUser"              => 2.00, // Todos PDV REGULAR
+                    "cantidadRecarga"        => $totalRecargas,
+                    "bonoDevolucionChips"    => (float) $paymentData->bonoDevolucionChips,
+                    "precioUniCalidadAdi"    => (float) $paymentData->precioUniCalidadAdi,
+                    "cantidadCalidad"        => $totalVCalidad,
+                    "bonoCalidad"            => (float) $paymentData->bonoCalidad,
+                    "zonal"                  => $paymentData->ZONAL ?? "",
+
+                    // Bonos por rango
+                    "nivel_rango"        => (int) $paymentData->nivel_rango,
+                    "rango_mes_anterior" => (int) $paymentData->RANGO_MES_ANTERIOR,
+                    "tipo_bono"          => $paymentData->tipo_bono,
+                    "bono_rango"         => (float) $paymentData->bono_rango,
+                    "ratio_min_requerido" => (float) $paymentData->ratio_min_requerido,
                 ];
 
                 return response()->json([
-                    "status" => Response::HTTP_OK, 
-                    "message" => "Hay pago para el vendedor PDV del mes de " . $mes, 
-                    "data" => $payment
+                    "status"  => Response::HTTP_OK,
+                    "message" => "Hay pago para el vendedor PDV del mes de " . $mes,
+                    "data"    => $payment
                 ], Response::HTTP_OK);
             } else {
                 return response()->json([
-                    "status" => Response::HTTP_OK, 
-                    "message" => "No hay pagos", 
-                    "data" => []
+                    "status"  => Response::HTTP_OK,
+                    "message" => "No hay pagos",
+                    "data"    => []
                 ], Response::HTTP_OK);
             }
         } catch (\Exception $ex) {
             return response()->json([
-                "status" => Response::HTTP_BAD_REQUEST, 
+                "status"  => Response::HTTP_BAD_REQUEST,
                 "message" => $ex->getMessage()
             ], Response::HTTP_BAD_REQUEST);
         }
