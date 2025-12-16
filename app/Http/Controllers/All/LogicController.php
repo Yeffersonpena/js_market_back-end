@@ -357,7 +357,7 @@ class LogicController extends Controller
                     "ventaTotal"         => $ventaAvancePrepago,
 
                     // Detalle y métricas
-                    "faltaVenta"         => max(0, $maxVenta - $ventaAvancePrepago),
+                    "faltaVenta"         => 0.00, // Valor fijo del SP original (spCalculoPayment_12 línea 152)
                     "cantidadPortaPre"   => (float) $paymentData->cantPrepagoPorta,
                     "precioUniPortaPre"  => 4.00,
                     "cantidadAltaPost"   => (float) $paymentData->cantidadAltaPost,
