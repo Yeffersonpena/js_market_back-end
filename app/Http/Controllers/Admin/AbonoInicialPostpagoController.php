@@ -128,8 +128,9 @@ class AbonoInicialPostpagoController extends Controller
     public function store(Request $request)
     {
         try {
+            // Validar campos básicos primero
             $validated = $request->validate([
-                'fecha_hora_recarga' => 'required|date',
+                'fecha_hora_recarga' => 'required|string',
                 'zonal' => 'nullable|string|max:100',
                 'accion' => 'nullable|string|max:50',
                 'dni' => 'required|integer',
@@ -139,13 +140,30 @@ class AbonoInicialPostpagoController extends Controller
             ]);
 
             $row = new AbonoInicialPostpago();
-            $row->FECHA_HORA_RECARGA = Carbon::parse($validated['fecha_hora_recarga']);
+
+            // Parsear fecha - acepta formato Y-m-d H:i:s o cualquier formato válido
+            try {
+                // Intentar primero con el formato esperado del frontend
+                $row->FECHA_HORA_RECARGA = Carbon::createFromFormat('Y-m-d H:i:s', $validated['fecha_hora_recarga']);
+            } catch (\Exception $e) {
+                // Si falla, intentar parseo automático de Carbon
+                try {
+                    $row->FECHA_HORA_RECARGA = Carbon::parse($validated['fecha_hora_recarga']);
+                } catch (\Exception $e2) {
+                    return response()->json([
+                        "status" => Response::HTTP_BAD_REQUEST,
+                        "message" => "Formato de fecha inválido: " . $validated['fecha_hora_recarga'],
+                    ], Response::HTTP_BAD_REQUEST);
+                }
+            }
+
             $row->ZONAL = $validated['zonal'] ?? null;
             $row->ACCION = $validated['accion'] ?? null;
             $row->DNI = (int) $validated['dni'];
             $row->RECARGADOR_CELULAR = $validated['recargador_celular'];
-            $row->MONTO = $validated['monto'];
-            $row->SE_ABONO = array_key_exists('se_abono', $validated) ? ((bool) $validated['se_abono'] ? 1 : 0) : 0;
+            $row->MONTO = (float) $validated['monto'];
+            $row->SE_ABONO = isset($validated['se_abono']) && $validated['se_abono'] ? 1 : 0;
+
             $row->save();
             $row->refresh(); // Recargar para obtener FECHA_CARGA
 
@@ -154,11 +172,19 @@ class AbonoInicialPostpagoController extends Controller
                 "message" => "Registro creado",
                 "data" => $this->transformData($row),
             ], Response::HTTP_CREATED);
-        } catch (\Exception $ex) {
+        } catch (\Illuminate\Validation\ValidationException $ex) {
             return response()->json([
-                "status" => Response::HTTP_BAD_REQUEST,
-                "message" => $ex->getMessage(),
-            ], Response::HTTP_BAD_REQUEST);
+                "status" => Response::HTTP_UNPROCESSABLE_ENTITY,
+                "message" => "Error de validación",
+                "errors" => $ex->errors(),
+            ], Response::HTTP_UNPROCESSABLE_ENTITY);
+        } catch (\Exception $ex) {
+            \Log::error('Error en store AbonoInicialPostpago: ' . $ex->getMessage());
+            \Log::error('Stack trace: ' . $ex->getTraceAsString());
+            return response()->json([
+                "status" => Response::HTTP_INTERNAL_SERVER_ERROR,
+                "message" => "Error al crear registro: " . $ex->getMessage(),
+            ], Response::HTTP_INTERNAL_SERVER_ERROR);
         }
     }
 
