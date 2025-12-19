@@ -57,7 +57,7 @@ class AbonoInicialPostpagoController extends Controller
             if ($search !== '') {
                 $query->where(function ($q) use ($search) {
                     $q->where('ZONAL', 'LIKE', "%$search%")
-                        ->orWhere('ACCION', 'LIKE', "%$search%")
+                        ->orWhereRaw('CAST(DNI AS VARCHAR) LIKE ?', ["%$search%"])
                         ->orWhere('RECARGADOR_CELULAR', 'LIKE', "%$search%");
                 });
             }
