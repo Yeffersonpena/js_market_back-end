@@ -10,6 +10,28 @@ use Symfony\Component\HttpFoundation\Response;
 
 class AbonoInicialPostpagoController extends Controller
 {
+    /**
+     * Transforma los campos del modelo de mayúsculas a snake_case en minúsculas
+     */
+    private function transformData($row)
+    {
+        if (!$row) {
+            return null;
+        }
+
+        return [
+            'id' => $row->ID,
+            'fecha_hora_recarga' => $row->FECHA_HORA_RECARGA ? $row->FECHA_HORA_RECARGA->toIso8601String() : null,
+            'zonal' => $row->ZONAL,
+            'accion' => $row->ACCION,
+            'dni' => $row->DNI,
+            'recargador_celular' => $row->RECARGADOR_CELULAR,
+            'monto' => (float) $row->MONTO,
+            'se_abono' => (bool) $row->SE_ABONO,
+            'fecha_carga' => $row->FECHA_CARGA ? $row->FECHA_CARGA->toIso8601String() : null,
+        ];
+    }
+
     public function index(Request $request)
     {
         try {
@@ -55,10 +77,15 @@ class AbonoInicialPostpagoController extends Controller
 
             $rows = $query->orderBy('FECHA_HORA_RECARGA', 'desc')->paginate($perPage);
 
+            // Transformar los datos a snake_case en minúsculas
+            $transformedData = array_map(function ($item) {
+                return $this->transformData($item);
+            }, $rows->items());
+
             return response()->json([
                 "status" => Response::HTTP_OK,
                 "message" => "Listado de abono inicial postpago",
-                "data" => $rows->items(),
+                "data" => $transformedData,
                 "pagination" => [
                     "current_page" => $rows->currentPage(),
                     "per_page" => $rows->perPage(),
@@ -88,7 +115,7 @@ class AbonoInicialPostpagoController extends Controller
             return response()->json([
                 "status" => Response::HTTP_OK,
                 "message" => "Detalle de abono inicial postpago",
-                "data" => $row,
+                "data" => $this->transformData($row),
             ], Response::HTTP_OK);
         } catch (\Exception $ex) {
             return response()->json([
@@ -120,11 +147,12 @@ class AbonoInicialPostpagoController extends Controller
             $row->MONTO = $validated['monto'];
             $row->SE_ABONO = array_key_exists('se_abono', $validated) ? ((bool) $validated['se_abono'] ? 1 : 0) : 0;
             $row->save();
+            $row->refresh(); // Recargar para obtener FECHA_CARGA
 
             return response()->json([
                 "status" => Response::HTTP_CREATED,
                 "message" => "Registro creado",
-                "data" => $row,
+                "data" => $this->transformData($row),
             ], Response::HTTP_CREATED);
         } catch (\Exception $ex) {
             return response()->json([
@@ -179,11 +207,12 @@ class AbonoInicialPostpagoController extends Controller
             }
 
             $row->save();
+            $row->refresh(); // Recargar para obtener datos actualizados
 
             return response()->json([
                 "status" => Response::HTTP_OK,
                 "message" => "Registro actualizado",
-                "data" => $row,
+                "data" => $this->transformData($row),
             ], Response::HTTP_OK);
         } catch (\Exception $ex) {
             return response()->json([
@@ -217,5 +246,3 @@ class AbonoInicialPostpagoController extends Controller
         }
     }
 }
-
-
