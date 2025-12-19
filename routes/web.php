@@ -5,6 +5,7 @@ use App\Http\Controllers\Admin\Config\ConfigController;
 use App\Http\Controllers\Admin\GestorController;
 use App\Http\Controllers\Admin\GestorEntregableController;
 use App\Http\Controllers\Admin\AbonoInicialPostpagoController;
+use App\Http\Controllers\Admin\AbonosPostpagoLogController;
 use App\Http\Controllers\All\LogicController;
 use App\Http\Controllers\Controller;
 use App\Http\Controllers\LoginController;
@@ -131,6 +132,9 @@ Route::middleware(['jwt.apiRest.jsMarket', 'jwt.user.admin'])->group(function ()
     Route::put('/api/v1/admin/abono-inicial-postpago/{id}', [AbonoInicialPostpagoController::class, 'update']);
     Route::patch('/api/v1/admin/abono-inicial-postpago/{id}', [AbonoInicialPostpagoController::class, 'update']);
     Route::delete('/api/v1/admin/abono-inicial-postpago/{id}', [AbonoInicialPostpagoController::class, 'destroy']);
+
+    // Abonos postpago log (Solo lectura - solo admin)
+    Route::get('/api/v1/admin/abonos-postpago-log', [AbonosPostpagoLogController::class, 'index']);
 
 
 });
