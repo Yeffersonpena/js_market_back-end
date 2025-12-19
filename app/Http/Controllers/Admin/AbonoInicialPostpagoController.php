@@ -24,14 +24,14 @@ class AbonoInicialPostpagoController extends Controller
         try {
             return [
                 'id' => $row->ID,
-                'fecha_hora_recarga' => $row->FECHA_HORA_RECARGA ? Carbon::parse($row->FECHA_HORA_RECARGA)->format('Y-m-d\TH:i:s\Z') : null,
+                'fecha_hora_recarga' => $row->FECHA_HORA_RECARGA ? Carbon::parse($row->FECHA_HORA_RECARGA)->setTimezone('America/Lima')->format('Y-m-d\TH:i:s') : null,
                 'zonal' => $row->ZONAL,
                 'accion' => $row->ACCION,
                 'dni' => $row->DNI,
                 'recargador_celular' => $row->RECARGADOR_CELULAR,
                 'monto' => (float) $row->MONTO,
                 'se_abono' => (bool) $row->SE_ABONO,
-                'fecha_carga' => $row->FECHA_CARGA ? Carbon::parse($row->FECHA_CARGA)->format('Y-m-d\TH:i:s\Z') : null,
+                'fecha_carga' => $row->FECHA_CARGA ? Carbon::parse($row->FECHA_CARGA)->setTimezone('America/Lima')->format('Y-m-d\TH:i:s') : null,
             ];
         } catch (\Exception $e) {
             // Si hay error al transformar, devolver datos básicos
