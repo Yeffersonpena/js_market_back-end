@@ -2,12 +2,14 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Exports\AbonoInicialPostpagoExport;
 use App\Http\Controllers\Controller;
 use App\Models\AbonoInicialPostpago;
 use App\Models\PDV_ENTREGABLE;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
+use Maatwebsite\Excel\Facades\Excel;
 use Symfony\Component\HttpFoundation\Response;
 
 class AbonoInicialPostpagoController extends Controller
@@ -337,6 +339,24 @@ class AbonoInicialPostpagoController extends Controller
             return response()->json([
                 "status" => Response::HTTP_INTERNAL_SERVER_ERROR,
                 "message" => "Error al obtener datos: " . $ex->getMessage(),
+            ], Response::HTTP_INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    /**
+     * Exportar datos a Excel
+     */
+    public function export()
+    {
+        try {
+            $nombreArchivo = 'abono_inicial_postpago_' . date('Y-m-d_His') . '.xlsx';
+            return Excel::download(new AbonoInicialPostpagoExport(), $nombreArchivo);
+        } catch (\Exception $ex) {
+            Log::error('Error en export AbonoInicialPostpago: ' . $ex->getMessage());
+            Log::error('Stack trace: ' . $ex->getTraceAsString());
+            return response()->json([
+                "status" => Response::HTTP_INTERNAL_SERVER_ERROR,
+                "message" => "Error al exportar datos: " . (app()->environment('production') ? 'Contacte a soporte.' : $ex->getMessage()),
             ], Response::HTTP_INTERNAL_SERVER_ERROR);
         }
     }
