@@ -179,7 +179,7 @@ class GestorController extends Controller
             }
             return response()->json(["status" => Response::HTTP_OK, "message" => "El archivo {$msgAlertFile} ya se ejecuto el dia de hoy"], Response::HTTP_OK);
             // return response()->json(["status" => Response::HTTP_OK, "message" => $nameSp], Response::HTTP_OK);
-            
+
             // if ($request->hasFile('file_entregable') && $request->file('file_entregable')->isValid()) {
             //     $file = $request->file('file_entregable');
             //     $fileName = 'Entregable' . '.' . $file->getClientOriginalExtension();
@@ -187,7 +187,7 @@ class GestorController extends Controller
             //     Storage::exists($pathEntregable) ? Storage::delete($pathEntregable) : false;
             //     $path = $file->storeAs('file_xlsx', $fileName);
             //     if ($path) {
-            //         // server 
+            //         // server
             //         // $pathAllEntregable=env("PATH_LOAD_XLSX").$fileName;
             //         // $loadEntregable=DB::select("EXEC spLoadFileEntregable ?", [$pathAllEntregable]);
             //         $loadEntregable = DB::statement("EXEC spLoadFileEntregable");
@@ -204,7 +204,7 @@ class GestorController extends Controller
             return response()->json(["status" => Response::HTTP_BAD_REQUEST, "message" => $ex->getMessage()], Response::HTTP_BAD_REQUEST);
         }
     }
-    
+
     function loadFunnel(Request $request){
         try{
             $request->validate([
@@ -265,15 +265,15 @@ class GestorController extends Controller
     }catch(\Exception $ex){
         return response()->json(["status" => Response::HTTP_BAD_REQUEST, "message" => $ex->getMessage()], Response::HTTP_BAD_REQUEST);
     }
-        
+
     }
     function getZonal(){
         try{
-            $listZonal=Zonal::get();
+            $listZonal=Zonal::orderBy('zonal')->get();
             if($listZonal){
-                return response()->json(["status"=>Response::HTTP_OK, "message"=>"Existe lista de zonal", "data"=>$listZonal],Response::HTTP_OK); 
+                return response()->json(["status"=>Response::HTTP_OK, "message"=>"Existe lista de zonal", "data"=>$listZonal],Response::HTTP_OK);
             }else{
-                return response()->json(["status"=>Response::HTTP_OK, "message"=>"No hay zonal", "data"=>[]],Response::HTTP_OK,); 
+                return response()->json(["status"=>Response::HTTP_OK, "message"=>"No hay zonal", "data"=>[]],Response::HTTP_OK,);
             }
         }catch(\Exception $ex){
             return response()->json(["status" => Response::HTTP_BAD_REQUEST, "message" => $ex->getMessage()], Response::HTTP_BAD_REQUEST);
@@ -347,7 +347,7 @@ class GestorController extends Controller
                         }else{
                             $stateValue=false;
                             $messageInfo="No hay datos para la fecha ".$fecha;
-                        }    
+                        }
                     }
                     if($zonal !=0){
                         $existUserData=VI_INGRESO_LOG::where('zonal',$zonal)->exists();
@@ -357,7 +357,7 @@ class GestorController extends Controller
                         }else{
                             $stateValue=false;
                             $messageInfo="No hay datos en la zonal ".$zonal;
-                        }    
+                        }
                     }
                 }
                 return response()->json(["status" => Response::HTTP_OK, "message" => $stateValue?"Si hay historial de sesiones":$messageInfo, "data"=>$stateValue?$getUserData:[]], Response::HTTP_OK);
