@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\AbonoInicialPostpago;
+use App\Models\PDV_ENTREGABLE;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
@@ -284,6 +285,59 @@ class AbonoInicialPostpagoController extends Controller
                 "status" => Response::HTTP_BAD_REQUEST,
                 "message" => $ex->getMessage(),
             ], Response::HTTP_BAD_REQUEST);
+        }
+    }
+
+    public function autocompletar($dni)
+    {
+        try {
+            $dniInt = (int) $dni;
+
+            // Query con LEFT JOIN para obtener datos de PDV_OUT_ENTREGABLE y BASE_RECARGADORES
+            $result = PDV_ENTREGABLE::select(
+                'PDV_OUT_ENTREGABLE.ZONAL',
+                'PDV_OUT_ENTREGABLE.ACCION_1',
+                'BASE_RECARGADORES.NUM_RECARGA'
+            )
+                ->leftJoin('PORTAL_COMERCIAL.dbo.BASE_RECARGADORES', function ($join) {
+                    $join->on('PDV_OUT_ENTREGABLE.DNI_RESPONSABLE', '=', 'BASE_RECARGADORES.DNI');
+                })
+                ->where('PDV_OUT_ENTREGABLE.DNI_RESPONSABLE', $dniInt)
+                ->orderBy('PDV_OUT_ENTREGABLE.AÑO', 'desc')
+                ->orderBy('PDV_OUT_ENTREGABLE.MES', 'desc')
+                ->first();
+
+            if (!$result) {
+                return response()->json([
+                    "status" => Response::HTTP_NOT_FOUND,
+                    "message" => "No se encontraron datos para el DNI proporcionado",
+                    "data" => null,
+                ], Response::HTTP_NOT_FOUND);
+            }
+
+            // Convertir NUM_RECARGA a string y validar formato
+            $recargador = null;
+            if ($result->NUM_RECARGA) {
+                $recargadorStr = (string) $result->NUM_RECARGA;
+                // Si tiene menos de 9 dígitos, rellenar con ceros a la izquierda
+                $recargador = str_pad($recargadorStr, 9, '0', STR_PAD_LEFT);
+            }
+
+            return response()->json([
+                "status" => Response::HTTP_OK,
+                "message" => "Datos obtenidos correctamente",
+                "data" => [
+                    "zonal" => $result->ZONAL,
+                    "accion" => $result->ACCION_1,
+                    "recargador_celular" => $recargador,
+                ],
+            ], Response::HTTP_OK);
+        } catch (\Exception $ex) {
+            Log::error('Error en autocompletar AbonoInicialPostpago: ' . $ex->getMessage());
+            return response()->json([
+                "status" => Response::HTTP_INTERNAL_SERVER_ERROR,
+                "message" => "Error al obtener datos: " . $ex->getMessage(),
+            ], Response::HTTP_INTERNAL_SERVER_ERROR);
         }
     }
 }
