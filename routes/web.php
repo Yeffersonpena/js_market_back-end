@@ -4,6 +4,7 @@ use App\Http\Controllers\Admin\AdminController;
 use App\Http\Controllers\Admin\Config\ConfigController;
 use App\Http\Controllers\Admin\GestorController;
 use App\Http\Controllers\Admin\GestorEntregableController;
+use App\Http\Controllers\Admin\AbonoInicialPostpagoController;
 use App\Http\Controllers\All\LogicController;
 use App\Http\Controllers\Controller;
 use App\Http\Controllers\LoginController;
@@ -120,6 +121,14 @@ Route::middleware(['jwt.apiRest.jsMarket', 'jwt.user.admin'])->group(function ()
     Route::post('/api/v1/admin/entregable/post', [GestorEntregableController::class, 'post'])->name('post.entregable.api');
     Route::delete('/api/v1/admin/entregable/delete/{anio}/{mes}/{dniResp}/{dniVen}', [GestorEntregableController::class, 'delete'])->name('delete.entregable.api');
     Route::put('/api/v1/admin/entregable/update/{anio}/{mes}/{dniResp}/{dniVen}', [GestorEntregableController::class, 'update'])->name('update.entregable.api');
+
+    // Abono inicial postpago (CRUD - solo admin)
+    Route::get('/api/v1/admin/abono-inicial-postpago', [AbonoInicialPostpagoController::class, 'index']);
+    Route::get('/api/v1/admin/abono-inicial-postpago/{id}', [AbonoInicialPostpagoController::class, 'show']);
+    Route::post('/api/v1/admin/abono-inicial-postpago', [AbonoInicialPostpagoController::class, 'store']);
+    Route::put('/api/v1/admin/abono-inicial-postpago/{id}', [AbonoInicialPostpagoController::class, 'update']);
+    Route::patch('/api/v1/admin/abono-inicial-postpago/{id}', [AbonoInicialPostpagoController::class, 'update']);
+    Route::delete('/api/v1/admin/abono-inicial-postpago/{id}', [AbonoInicialPostpagoController::class, 'destroy']);
 
 
 });
