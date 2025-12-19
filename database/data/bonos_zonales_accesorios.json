@@ -1,0 +1,70 @@
+{
+    "titulo": "Tabla de Bonos por Zonal",
+    "descripcion": "Cuotas y bonos asignados por zona",
+    "categoria": "ACCESORIOS",
+    "zonales": [
+        {
+            "zonal": "AREQUIPA",
+            "cuota1": 3500,
+            "bono1": 400,
+            "cuota2": 4500,
+            "bono2": 480
+        },
+        {
+            "zonal": "AYACUCHO",
+            "cuota1": 3500,
+            "bono1": 400,
+            "cuota2": 4500,
+            "bono2": 480
+        },
+        {
+            "zonal": "CUSCO",
+            "cuota1": 4500,
+            "bono1": 500,
+            "cuota2": 5500,
+            "bono2": 580
+        },
+        {
+            "zonal": "HUANCAYO",
+            "cuota1": 4500,
+            "bono1": 500,
+            "cuota2": 5500,
+            "bono2": 580
+        },
+        {
+            "zonal": "HUANUCO",
+            "cuota1": 3000,
+            "bono1": 300,
+            "cuota2": 4000,
+            "bono2": 380
+        },
+        {
+            "zonal": "ICA",
+            "cuota1": 4000,
+            "bono1": 450,
+            "cuota2": 5000,
+            "bono2": 530
+        },
+        {
+            "zonal": "LIMASUR",
+            "cuota1": 3500,
+            "bono1": 400,
+            "cuota2": 4500,
+            "bono2": 480
+        },
+        {
+            "zonal": "PUCALLPA",
+            "cuota1": 3500,
+            "bono1": 400,
+            "cuota2": 4500,
+            "bono2": 480
+        },
+        {
+            "zonal": "PUNO",
+            "cuota1": 3000,
+            "bono1": 300,
+            "cuota2": 4000,
+            "bono2": 380
+        }
+    ]
+}

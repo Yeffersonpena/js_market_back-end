@@ -1,0 +1,70 @@
+{
+    "titulo": "Tabla de Bonos por Zonal",
+    "descripcion": "Cuotas y bonos asignados por zona",
+    "categoria": "EQUIPOS",
+    "zonales": [
+        {
+            "zonal": "AREQUIPA",
+            "cuota1": 35000,
+            "bono1": 500,
+            "cuota2": 40000,
+            "bono2": 800
+        },
+        {
+            "zonal": "AYACUCHO",
+            "cuota1": 65000,
+            "bono1": 800,
+            "cuota2": 70000,
+            "bono2": 1100
+        },
+        {
+            "zonal": "CUSCO",
+            "cuota1": 75000,
+            "bono1": 800,
+            "cuota2": 83000,
+            "bono2": 1100
+        },
+        {
+            "zonal": "HUANCAYO",
+            "cuota1": 70000,
+            "bono1": 800,
+            "cuota2": 80000,
+            "bono2": 1100
+        },
+        {
+            "zonal": "HUANUCO",
+            "cuota1": 45000,
+            "bono1": 500,
+            "cuota2": 55000,
+            "bono2": 1100
+        },
+        {
+            "zonal": "ICA",
+            "cuota1": 80000,
+            "bono1": 800,
+            "cuota2": 90000,
+            "bono2": 1100
+        },
+        {
+            "zonal": "LIMASUR",
+            "cuota1": 30000,
+            "bono1": 500,
+            "cuota2": 37000,
+            "bono2": 800
+        },
+        {
+            "zonal": "PUCALLPA",
+            "cuota1": 38000,
+            "bono1": 500,
+            "cuota2": 45000,
+            "bono2": 800
+        },
+        {
+            "zonal": "PUNO",
+            "cuota1": 33000,
+            "bono1": 500,
+            "cuota2": 40000,
+            "bono2": 800
+        }
+    ]
+}
