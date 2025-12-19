@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\AbonoInicialPostpago;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Symfony\Component\HttpFoundation\Response;
 
 class AbonoInicialPostpagoController extends Controller
@@ -19,17 +20,32 @@ class AbonoInicialPostpagoController extends Controller
             return null;
         }
 
-        return [
-            'id' => $row->ID,
-            'fecha_hora_recarga' => $row->FECHA_HORA_RECARGA ? $row->FECHA_HORA_RECARGA->toIso8601String() : null,
-            'zonal' => $row->ZONAL,
-            'accion' => $row->ACCION,
-            'dni' => $row->DNI,
-            'recargador_celular' => $row->RECARGADOR_CELULAR,
-            'monto' => (float) $row->MONTO,
-            'se_abono' => (bool) $row->SE_ABONO,
-            'fecha_carga' => $row->FECHA_CARGA ? $row->FECHA_CARGA->toIso8601String() : null,
-        ];
+        try {
+            return [
+                'id' => $row->ID,
+                'fecha_hora_recarga' => $row->FECHA_HORA_RECARGA ? Carbon::parse($row->FECHA_HORA_RECARGA)->format('Y-m-d\TH:i:s\Z') : null,
+                'zonal' => $row->ZONAL,
+                'accion' => $row->ACCION,
+                'dni' => $row->DNI,
+                'recargador_celular' => $row->RECARGADOR_CELULAR,
+                'monto' => (float) $row->MONTO,
+                'se_abono' => (bool) $row->SE_ABONO,
+                'fecha_carga' => $row->FECHA_CARGA ? Carbon::parse($row->FECHA_CARGA)->format('Y-m-d\TH:i:s\Z') : null,
+            ];
+        } catch (\Exception $e) {
+            // Si hay error al transformar, devolver datos básicos
+            return [
+                'id' => $row->ID ?? null,
+                'fecha_hora_recarga' => $row->FECHA_HORA_RECARGA ? (string) $row->FECHA_HORA_RECARGA : null,
+                'zonal' => $row->ZONAL ?? null,
+                'accion' => $row->ACCION ?? null,
+                'dni' => $row->DNI ?? null,
+                'recargador_celular' => $row->RECARGADOR_CELULAR ?? null,
+                'monto' => isset($row->MONTO) ? (float) $row->MONTO : 0,
+                'se_abono' => isset($row->SE_ABONO) ? (bool) $row->SE_ABONO : false,
+                'fecha_carga' => $row->FECHA_CARGA ? (string) $row->FECHA_CARGA : null,
+            ];
+        }
     }
 
     public function index(Request $request)
@@ -62,25 +78,22 @@ class AbonoInicialPostpagoController extends Controller
                 });
             }
 
-            // Rango de fechas (acepta date o datetime)
-            $desde = $request->input('desde');
-            if ($desde !== null && $desde !== '') {
-                $query->where('FECHA_HORA_RECARGA', '>=', Carbon::parse($desde));
-            }
-            $hasta = $request->input('hasta');
-            if ($hasta !== null && $hasta !== '') {
-                $query->where('FECHA_HORA_RECARGA', '<=', Carbon::parse($hasta));
-            }
-
             $perPage = (int) $request->input('per_page', 10);
             $perPage = $perPage > 0 ? min($perPage, 100) : 10;
 
-            $rows = $query->orderBy('FECHA_HORA_RECARGA', 'desc')->paginate($perPage);
+            $page = (int) $request->input('page', 1);
+            $page = $page > 0 ? $page : 1;
+
+            $rows = $query->orderBy('FECHA_HORA_RECARGA', 'desc')->paginate($perPage, ['*'], 'page', $page);
 
             // Transformar los datos a snake_case en minúsculas
-            $transformedData = array_map(function ($item) {
-                return $this->transformData($item);
-            }, $rows->items());
+            $transformedData = [];
+            foreach ($rows->items() as $item) {
+                $transformed = $this->transformData($item);
+                if ($transformed) {
+                    $transformedData[] = $transformed;
+                }
+            }
 
             return response()->json([
                 "status" => Response::HTTP_OK,
@@ -94,10 +107,12 @@ class AbonoInicialPostpagoController extends Controller
                 ],
             ], Response::HTTP_OK);
         } catch (\Exception $ex) {
+            Log::error('Error en index AbonoInicialPostpago: ' . $ex->getMessage());
+            Log::error('Stack trace: ' . $ex->getTraceAsString());
             return response()->json([
-                "status" => Response::HTTP_BAD_REQUEST,
-                "message" => $ex->getMessage(),
-            ], Response::HTTP_BAD_REQUEST);
+                "status" => Response::HTTP_INTERNAL_SERVER_ERROR,
+                "message" => "Error al obtener datos: " . $ex->getMessage(),
+            ], Response::HTTP_INTERNAL_SERVER_ERROR);
         }
     }
 
@@ -179,8 +194,8 @@ class AbonoInicialPostpagoController extends Controller
                 "errors" => $ex->errors(),
             ], Response::HTTP_UNPROCESSABLE_ENTITY);
         } catch (\Exception $ex) {
-            \Log::error('Error en store AbonoInicialPostpago: ' . $ex->getMessage());
-            \Log::error('Stack trace: ' . $ex->getTraceAsString());
+            Log::error('Error en store AbonoInicialPostpago: ' . $ex->getMessage());
+            Log::error('Stack trace: ' . $ex->getTraceAsString());
             return response()->json([
                 "status" => Response::HTTP_INTERNAL_SERVER_ERROR,
                 "message" => "Error al crear registro: " . $ex->getMessage(),
