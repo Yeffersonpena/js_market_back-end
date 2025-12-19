@@ -352,11 +352,23 @@ class AbonoInicialPostpagoController extends Controller
             $nombreArchivo = 'abono_inicial_postpago_' . date('Y-m-d_His') . '.xlsx';
             return Excel::download(new AbonoInicialPostpagoExport(), $nombreArchivo);
         } catch (\Exception $ex) {
-            Log::error('Error en export AbonoInicialPostpago: ' . $ex->getMessage());
-            Log::error('Stack trace: ' . $ex->getTraceAsString());
+            // Intentar loggear solo si no es un error de permisos
+            try {
+                if (strpos($ex->getMessage(), 'Permission denied') === false) {
+                    Log::error('Error en export AbonoInicialPostpago: ' . $ex->getMessage());
+                }
+            } catch (\Exception $logEx) {
+                // Ignorar errores de log si no hay permisos
+            }
+
+            $errorMessage = $ex->getMessage();
+            if (strpos($errorMessage, 'Permission denied') !== false) {
+                $errorMessage = 'Error de permisos en el servidor. Contacte al administrador del sistema.';
+            }
+
             return response()->json([
                 "status" => Response::HTTP_INTERNAL_SERVER_ERROR,
-                "message" => "Error al exportar datos: " . (app()->environment('production') ? 'Contacte a soporte.' : $ex->getMessage()),
+                "message" => "Error al exportar datos: " . (app()->environment('production') ? 'Contacte a soporte.' : $errorMessage),
             ], Response::HTTP_INTERNAL_SERVER_ERROR);
         }
     }
