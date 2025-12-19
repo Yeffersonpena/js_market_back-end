@@ -125,6 +125,7 @@ Route::middleware(['jwt.apiRest.jsMarket', 'jwt.user.admin'])->group(function ()
     // Abono inicial postpago (CRUD - solo admin)
     Route::get('/api/v1/admin/abono-inicial-postpago', [AbonoInicialPostpagoController::class, 'index']);
     Route::get('/api/v1/admin/abono-inicial-postpago/autocompletar/{dni}', [AbonoInicialPostpagoController::class, 'autocompletar']);
+    Route::get('/api/v1/admin/abono-inicial-postpago/export', [AbonoInicialPostpagoController::class, 'export']);
     Route::get('/api/v1/admin/abono-inicial-postpago/{id}', [AbonoInicialPostpagoController::class, 'show']);
     Route::post('/api/v1/admin/abono-inicial-postpago', [AbonoInicialPostpagoController::class, 'store']);
     Route::put('/api/v1/admin/abono-inicial-postpago/{id}', [AbonoInicialPostpagoController::class, 'update']);
