@@ -27,6 +27,13 @@ class AbonosPostpagoLogController extends Controller
                 'nombre_pdv' => $row->NOMBRE_PDV ?? null,
                 'dni_vendedor' => $row->DNI_VENDEDOR ?? null,
                 'nombre_vvdd' => $row->NOMBRE_VVDD ?? null,
+                // Campos calculados según canal
+                'dni_ganador' => ($row->CANAL ?? '') === 'PDV'
+                    ? ($row->DNI_RESPONSABLE ?? null)
+                    : ($row->DNI_VENDEDOR ?? null),
+                'nombre_ganador' => ($row->CANAL ?? '') === 'PDV'
+                    ? ($row->NOMBRE_PDV ?? null)
+                    : ($row->NOMBRE_VVDD ?? null),
                 'recargador' => $row->RECARGADOR ?? null,
                 'alta' => isset($row->Alta) ? (int) $row->Alta : 0,
                 'portabilidad' => isset($row->Portabilidad) ? (int) $row->Portabilidad : 0,
