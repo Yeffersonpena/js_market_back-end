@@ -66,6 +66,39 @@ class AbonosPostpagoLogController extends Controller
                 });
             }
 
+            // Filtro por fecha_carga (fecha específica)
+            $fechaCarga = $request->input('fecha_carga');
+            if ($fechaCarga) {
+                try {
+                    $fechaCargaParsed = Carbon::parse($fechaCarga)->format('Y-m-d');
+                    $query->whereDate('FECHA_CARGA', $fechaCargaParsed);
+                } catch (\Exception $e) {
+                    Log::warning('Fecha de carga inválida: ' . $fechaCarga);
+                }
+            }
+
+            // Filtro por rango de fechas usando el campo FECHA
+            $fechaDesde = $request->input('fecha_desde');
+            $fechaHasta = $request->input('fecha_hasta');
+
+            if ($fechaDesde) {
+                try {
+                    $fechaDesdeParsed = Carbon::parse($fechaDesde)->format('Y-m-d');
+                    $query->whereDate('FECHA', '>=', $fechaDesdeParsed);
+                } catch (\Exception $e) {
+                    Log::warning('Fecha desde inválida: ' . $fechaDesde);
+                }
+            }
+
+            if ($fechaHasta) {
+                try {
+                    $fechaHastaParsed = Carbon::parse($fechaHasta)->format('Y-m-d');
+                    $query->whereDate('FECHA', '<=', $fechaHastaParsed);
+                } catch (\Exception $e) {
+                    Log::warning('Fecha hasta inválida: ' . $fechaHasta);
+                }
+            }
+
             // Ordenar por más nuevo primero (FECHA_CARGA DESC)
             $query->orderBy('FECHA_CARGA', 'desc');
 
@@ -116,4 +149,3 @@ class AbonosPostpagoLogController extends Controller
         }
     }
 }
-
