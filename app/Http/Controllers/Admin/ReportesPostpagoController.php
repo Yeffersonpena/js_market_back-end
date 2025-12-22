@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Services\PythonScriptService;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -317,6 +318,51 @@ class ReportesPostpagoController extends Controller
             return response()->json([
                 "status" => Response::HTTP_INTERNAL_SERVER_ERROR,
                 "message" => "Error al descargar archivo",
+            ], Response::HTTP_INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    /**
+     * Obtiene las fechas límite de las tablas relacionadas
+     * - Máxima fecha de ventas en VentasLog (solo Postpago)
+     * - Máxima fecha de actualización en BASE_RECARGADORES
+     * - Máxima fecha en abonos_postpago_log
+     */
+    public function obtenerFechasData()
+    {
+        try {
+            // 1. Máxima fecha de VentasLog (solo Postpago)
+            $maxFechaVentas = DB::connection('sqlsrv')
+                ->table('VentasLog')
+                ->where('PRODUCT_NAME', 'Postpago')
+                ->max('FECHA');
+
+            // 2. Máxima fecha de actualización de BASE_RECARGADORES
+            $maxFechaRecargadores = DB::connection('sqlsrv')
+                ->table('BASE_RECARGADORES')
+                ->max('created_at');
+
+            // 3. Máxima fecha en abonos_postpago_log
+            $maxFechaAbonos = DB::connection('sqlsrv')
+                ->table('abonos_postpago_log')
+                ->max('FECHA');
+
+            return response()->json([
+                "status" => Response::HTTP_OK,
+                "message" => "Fechas límite obtenidas correctamente",
+                "data" => [
+                    "max_fecha_ventas" => $maxFechaVentas ? Carbon::parse($maxFechaVentas)->format('Y-m-d') : null,
+                    "max_fecha_recargadores" => $maxFechaRecargadores ? Carbon::parse($maxFechaRecargadores)->setTimezone('America/Lima')->format('Y-m-d\TH:i:s') : null,
+                    "max_fecha_abonos" => $maxFechaAbonos ? Carbon::parse($maxFechaAbonos)->format('Y-m-d') : null,
+                ],
+            ], Response::HTTP_OK);
+        } catch (\Exception $ex) {
+            Log::error('Error obteniendo fechas límite: ' . $ex->getMessage());
+            Log::error('Stack trace: ' . $ex->getTraceAsString());
+            return response()->json([
+                "status" => Response::HTTP_INTERNAL_SERVER_ERROR,
+                "message" => "Error al obtener fechas límite: " .
+                    (app()->environment('production') ? 'Contacte a soporte.' : $ex->getMessage()),
             ], Response::HTTP_INTERNAL_SERVER_ERROR);
         }
     }
