@@ -138,6 +138,7 @@ Route::middleware(['jwt.apiRest.jsMarket', 'jwt.user.admin'])->group(function ()
     Route::get('/api/v1/admin/abonos-postpago-log', [AbonosPostpagoLogController::class, 'index']);
 
     // Reportes Postpago (ejecuta scripts Python - solo admin)
+    Route::get('/api/v1/admin/reportes-postpago/fechas-data', [ReportesPostpagoController::class, 'obtenerFechasData']);
     Route::post('/api/v1/admin/reportes-postpago/ejecutar-sp', [ReportesPostpagoController::class, 'ejecutarSP']);
     Route::post('/api/v1/admin/reportes-postpago/cierre-postpago', [ReportesPostpagoController::class, 'generarCierrePostpago']);
     Route::post('/api/v1/admin/reportes-postpago/bono-recargas', [ReportesPostpagoController::class, 'generarBonoRecargas']);
