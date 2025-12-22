@@ -99,6 +99,13 @@ class AbonosPostpagoLogController extends Controller
                 }
             }
 
+            // Filtro por defecto: solo mostrar registros con ESTADO_ABONO = 'ABONADO'
+            // Si viene el parámetro mostrar_todos=true, mostrar todos los registros
+            $mostrarTodos = $request->input('mostrar_todos', false);
+            if (!$mostrarTodos || $mostrarTodos === 'false') {
+                $query->where('ESTADO_ABONO', 'ABONADO');
+            }
+
             // Ordenar por más nuevo primero (FECHA_CARGA DESC)
             $query->orderBy('FECHA_CARGA', 'desc');
 
