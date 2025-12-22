@@ -6,6 +6,7 @@ use App\Http\Controllers\Admin\GestorController;
 use App\Http\Controllers\Admin\GestorEntregableController;
 use App\Http\Controllers\Admin\AbonoInicialPostpagoController;
 use App\Http\Controllers\Admin\AbonosPostpagoLogController;
+use App\Http\Controllers\Admin\ReportesPostpagoController;
 use App\Http\Controllers\All\LogicController;
 use App\Http\Controllers\Controller;
 use App\Http\Controllers\LoginController;
@@ -135,6 +136,14 @@ Route::middleware(['jwt.apiRest.jsMarket', 'jwt.user.admin'])->group(function ()
 
     // Abonos postpago log (Solo lectura - solo admin)
     Route::get('/api/v1/admin/abonos-postpago-log', [AbonosPostpagoLogController::class, 'index']);
+
+    // Reportes Postpago (ejecuta scripts Python - solo admin)
+    Route::post('/api/v1/admin/reportes-postpago/ejecutar-sp', [ReportesPostpagoController::class, 'ejecutarSP']);
+    Route::post('/api/v1/admin/reportes-postpago/cierre-postpago', [ReportesPostpagoController::class, 'generarCierrePostpago']);
+    Route::post('/api/v1/admin/reportes-postpago/bono-recargas', [ReportesPostpagoController::class, 'generarBonoRecargas']);
+    Route::post('/api/v1/admin/reportes-postpago/generar-ambos', [ReportesPostpagoController::class, 'generarAmbos']);
+    Route::get('/api/v1/admin/reportes-postpago/descargar/{archivo}', [ReportesPostpagoController::class, 'descargarArchivo'])
+        ->name('reportes-postpago.download');
 
 
 });
