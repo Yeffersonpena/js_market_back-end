@@ -2,12 +2,14 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Exports\VentasInusualesExport;
 use App\Http\Controllers\Controller;
 use App\Services\PythonScriptService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Maatwebsite\Excel\Facades\Excel;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
@@ -362,6 +364,150 @@ class ReportesPostpagoController extends Controller
             return response()->json([
                 "status" => Response::HTTP_INTERNAL_SERVER_ERROR,
                 "message" => "Error al obtener fechas límite: " .
+                    (app()->environment('production') ? 'Contacte a soporte.' : $ex->getMessage()),
+            ], Response::HTTP_INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    /**
+     * Lista las ventas inusuales (Alta > 2) con paginación y búsqueda
+     */
+    public function listarVentasInusuales(Request $request)
+    {
+        try {
+            $request->validate([
+                'fecha_desde' => 'required|date',
+                'fecha_hasta' => 'required|date|after_or_equal:fecha_desde',
+                'page' => 'nullable|integer|min:1',
+                'per_page' => 'nullable|integer|min:1|max:100',
+                'search' => 'nullable|string|max:255',
+            ]);
+
+            $fechaDesde = Carbon::parse($request->input('fecha_desde'))->startOfDay();
+            $fechaHasta = Carbon::parse($request->input('fecha_hasta'))->endOfDay();
+            $año = $fechaDesde->year;
+            $mes = $fechaDesde->month;
+            $search = $request->input('search', '');
+            $perPage = (int) $request->input('per_page', 10);
+            $perPage = $perPage > 0 ? min($perPage, 100) : 10;
+            $page = (int) $request->input('page', 1);
+            $page = $page > 0 ? $page : 1;
+
+            // Construir query base
+            $query = DB::connection('sqlsrv')
+                ->table('VentasLog as VL')
+                ->join('PDV_OUT_ENTREGABLE as E', function ($join) {
+                    $join->on(DB::raw('CAST(VL.DNI_RESPONSABLE AS INT)'), '=', 'E.DNI_RESPONSABLE');
+                })
+                ->where('VL.PRODUCT_NAME', 'Postpago')
+                ->where('E.AÑO', $año)
+                ->where('E.MES', $mes)
+                ->where('E.ESTADO', 'ACTIVO')
+                ->whereBetween('VL.FECHA', [$fechaDesde->format('Y-m-d'), $fechaHasta->format('Y-m-d')])
+                ->select([
+                    'VL.FECHA',
+                    DB::raw('E.ZONAL AS [ZONAL_JS]'),
+                    DB::raw('E.ACCION_1 AS [ACCION_JS]'),
+                    'VL.DNI_RESPONSABLE',
+                    'VL.DNI_VENDEDOR',
+                    DB::raw('SUM(CASE WHEN VL.OPERATION_NAME = \'Alta\' THEN 1 ELSE 0 END) AS [Alta]'),
+                    DB::raw('SUM(CASE WHEN VL.OPERATION_NAME = \'Portabilidad\' THEN 1 ELSE 0 END) AS [Portabilidad]'),
+                    DB::raw('SUM(CASE WHEN VL.OPERATION_NAME = \'Alta\' THEN 1 ELSE 0 END) + SUM(CASE WHEN VL.OPERATION_NAME = \'Portabilidad\' THEN 1 ELSE 0 END) AS [Total_general]'),
+                ])
+                ->groupBy('VL.FECHA', 'E.ZONAL', 'E.ACCION_1', 'VL.DNI_RESPONSABLE', 'VL.DNI_VENDEDOR')
+                ->havingRaw('SUM(CASE WHEN VL.OPERATION_NAME = \'Alta\' THEN 1 ELSE 0 END) > 2');
+
+            // Aplicar búsqueda si existe
+            if ($search !== '') {
+                $query->where(function ($q) use ($search) {
+                    $q->whereRaw('CAST(VL.DNI_RESPONSABLE AS VARCHAR) LIKE ?', ["%$search%"])
+                        ->orWhereRaw('CAST(VL.DNI_VENDEDOR AS VARCHAR) LIKE ?', ["%$search%"])
+                        ->orWhere('E.ZONAL', 'LIKE', "%$search%")
+                        ->orWhere('E.ACCION_1', 'LIKE', "%$search%");
+                });
+            }
+
+            // Obtener todos los resultados y paginar en memoria
+            // (Necesario porque GROUP BY + HAVING no funciona bien con skip/take en SQL Server)
+            $allResults = $query
+                ->orderBy('VL.FECHA', 'asc')
+                ->orderBy('E.ZONAL', 'asc')
+                ->orderBy('E.ACCION_1', 'asc')
+                ->orderBy('VL.DNI_RESPONSABLE', 'asc')
+                ->orderBy('VL.DNI_VENDEDOR', 'asc')
+                ->get();
+
+            $total = $allResults->count();
+            $results = $allResults->slice(($page - 1) * $perPage, $perPage)->values();
+
+            // Transformar datos a snake_case
+            $transformedData = [];
+            foreach ($results as $row) {
+                $transformedData[] = [
+                    'fecha' => $row->FECHA ? Carbon::parse($row->FECHA)->format('Y-m-d') : null,
+                    'zonal_js' => $row->ZONAL_JS ?? null,
+                    'accion_js' => $row->ACCION_JS ?? null,
+                    'dni_responsable' => $row->DNI_RESPONSABLE ?? null,
+                    'dni_vendedor' => $row->DNI_VENDEDOR ?? null,
+                    'alta' => (int) ($row->Alta ?? 0),
+                    'portabilidad' => (int) ($row->Portabilidad ?? 0),
+                    'total_general' => (int) ($row->Total_general ?? 0),
+                ];
+            }
+
+            return response()->json([
+                "status" => Response::HTTP_OK,
+                "message" => "Ventas inusuales obtenidas correctamente",
+                "data" => $transformedData,
+                "pagination" => [
+                    "current_page" => $page,
+                    "per_page" => $perPage,
+                    "total" => $total,
+                    "last_page" => (int) ceil($total / $perPage),
+                ],
+            ], Response::HTTP_OK);
+        } catch (\Exception $ex) {
+            Log::error('Error listando ventas inusuales: ' . $ex->getMessage());
+            Log::error('Stack trace: ' . $ex->getTraceAsString());
+            return response()->json([
+                "status" => Response::HTTP_INTERNAL_SERVER_ERROR,
+                "message" => "Error al listar ventas inusuales: " .
+                    (app()->environment('production') ? 'Contacte a soporte.' : $ex->getMessage()),
+            ], Response::HTTP_INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    /**
+     * Exporta las ventas inusuales a Excel
+     */
+    public function exportarVentasInusuales(Request $request)
+    {
+        try {
+            $request->validate([
+                'fecha_desde' => 'required|date',
+                'fecha_hasta' => 'required|date|after_or_equal:fecha_desde',
+            ]);
+
+            $fechaDesde = Carbon::parse($request->input('fecha_desde'));
+            $fechaHasta = Carbon::parse($request->input('fecha_hasta'));
+
+            // Generar nombre del archivo
+            $nombreArchivo = sprintf(
+                'VENTAS_INUSUALES_%s_%s.xlsx',
+                $fechaDesde->format('d-m-Y'),
+                $fechaHasta->format('d-m-Y')
+            );
+
+            return Excel::download(
+                new VentasInusualesExport($fechaDesde, $fechaHasta),
+                $nombreArchivo
+            );
+        } catch (\Exception $ex) {
+            Log::error('Error exportando ventas inusuales: ' . $ex->getMessage());
+            Log::error('Stack trace: ' . $ex->getTraceAsString());
+            return response()->json([
+                "status" => Response::HTTP_INTERNAL_SERVER_ERROR,
+                "message" => "Error al exportar ventas inusuales: " .
                     (app()->environment('production') ? 'Contacte a soporte.' : $ex->getMessage()),
             ], Response::HTTP_INTERNAL_SERVER_ERROR);
         }
