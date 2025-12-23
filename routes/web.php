@@ -145,6 +145,8 @@ Route::middleware(['jwt.apiRest.jsMarket', 'jwt.user.admin'])->group(function ()
     Route::post('/api/v1/admin/reportes-postpago/generar-ambos', [ReportesPostpagoController::class, 'generarAmbos']);
     Route::get('/api/v1/admin/reportes-postpago/descargar/{archivo}', [ReportesPostpagoController::class, 'descargarArchivo'])
         ->name('reportes-postpago.download');
+    Route::get('/api/v1/admin/reportes-postpago/ventas-inusuales', [ReportesPostpagoController::class, 'listarVentasInusuales']);
+    Route::get('/api/v1/admin/reportes-postpago/ventas-inusuales/export', [ReportesPostpagoController::class, 'exportarVentasInusuales']);
 
 
 });
