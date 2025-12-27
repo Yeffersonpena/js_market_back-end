@@ -422,6 +422,134 @@ class ImagenController extends Controller
         }
     }
 
+    /**
+     * Sube un Excel de comunicación a múltiples aceleradores
+     * Los aceleradores deben tener: mismas fechas, mismo modo, y ser tipo ACELERADOR
+     *
+     * @param Request $request
+     * @return JsonResponse
+     */
+    public function updateComunicacionAceleradorMultiple(Request $request): JsonResponse
+    {
+        try {
+            // Validar request
+            $request->validate([
+                'archivo_comunicacion' => 'required|file|mimes:xlsx,xls|max:10240',
+                'ids' => 'required|string' // JSON string con array de IDs
+            ]);
+
+            // Decodificar IDs
+            $idsJson = $request->input('ids');
+            $ids = json_decode($idsJson, true);
+
+            if (!is_array($ids) || empty($ids)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Debe proporcionar al menos un ID de acelerador'
+                ], 400);
+            }
+
+            // Validar que los IDs sean números
+            $ids = array_filter(array_map('intval', $ids));
+            if (empty($ids)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Los IDs proporcionados no son válidos'
+                ], 400);
+            }
+
+            // Obtener todos los flyers
+            $flyers = PDVOutCampanasFlyers::whereIn('id', $ids)->get();
+
+            if ($flyers->count() !== count($ids)) {
+                $idsEncontrados = $flyers->pluck('id')->toArray();
+                $idsNoEncontrados = array_diff($ids, $idsEncontrados);
+
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Algunos flyers no fueron encontrados',
+                    'ids_no_encontrados' => array_values($idsNoEncontrados)
+                ], 404);
+            }
+
+            // Validar que forman un grupo válido (mismas fechas, mismo modo, tipo ACELERADOR)
+            $validationErrors = $this->comunicacionService->validateGrupoAceleradores($flyers->toArray());
+            if (!empty($validationErrors)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Los aceleradores seleccionados no pueden combinarse',
+                    'errors' => $validationErrors
+                ], 400);
+            }
+
+            // Procesar el archivo usando el primer flyer como referencia
+            $primerFlyer = $flyers->first();
+            $result = $this->comunicacionService->processComunicacionUpdate(
+                $primerFlyer,
+                $request->file('archivo_comunicacion')
+            );
+
+            if (!$result['success']) {
+                return response()->json([
+                    'success' => false,
+                    'message' => implode(', ', $result['errors']),
+                    'errors' => $result['errors']
+                ], 400);
+            }
+
+            // Obtener el archivo y fecha de comunicación del primer flyer actualizado
+            $primerFlyer->refresh();
+            $archivoComunicacion = $primerFlyer->archivo_comunicacion;
+            $fechaComunicacion = $primerFlyer->fecha_comunicacion;
+
+            // Actualizar todos los flyers del grupo con el mismo archivo
+            $actualizacionExitosa = $this->comunicacionService->updateComunicacionMultiple(
+                $flyers->toArray(),
+                $archivoComunicacion,
+                $fechaComunicacion
+            );
+
+            if (!$actualizacionExitosa) {
+                // Si falla, eliminar el archivo usando el servicio
+                $this->comunicacionService->deleteComunicacionFile($archivoComunicacion);
+
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Error al actualizar los flyers del grupo'
+                ], 500);
+            }
+
+            return response()->json([
+                'success' => true,
+                'message' => "Comunicación actualizada exitosamente. Se actualizaron " .
+                            $flyers->count() . " flyer(s).",
+                'data' => [
+                    'flyers_actualizados' => $flyers->count(),
+                    'archivo_comunicacion' => $archivoComunicacion,
+                    'fecha_comunicacion' => $fechaComunicacion,
+                    'ids_procesados' => $ids,
+                    'download_url' => $result['data']['download_url']
+                ]
+            ], 200);
+
+        } catch (ValidationException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Datos de validación incorrectos',
+                'errors' => $e->errors()
+            ], 422);
+        } catch (\Exception $ex) {
+            Log::error('Error en updateComunicacionAceleradorMultiple', [
+                'error' => $ex->getMessage(),
+                'trace' => $ex->getTraceAsString()
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Error al procesar la solicitud: ' . $ex->getMessage()
+            ], 500);
+        }
+    }
 
     /**
      * Descarga segura de archivo privado de comunicación
