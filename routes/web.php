@@ -84,6 +84,7 @@ Route::middleware(['jwt.apiRest.jsMarket', 'jwt.user.admin'])->group(function ()
 
     // Rutas para comunicación de aceleradores
     Route::post('/api/v1/imagenes/campanas/{id}/comunicacion-acelerador', [ImagenController::class, 'updateComunicacionAcelerador'])->name('updateComunicacionAcelerador.imagen.api');
+    Route::post('/api/v1/imagenes/campanas/comunicacion-acelerador-multiple', [ImagenController::class, 'updateComunicacionAceleradorMultiple'])->name('updateComunicacionAceleradorMultiple.imagen.api');
     Route::get('/api/v1/imagenes/campanas/download-secure/{fileName}', [ImagenController::class, 'downloadSecureFile'])->name('downloadSecureFile.imagen.api');
 
     Route::post('/api/v1/admin/updateFileSp', [GestorController::class, 'loadFileSp'])->name('fileSp.carga.api');
