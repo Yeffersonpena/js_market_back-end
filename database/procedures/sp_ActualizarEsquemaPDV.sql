@@ -39,6 +39,57 @@ BEGIN
         SET @maxDateCalidad = EOMONTH(@fechaPeriodo);
 
     -- ============================================
+    -- VALIDACIÓN: Fecha máxima común entre VentasLog y Funnel
+    -- ============================================
+    -- PROBLEMA: VentasLog y PDV_OUT_FUNNEL pueden tener datos hasta fechas diferentes.
+    --          Si VentasLog tiene datos hasta el día 28 y Funnel hasta el día 26,
+    --          los ratios se calculan incorrectamente (recargas hasta día 26 / ventas hasta día 28).
+    -- SOLUCIÓN: Validar que ambas fuentes tengan datos y usar la fecha mínima entre ambas
+    --          (fecha máxima común) para garantizar que todos los cálculos usen el mismo período.
+    -- REGLA: Ambas fuentes DEBEN tener datos. Si alguna falta, el SP termina con error.
+    --        Si ambas tienen datos, se usa la fecha mínima entre las máximas de cada fuente.
+
+    DECLARE @maxFechaVentasLog DATE;
+    DECLARE @maxFechaFunnel DATE;
+    DECLARE @fechaMaximaComun DATE;
+    DECLARE @maxFechaVentasLogStr VARCHAR(20);
+    DECLARE @maxFechaFunnelStr VARCHAR(20);
+
+    -- Obtener fecha máxima en VentasLog para el período (solo Prepago, que es lo que usamos)
+    SELECT @maxFechaVentasLog = MAX(FECHA)
+    FROM PORTAL_COMERCIAL.dbo.VentasLog
+    WHERE FECHA >= @fechaInicioMes AND FECHA < @fechaFinMes
+      AND PRODUCT_NAME = 'Prepago'
+      AND VALOR_DNI_RESPONSABLE IS NOT NULL;
+
+    -- Obtener fecha máxima en PDV_OUT_FUNNEL para el período
+    SELECT @maxFechaFunnel = MAX(fecha)
+    FROM dbo.PDV_OUT_FUNNEL
+    WHERE fecha >= @fechaInicioMes AND fecha < @fechaFinMes;
+
+    -- Validar que ambas fuentes tengan datos (REQUISITO ESTRICTO)
+    IF @maxFechaVentasLog IS NULL OR @maxFechaFunnel IS NULL
+    BEGIN
+        -- Convertir fechas a string para el mensaje de error
+        SET @maxFechaVentasLogStr = CASE WHEN @maxFechaVentasLog IS NULL THEN 'NULL' ELSE CONVERT(VARCHAR(20), @maxFechaVentasLog, 120) END;
+        SET @maxFechaFunnelStr = CASE WHEN @maxFechaFunnel IS NULL THEN 'NULL' ELSE CONVERT(VARCHAR(20), @maxFechaFunnel, 120) END;
+
+        RAISERROR('Error: Una o ambas fuentes (VentasLog/Funnel) no tienen datos para el período %d/%d. VentasLog máximo: %s, Funnel máximo: %s',
+                  16, 1, @mes, @año, @maxFechaVentasLogStr, @maxFechaFunnelStr);
+        RETURN;
+    END;
+
+    -- Usar la fecha mínima entre ambas (fecha máxima común)
+    -- Ejemplo: VentasLog máximo = 28, Funnel máximo = 26 → usar 26
+    SET @fechaMaximaComun = CASE
+        WHEN @maxFechaVentasLog < @maxFechaFunnel THEN @maxFechaVentasLog
+        ELSE @maxFechaFunnel
+    END;
+
+    -- A partir de aquí, @fechaMaximaComun se usa como límite superior en TODAS las consultas
+    -- de VentasLog y PDV_OUT_FUNNEL para garantizar consistencia en los cálculos.
+
+    -- ============================================
     -- ETAPA 1: CALCULAR MÉTRICAS EN TABLA TEMPORAL
     -- ============================================
 
@@ -54,11 +105,13 @@ BEGIN
     );
 
     -- Actualizar pre-portabilidades
+    -- CAMBIO: Agregado filtro de fecha máxima común para sincronizar con Funnel
     MERGE #EventosAgregados AS destino
     USING (
         SELECT VALOR_DNI_RESPONSABLE AS DNI_RESPONSABLE, COUNT(*) AS cnt
         FROM PORTAL_COMERCIAL.dbo.VentasLog
         WHERE FECHA >= @fechaInicioMes AND FECHA < @fechaFinMes
+          AND FECHA <= @fechaMaximaComun  -- NUEVO: Limitar a fecha máxima común
           AND PRODUCT_NAME = 'Prepago' AND OPERATION_NAME = 'Portabilidad'
           AND VALOR_DNI_RESPONSABLE IS NOT NULL
         GROUP BY VALOR_DNI_RESPONSABLE
@@ -68,6 +121,7 @@ BEGIN
     WHEN NOT MATCHED THEN INSERT (DNI_RESPONSABLE, PRE_PORTA) VALUES (origen.DNI_RESPONSABLE, origen.cnt);
 
     -- Actualizar recargas
+    -- CAMBIO: Agregado filtro de fecha máxima común para sincronizar con VentasLog
     MERGE #EventosAgregados AS destino
     USING (
         SELECT e4.DNI_RESPONSABLE, COUNT(*) AS cnt
@@ -75,6 +129,7 @@ BEGIN
         INNER JOIN dbo.PDV_OUT_FUNNEL f ON f.DNI_RESPONSABLE = e4.DNI_RESPONSABLE AND f.ACCION = e4.ACCION_1
         WHERE e4.AÑO = @año AND e4.MES = @mes AND e4.ESTADO = 'ACTIVO'
           AND f.fecha >= @fechaInicioMes AND f.fecha < @fechaFinMes
+          AND f.fecha <= @fechaMaximaComun  -- NUEVO: Limitar a fecha máxima común
           AND f.RECARGA_SI_NO = 1 AND f.[RECARGAS>5] = 1
           AND f.PRODUCTO_WEB IN ('PREPAGO M7', 'PORT PREPAGO M7')
         GROUP BY e4.DNI_RESPONSABLE
@@ -84,6 +139,7 @@ BEGIN
     WHEN NOT MATCHED THEN INSERT (DNI_RESPONSABLE, TOTAL_RECARGAS) VALUES (origen.DNI_RESPONSABLE, origen.cnt);
 
     -- Actualizar ventas de calidad
+    -- CAMBIO: Agregado filtro de fecha máxima común (además de @maxDateCalidad)
     MERGE #EventosAgregados AS destino
     USING (
         SELECT e4.DNI_RESPONSABLE, COUNT(*) AS cnt
@@ -91,7 +147,8 @@ BEGIN
         INNER JOIN PORTAL_COMERCIAL.dbo.PDV_OUT_FUNNEL f ON f.DNI_RESPONSABLE = e4.DNI_RESPONSABLE AND f.ACCION = e4.ACCION_1
         WHERE e4.AÑO = @año AND e4.MES = @mes AND e4.ESTADO = 'ACTIVO'
           AND f.fecha >= @fechaInicioMes AND f.fecha < @fechaFinMes
-          AND f.fecha <= @maxDateCalidad
+          AND f.fecha <= @fechaMaximaComun  -- NUEVO: Limitar a fecha máxima común
+          AND f.fecha <= @maxDateCalidad    -- Mantener lógica de calidad existente
           AND f.CALIDAD_CLUSTER IN ('Cluster 1: IMEI nuevo', 'Cluster 2: IMEI reutilizado')
         GROUP BY e4.DNI_RESPONSABLE
     ) AS origen
@@ -100,6 +157,7 @@ BEGIN
     WHEN NOT MATCHED THEN INSERT (DNI_RESPONSABLE, TOTAL_VCALIDAD) VALUES (origen.DNI_RESPONSABLE, origen.cnt);
 
     -- Actualizar portabilidades prepago
+    -- CAMBIO: Agregado filtro de fecha máxima común para sincronizar con VentasLog
     MERGE #EventosAgregados AS destino
     USING (
         SELECT e4.DNI_RESPONSABLE, COUNT(*) AS cnt
@@ -107,6 +165,7 @@ BEGIN
         INNER JOIN PORTAL_COMERCIAL.dbo.PDV_OUT_FUNNEL f ON f.DNI_RESPONSABLE = e4.DNI_RESPONSABLE AND f.ACCION = e4.ACCION_1
         WHERE e4.AÑO = @año AND e4.MES = @mes AND e4.ESTADO = 'ACTIVO'
           AND f.fecha >= @fechaInicioMes AND f.fecha < @fechaFinMes
+          AND f.fecha <= @fechaMaximaComun  -- NUEVO: Limitar a fecha máxima común
           AND f.PRODUCTOORIGEN = 'PREPAGO' AND f.PRODUCTO_WEB = 'PORT M4 NO DIR'
         GROUP BY e4.DNI_RESPONSABLE
     ) AS origen
@@ -115,6 +174,7 @@ BEGIN
     WHEN NOT MATCHED THEN INSERT (DNI_RESPONSABLE, PORTAPRE) VALUES (origen.DNI_RESPONSABLE, origen.cnt);
 
     -- Actualizar portabilidades postpago
+    -- CAMBIO: Agregado filtro de fecha máxima común para sincronizar con VentasLog
     MERGE #EventosAgregados AS destino
     USING (
         SELECT e4.DNI_RESPONSABLE, COUNT(*) AS cnt
@@ -122,6 +182,7 @@ BEGIN
         INNER JOIN PORTAL_COMERCIAL.dbo.PDV_OUT_FUNNEL f ON f.DNI_RESPONSABLE = e4.DNI_RESPONSABLE AND f.ACCION = e4.ACCION_1
         WHERE e4.AÑO = @año AND e4.MES = @mes AND e4.ESTADO = 'ACTIVO'
           AND f.fecha >= @fechaInicioMes AND f.fecha < @fechaFinMes
+          AND f.fecha <= @fechaMaximaComun  -- NUEVO: Limitar a fecha máxima común
           AND f.PRODUCTOORIGEN = 'POSTPAGO' AND f.PRODUCTO_WEB = 'PORT M4 NO DIR'
         GROUP BY e4.DNI_RESPONSABLE
     ) AS origen
@@ -178,9 +239,11 @@ BEGIN
     FROM PORTAL_COMERCIAL.dbo.PDV_OUT_ENTREGABLE e
     LEFT JOIN #EventosAgregados ev ON e.DNI_RESPONSABLE = ev.DNI_RESPONSABLE
     LEFT JOIN (
+        -- CAMBIO: Agregado filtro de fecha máxima común para sincronizar con Funnel
         SELECT VALOR_DNI_RESPONSABLE AS DNI_RESPONSABLE, COUNT(DISTINCT CAST(FECHA AS DATE)) AS DIAS_VENTAS_RESPONSABLE
         FROM PORTAL_COMERCIAL.dbo.VentasLog
         WHERE FECHA >= @fechaInicioMes AND FECHA < @fechaFinMes
+          AND FECHA <= @fechaMaximaComun  -- NUEVO: Limitar a fecha máxima común
           AND PRODUCT_NAME = 'Prepago'
           AND VALOR_DNI_RESPONSABLE IS NOT NULL
         GROUP BY VALOR_DNI_RESPONSABLE
@@ -194,23 +257,30 @@ BEGIN
         GROUP BY VALOR_DNI_RESPONSABLE
     ) v ON e.DNI_RESPONSABLE = v.DNI_RESPONSABLE
     LEFT JOIN (
+        -- CAMBIO: Agregado filtro de fecha máxima común para sincronizar con Funnel
+        -- IMPORTANTE: Esta métrica se usa en el cálculo de ratio = (TOTAL_RECARGAS / VENTA_AVANCE_PREPAGO)
         SELECT VALOR_DNI_RESPONSABLE AS DNI_RESPONSABLE, COUNT(*) AS VENTA_AVANCE_PREPAGO
         FROM PORTAL_COMERCIAL.dbo.VentasLog
         WHERE FECHA >= @fechaInicioMes AND FECHA < @fechaFinMes
+          AND FECHA <= @fechaMaximaComun  -- NUEVO: Limitar a fecha máxima común
           AND PRODUCT_NAME = 'Prepago'
           AND VALOR_DNI_RESPONSABLE IS NOT NULL
         GROUP BY VALOR_DNI_RESPONSABLE
     ) vpt ON e.DNI_RESPONSABLE = vpt.DNI_RESPONSABLE
     LEFT JOIN (
+        -- CAMBIO: Agregado filtro de fecha máxima común (además de @maxDateCalidad)
+        -- IMPORTANTE: Esta métrica se usa en el cálculo de ratioCalidad = (TOTAL_VCALIDAD / VENTA_PREPAGO_CALIDAD)
         SELECT VALOR_DNI_RESPONSABLE AS DNI_RESPONSABLE, COUNT(*) AS VENTA_PREPAGO_CALIDAD
         FROM PORTAL_COMERCIAL.dbo.VentasLog
         WHERE FECHA >= @fechaInicioMes AND FECHA < @fechaFinMes
-          AND FECHA <= @maxDateCalidad
+          AND FECHA <= @fechaMaximaComun  -- NUEVO: Limitar a fecha máxima común
+          AND FECHA <= @maxDateCalidad    -- Mantener lógica de calidad existente
           AND PRODUCT_NAME = 'Prepago'
           AND VALOR_DNI_RESPONSABLE IS NOT NULL
         GROUP BY VALOR_DNI_RESPONSABLE
     ) vpc ON e.DNI_RESPONSABLE = vpc.DNI_RESPONSABLE
     LEFT JOIN (
+        -- CAMBIO: Agregado filtro de fecha máxima común para sincronizar con VentasLog
         SELECT
             e3.DNI_RESPONSABLE,
             COUNT(CASE WHEN f.PRODUCTO_WEB = 'POSTPAGO M4' THEN 1 END) AS cantidadAltaPost,
@@ -220,6 +290,7 @@ BEGIN
         INNER JOIN dbo.PDV_OUT_FUNNEL f ON f.DNI_RESPONSABLE = e3.DNI_RESPONSABLE AND f.ACCION = e3.ACCION_1
         WHERE e3.AÑO = @año AND e3.MES = @mes AND e3.ESTADO = 'ACTIVO'
           AND f.FECHA >= @fechaInicioMes AND f.FECHA < @fechaFinMes
+          AND f.FECHA <= @fechaMaximaComun  -- NUEVO: Limitar a fecha máxima común
           AND (
               f.PRODUCTO_WEB = 'POSTPAGO M4'
               OR (f.PRODUCTO_WEB = 'PORT M4 NO DIR' AND f.PRODUCTOORIGEN IN ('PREPAGO', 'POSTPAGO'))
@@ -493,4 +564,32 @@ BEGIN
 
     DROP TABLE #MetricasCalculadas;
     DROP TABLE #BonosCalculados;
+
+    -- ============================================
+    -- ETAPA 4: ACTUALIZAR PARÁMETRO DE FECHA MÁXIMA COMÚN
+    -- ============================================
+    -- Actualizar el parámetro tipo=9 con la fecha máxima común calculada
+    -- Este parámetro puede ser usado por otros procesos para conocer hasta qué fecha
+    -- se procesaron los datos en el último cálculo del esquema PDV.
+    -- Se actualiza solo si los datos se insertaron correctamente (después de DROP TABLE).
+
+    -- Actualizar o insertar el parámetro tipo=9 con la fecha máxima común
+    DECLARE @fechaMaximaComunStr VARCHAR(10) = CONVERT(VARCHAR(10), @fechaMaximaComun, 120);
+    DECLARE @fechaActualizacionStr VARCHAR(10) = CONVERT(VARCHAR(10), GETDATE(), 120);
+
+    MERGE PORTAL_COMERCIAL.dbo.parametros AS destino
+    USING (
+        SELECT
+            @fechaMaximaComunStr AS valor,
+            'Fecha máxima común calculada por sp_ActualizarEsquemaPDV PARA ESQUEMA PDV Actualizado: ' + @fechaActualizacionStr AS comentario
+    ) AS origen
+    ON destino.tipo = 9 AND destino.[level] = 0
+    WHEN MATCHED THEN
+        UPDATE SET
+            valor = origen.valor,
+            comentario = origen.comentario
+    WHEN NOT MATCHED THEN
+        INSERT (tipo, [level], fecha, valor, comentario)
+        VALUES (9, 0, NULL, origen.valor, origen.comentario);
+
 END;
