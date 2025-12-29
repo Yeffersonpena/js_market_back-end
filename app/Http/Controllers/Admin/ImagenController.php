@@ -473,7 +473,8 @@ class ImagenController extends Controller
             }
 
             // Validar que forman un grupo válido (mismas fechas, mismo modo, tipo ACELERADOR)
-            $validationErrors = $this->comunicacionService->validateGrupoAceleradores($flyers->toArray());
+            // Pasar la colección directamente (el servicio maneja tanto objetos como arrays)
+            $validationErrors = $this->comunicacionService->validateGrupoAceleradores($flyers->all());
             if (!empty($validationErrors)) {
                 return response()->json([
                     'success' => false,
@@ -503,8 +504,9 @@ class ImagenController extends Controller
             $fechaComunicacion = $primerFlyer->fecha_comunicacion;
 
             // Actualizar todos los flyers del grupo con el mismo archivo
+            // Pasar la colección directamente (el servicio maneja tanto objetos como arrays)
             $actualizacionExitosa = $this->comunicacionService->updateComunicacionMultiple(
-                $flyers->toArray(),
+                $flyers->all(),
                 $archivoComunicacion,
                 $fechaComunicacion
             );

@@ -143,7 +143,7 @@ class CampanaComunicacionService
      * Valida que un grupo de aceleradores pueda compartir el mismo Excel
      * Deben tener: mismas fechas, mismo modo, y ser tipo ACELERADOR
      *
-     * @param array $flyers Array de objetos PDVOutCampanasFlyers
+     * @param array $flyers Array de objetos PDVOutCampanasFlyers o arrays
      * @return array Array de errores (vacío si es válido)
      */
     public function validateGrupoAceleradores(array $flyers): array
@@ -155,10 +155,26 @@ class CampanaComunicacionService
             return $errors;
         }
 
+        // Helper para obtener valor de flyer (puede ser objeto o array)
+        $getValue = function($flyer, $key) {
+            if (is_object($flyer)) {
+                return isset($flyer->$key) ? $flyer->$key : null;
+            }
+            return $flyer[$key] ?? null;
+        };
+
+        // Helper para obtener ID de flyer
+        $getId = function($flyer) use ($getValue) {
+            return $getValue($flyer, 'id');
+        };
+
         // Validar que todos sean ACELERADOR
         foreach ($flyers as $flyer) {
-            if (strtoupper($flyer->tipoImg) !== 'ACELERADOR') {
-                $errors[] = "El flyer ID {$flyer->id} no es de tipo ACELERADOR";
+            $tipoImg = $getValue($flyer, 'tipoImg');
+            $id = $getId($flyer);
+
+            if (strtoupper($tipoImg) !== 'ACELERADOR') {
+                $errors[] = "El flyer ID {$id} no es de tipo ACELERADOR";
             }
         }
 
@@ -168,24 +184,29 @@ class CampanaComunicacionService
 
         // Obtener valores del primer flyer como referencia
         $primerFlyer = $flyers[0];
-        $fechaInicioReferencia = $primerFlyer->fecha_inicio;
-        $fechaFinReferencia = $primerFlyer->fecha_fin;
-        $modoReferencia = $primerFlyer->modo;
+        $fechaInicioReferencia = $getValue($primerFlyer, 'fecha_inicio');
+        $fechaFinReferencia = $getValue($primerFlyer, 'fecha_fin');
+        $modoReferencia = $getValue($primerFlyer, 'modo');
 
         // Validar que todos tengan las mismas fechas y modo
         foreach ($flyers as $index => $flyer) {
             if ($index === 0) continue; // Saltar el primero
 
-            if ($flyer->fecha_inicio !== $fechaInicioReferencia) {
-                $errors[] = "El flyer ID {$flyer->id} tiene fecha_inicio diferente ({$flyer->fecha_inicio} vs {$fechaInicioReferencia})";
+            $id = $getId($flyer);
+            $fechaInicio = $getValue($flyer, 'fecha_inicio');
+            $fechaFin = $getValue($flyer, 'fecha_fin');
+            $modo = $getValue($flyer, 'modo');
+
+            if ($fechaInicio !== $fechaInicioReferencia) {
+                $errors[] = "El flyer ID {$id} tiene fecha_inicio diferente ({$fechaInicio} vs {$fechaInicioReferencia})";
             }
 
-            if ($flyer->fecha_fin !== $fechaFinReferencia) {
-                $errors[] = "El flyer ID {$flyer->id} tiene fecha_fin diferente ({$flyer->fecha_fin} vs {$fechaFinReferencia})";
+            if ($fechaFin !== $fechaFinReferencia) {
+                $errors[] = "El flyer ID {$id} tiene fecha_fin diferente ({$fechaFin} vs {$fechaFinReferencia})";
             }
 
-            if ($flyer->modo !== $modoReferencia) {
-                $errors[] = "El flyer ID {$flyer->id} tiene modo diferente ({$flyer->modo} vs {$modoReferencia})";
+            if ($modo !== $modoReferencia) {
+                $errors[] = "El flyer ID {$id} tiene modo diferente ({$modo} vs {$modoReferencia})";
             }
         }
 
