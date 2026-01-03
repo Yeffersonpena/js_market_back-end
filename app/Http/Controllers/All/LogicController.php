@@ -94,7 +94,7 @@ class LogicController extends Controller
                 ->whereRaw('? BETWEEN MONTH(fecha_inicio) AND MONTH(fecha_fin)', [$mes])
                 ->where(function ($query) use ($anio) {
                     $query->whereYear('fecha_inicio', $anio)
-                        ->orWhereYear('fecha_fin', $anio);
+                          ->orWhereYear('fecha_fin', $anio);
                 })
                 ->exists();
             if (!$existeAvance) {
