@@ -448,4 +448,98 @@ class LogicController extends Controller
             return response()->json(["status" => Response::HTTP_BAD_REQUEST, "message" => $ex->getMessage()], Response::HTTP_BAD_REQUEST);
         }
     }
+
+    /**
+     * Obtener la fecha máxima de actualización del esquema PDV
+     * Consulta el parámetro tipo=9 que contiene la fecha máxima común calculada por sp_ActualizarEsquemaPDV
+     *
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function getFechaMaximaEsquemaPDV()
+    {
+        try {
+            // Obtener el parámetro tipo=9 que contiene la fecha máxima común
+            $parametro = DB::select('
+                SELECT valor, comentario
+                FROM PORTAL_COMERCIAL.dbo.parametros
+                WHERE tipo = 9 AND [level] = 0
+            ');
+
+            if ($parametro && count($parametro) > 0) {
+                $fechaMaxima = $parametro[0]->valor;
+                $comentario = $parametro[0]->comentario ?? '';
+
+                return response()->json([
+                    "status" => Response::HTTP_OK,
+                    "message" => "Fecha máxima de actualización obtenida correctamente",
+                    "data" => [
+                        "fecha_maxima_actualizacion" => $fechaMaxima,
+                        "comentario" => $comentario
+                    ]
+                ], Response::HTTP_OK);
+            } else {
+                return response()->json([
+                    "status" => Response::HTTP_OK,
+                    "message" => "No se encontró información de fecha máxima de actualización",
+                    "data" => [
+                        "fecha_maxima_actualizacion" => null,
+                        "comentario" => null
+                    ]
+                ], Response::HTTP_OK);
+            }
+        } catch (\Exception $ex) {
+            return response()->json([
+                "status" => Response::HTTP_BAD_REQUEST,
+                "message" => "Error al obtener la fecha máxima: " . $ex->getMessage()
+            ], Response::HTTP_BAD_REQUEST);
+        }
+    }
+
+    /**
+     * Ejecutar el stored procedure sp_ActualizarEsquemaPDV
+     * Actualiza el esquema PDV para un año y mes específicos
+     *
+     * @param int $anio Año del período a actualizar
+     * @param int $mes Mes del período a actualizar
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function ejecutarActualizarEsquemaPDV($anio, $mes)
+    {
+        try {
+            // Validar parámetros
+            if (!is_numeric($anio) || !is_numeric($mes) || $mes < 1 || $mes > 12) {
+                return response()->json([
+                    "status" => Response::HTTP_BAD_REQUEST,
+                    "message" => "Parámetros inválidos. Año y mes deben ser numéricos, mes entre 1 y 12."
+                ], Response::HTTP_BAD_REQUEST);
+            }
+
+            // Ejecutar el stored procedure
+            $resultado = DB::select('EXEC dbo.sp_ActualizarEsquemaPDV ?, ?', [$anio, $mes]);
+
+            if ($resultado && count($resultado) > 0) {
+                $data = $resultado[0];
+                return response()->json([
+                    "status" => Response::HTTP_OK,
+                    "message" => "Esquema PDV actualizado correctamente",
+                    "data" => [
+                        "cantidad_registros" => (int) $data->cantidad_registros,
+                        "año" => (int) $anio,
+                        "mes" => (int) $mes
+                    ]
+                ], Response::HTTP_OK);
+            } else {
+                return response()->json([
+                    "status" => Response::HTTP_OK,
+                    "message" => "El stored procedure se ejecutó pero no devolvió resultados",
+                    "data" => []
+                ], Response::HTTP_OK);
+            }
+        } catch (\Exception $ex) {
+            return response()->json([
+                "status" => Response::HTTP_BAD_REQUEST,
+                "message" => "Error al ejecutar el stored procedure: " . $ex->getMessage()
+            ], Response::HTTP_BAD_REQUEST);
+        }
+    }
 }

@@ -167,6 +167,8 @@ Route::middleware(['jwt.apiRest.jsMarket', 'jwt.user.pdv'])->group(function () {
     Route::get('/api/v1/pdv/getPayment/{dni}/{anio}/{mes}', [LogicController::class, 'getPayment'])->name('payment.user.api');
     Route::get('/api/v1/pdv/getPaymentOptimized/{dni}/{anio}/{mes}', [LogicController::class, 'getPaymentOptimized'])->name('payment.optimized.user.api');
     Route::get('/api/v1/pdv/getIncidencia/{dni}/{anio}/{mes}', [LogicController::class, 'getIncidencia'])->name('incidencia.user.api');
+    Route::get('/api/v1/pdv/getFechaMaximaEsquema', [LogicController::class, 'getFechaMaximaEsquemaPDV'])->name('getFechaMaximaEsquema.user.api');
+    Route::post('/api/v1/pdv/ejecutarActualizarEsquema/{anio}/{mes}', [LogicController::class, 'ejecutarActualizarEsquemaPDV'])->name('ejecutarActualizarEsquema.user.api');
 });
 Route::middleware(['jwt.apiRest.jsMarket', 'jwt.user.multimarca'])->group(function () {
     Route::get('/api/v1/multimarca/getDataMM/{dni}/{anio}/{mes}', [MultimarcaAvanceDiarioController::class, 'getDataMM'])->name('getDataMM.user.api');
