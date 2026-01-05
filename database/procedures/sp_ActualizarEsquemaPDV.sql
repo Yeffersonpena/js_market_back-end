@@ -598,4 +598,16 @@ BEGIN
         INSERT (tipo, [level], fecha, valor, comentario)
         VALUES (9, 0, NULL, origen.valor, origen.comentario);
 
+    -- ============================================
+    -- ETAPA 5: DEVOLVER CANTIDAD DE REGISTROS INSERTADOS
+    -- ============================================
+    DECLARE @cantidadRegistros INT;
+
+    SELECT @cantidadRegistros = COUNT(*)
+    FROM dbo.PDV_OUT_ESQUEMA_RESUMEN
+    WHERE AÑO = @año AND MES = @mes;
+
+    -- Devolver cantidad de registros insertados
+    SELECT @cantidadRegistros AS cantidad_registros;
+
 END;
