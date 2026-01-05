@@ -321,39 +321,33 @@ BEGIN
     FROM dbo.BonoEscala
     WHERE @fechaPeriodo BETWEEN fecha_inicio AND ISNULL(fecha_fin, @fechaPeriodo);
 
-    ;WITH CalculosConRango AS (
-        SELECT
-            m.DNI_RESPONSABLE,
-            CASE WHEN m.VENTA_AVANCE_PREPAGO > @MAX_VENTA_GLOBAL THEN @MAX_VENTA_GLOBAL ELSE m.VENTA_AVANCE_PREPAGO END AS VentaPrepagoLimitada,
-            CASE WHEN m.VENTA_PREPAGO_CALIDAD > @MAX_VENTA_GLOBAL THEN @MAX_VENTA_GLOBAL ELSE m.VENTA_PREPAGO_CALIDAD END AS VentaPrepagoCalidadLimitada,
-            FLOOR((CAST(m.TOTAL_RECARGAS AS DECIMAL(10,2)) / NULLIF(CAST(m.VENTA_AVANCE_PREPAGO AS DECIMAL(10,2)), 0) * 100)) AS ratio,
-            FLOOR((CAST(m.TOTAL_VCALIDAD AS DECIMAL(10,2)) / NULLIF(CAST(m.VENTA_PREPAGO_CALIDAD AS DECIMAL(10,2)), 0) * 100)) AS ratioCalidad,
-            be.nivel_rango,
-            @MAX_VENTA_GLOBAL AS MAX_VENTA,
-            @RATIO_MIN_GLOBAL AS RATIO_MIN
-        FROM #MetricasCalculadas m
-        OUTER APPLY (
-            SELECT TOP 1 nivel_rango
-            FROM dbo.BonoEscala
-            WHERE tipo_pdv = 'PDV REGULAR'
-              AND zonal_pattern = @zonalPattern
-              AND @fechaPeriodo BETWEEN fecha_inicio AND ISNULL(fecha_fin, @fechaPeriodo)
-              AND (CASE WHEN m.VENTA_AVANCE_PREPAGO > @MAX_VENTA_GLOBAL THEN @MAX_VENTA_GLOBAL ELSE m.VENTA_AVANCE_PREPAGO END) >= rango_min
-              AND (CASE WHEN m.VENTA_AVANCE_PREPAGO > @MAX_VENTA_GLOBAL THEN @MAX_VENTA_GLOBAL ELSE m.VENTA_AVANCE_PREPAGO END) <= rango_max
-            ORDER BY nivel_rango DESC
-        ) be
-    )
+    -- CRÍTICO: Actualizar TODOS los registros de #MetricasCalculadas, no solo los que tienen coincidencias
+    -- Usar UPDATE directo con subconsultas para garantizar que todos los DNI se actualicen
     UPDATE m
     SET
-        VentaPrepagoLimitada = c.VentaPrepagoLimitada,
-        VentaPrepagoCalidadLimitada = c.VentaPrepagoCalidadLimitada,
-        ratio = c.ratio,
-        ratioCalidad = c.ratioCalidad,
-        nivel_rango = ISNULL(c.nivel_rango, 0),
-        MAX_VENTA = c.MAX_VENTA,
-        RATIO_MIN = c.RATIO_MIN
-    FROM #MetricasCalculadas m
-    INNER JOIN CalculosConRango c ON m.DNI_RESPONSABLE = c.DNI_RESPONSABLE;
+        VentaPrepagoLimitada = CASE WHEN m.VENTA_AVANCE_PREPAGO > @MAX_VENTA_GLOBAL THEN @MAX_VENTA_GLOBAL ELSE m.VENTA_AVANCE_PREPAGO END,
+        VentaPrepagoCalidadLimitada = CASE WHEN m.VENTA_PREPAGO_CALIDAD > @MAX_VENTA_GLOBAL THEN @MAX_VENTA_GLOBAL ELSE m.VENTA_PREPAGO_CALIDAD END,
+        ratio = CASE
+            WHEN m.VENTA_AVANCE_PREPAGO > 0 THEN FLOOR((CAST(m.TOTAL_RECARGAS AS DECIMAL(10,2)) / CAST(m.VENTA_AVANCE_PREPAGO AS DECIMAL(10,2)) * 100))
+            ELSE 0
+        END,
+        ratioCalidad = CASE
+            WHEN m.VENTA_PREPAGO_CALIDAD > 0 THEN FLOOR((CAST(m.TOTAL_VCALIDAD AS DECIMAL(10,2)) / CAST(m.VENTA_PREPAGO_CALIDAD AS DECIMAL(10,2)) * 100))
+            ELSE 0
+        END,
+        nivel_rango = ISNULL((
+            SELECT TOP 1 be.nivel_rango
+            FROM dbo.BonoEscala be
+            WHERE tipo_pdv = 'PDV REGULAR'
+              AND zonal_pattern = @zonalPattern
+              AND @fechaPeriodo BETWEEN be.fecha_inicio AND ISNULL(be.fecha_fin, @fechaPeriodo)
+              AND (CASE WHEN m.VENTA_AVANCE_PREPAGO > @MAX_VENTA_GLOBAL THEN @MAX_VENTA_GLOBAL ELSE m.VENTA_AVANCE_PREPAGO END) >= be.rango_min
+              AND (CASE WHEN m.VENTA_AVANCE_PREPAGO > @MAX_VENTA_GLOBAL THEN @MAX_VENTA_GLOBAL ELSE m.VENTA_AVANCE_PREPAGO END) <= be.rango_max
+            ORDER BY be.nivel_rango DESC
+        ), 0),
+        MAX_VENTA = @MAX_VENTA_GLOBAL,
+        RATIO_MIN = @RATIO_MIN_GLOBAL
+    FROM #MetricasCalculadas m;
 
     DROP TABLE #EventosAgregados;
 
@@ -418,8 +412,10 @@ BEGIN
         ), 0) AS BONO_UNITARIO_EQUIPO,
         CASE WHEN m.nivel_rango >= 2 THEN m.VentaPrepagoLimitada ELSE 0 END AS bonoDevolucionChips,
         CASE
-            WHEN m.VentaPrepagoCalidadLimitada BETWEEN 50 AND 150 AND m.ratioCalidad >= 50 THEN 1.5
-            WHEN m.VentaPrepagoCalidadLimitada BETWEEN 5 AND 49 AND m.ratioCalidad >= 50 THEN 1.0
+            -- R5-R9 (ventas 40-250): S/ 1.5 si ratioCalidad >= 50%
+            WHEN m.VentaPrepagoCalidadLimitada >= 40 AND m.ratioCalidad >= 50 THEN 1.5
+            -- R1-R4 (ventas 5-39): S/ 1.0 si ratioCalidad >= 50%
+            WHEN m.VentaPrepagoCalidadLimitada BETWEEN 5 AND 39 AND m.ratioCalidad >= 50 THEN 1.0
             ELSE 0
         END AS precioUniCalidadAdi
     FROM #MetricasCalculadas m;
@@ -537,21 +533,21 @@ BEGIN
         m.cantidadPortaPostOPre,
         m.cantPrepagoPorta,
         m.VentaPrepagoLimitada AS bonoChips,
-        b.BONO_UNITARIO_EQUIPO,
-        b.bonoDevolucionChips,
-        b.precioUniCalidadAdi,
-        b.bonoCalidad,
-        b.bonoRecargaPre,
-        b.bonoPortaPre,
-        b.bonoPortaPostOPost,
-        b.bonoPortaPostOPre,
+        ISNULL(b.BONO_UNITARIO_EQUIPO, 0) AS BONO_UNITARIO_EQUIPO,
+        ISNULL(b.bonoDevolucionChips, 0) AS bonoDevolucionChips,
+        ISNULL(b.precioUniCalidadAdi, 0) AS precioUniCalidadAdi,
+        ISNULL(b.bonoCalidad, 0) AS bonoCalidad,
+        ISNULL(b.bonoRecargaPre, 0) AS bonoRecargaPre,
+        ISNULL(b.bonoPortaPre, 0) AS bonoPortaPre,
+        ISNULL(b.bonoPortaPostOPost, 0) AS bonoPortaPostOPost,
+        ISNULL(b.bonoPortaPostOPre, 0) AS bonoPortaPostOPre,
         m.nivel_rango,
-        b.rango_actual,
+        ISNULL(b.rango_actual, 0) AS rango_actual,
         b.tipo_bono,
-        b.bono_rango,
+        ISNULL(b.bono_rango, 0) AS bono_rango,
         m.RATIO_MIN AS ratio_min_requerido,
-        b.bonoTotalEfectivo,
-        b.bonoTotal,
+        ISNULL(b.bonoTotalEfectivo, 0) AS bonoTotalEfectivo,
+        ISNULL(b.bonoTotal, 0) AS bonoTotal,
         m.VentaPrepagoLimitada,
         m.VentaPrepagoCalidadLimitada,
         m.ratio,
@@ -559,7 +555,7 @@ BEGIN
         m.MAX_VENTA
     FROM PORTAL_COMERCIAL.dbo.PDV_OUT_ENTREGABLE e
     INNER JOIN #MetricasCalculadas m ON e.DNI_RESPONSABLE = m.DNI_RESPONSABLE
-    INNER JOIN #BonosCalculados b ON e.DNI_RESPONSABLE = b.DNI_RESPONSABLE
+    LEFT JOIN #BonosCalculados b ON e.DNI_RESPONSABLE = b.DNI_RESPONSABLE
     WHERE e.AÑO = @año AND e.MES = @mes AND e.ESTADO = 'ACTIVO';
 
     DROP TABLE #MetricasCalculadas;
