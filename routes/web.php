@@ -28,7 +28,9 @@ Route::get('/view/loadImagenPicture', function () {
     return view('view');
 });
 Route::post('/api/v1/imagenes/allImg', [ImagenController::class, 'updateImg'])->name('updateImg.imagen.api');
-Route::get('/view/reporte/viewReporte', function(){ return view('reporte');});
+Route::get('/view/reporte/viewReporte', function () {
+    return view('reporte');
+});
 // Route::get('/view/reporte/mm/viewReporte', function(){ return view('reporte');});
 Route::get('/api/v1/reporte/all', [ReporteController::class, 'reporteAll'])->name('reporteAll.reporte.api');
 Route::get('/api/v1/reporte/pdv-regular', [ReporteController::class, 'reportePdvRegular'])->name('reportePdvRegular.reporte.api');
@@ -37,14 +39,14 @@ Route::get('/api/v1/reporte/pdv-premium', [ReporteController::class, 'reportePre
 Route::get('/api/v1/reporte/mm/getReporte/{typeReporte}', [ReporteController::class, 'getReporte'])->name('getReporteMM.reporte.api');
 Route::get('/api/v1/reporte/pdv/getReporte/{typeReporte}', [ReporteController::class, 'getReportePdv'])->name('getReportePdv.reporte.api');
 Route::get('/api/v1/reporte/all/getFinanza/{typeReporte}/{anio}/{mes}', [ReporteController::class, 'getReporteFinanza'])->name('getFinanza.reporte.api');
-Route::get('/api/v1/reporte/getFin',[LoginController::class, 'testRep']);
+Route::get('/api/v1/reporte/getFin', [LoginController::class, 'testRep']);
 
 Route::get('/api/v1/test/server', function () {
     return response()->json(["status" => 200, "message" => "server start"]);
 });
-Route::get('/api/v1/test/db', function (){
-    $test=PDV_ABONOS::where('año','=','2025')->where('mes','=','2')->first();
-    return response()->json(["status"=>200, "message"=>$test]);
+Route::get('/api/v1/test/db', function () {
+    $test = PDV_ABONOS::where('año', '=', '2025')->where('mes', '=', '2')->first();
+    return response()->json(["status" => 200, "message" => $test]);
 });
 Route::post('/api/v1/users/login', [LoginController::class, 'loginLocalUser'])->name('login.user.api');
 Route::get('/api/v1/users/validation-user/{user}', [LoginController::class, 'validarUser'])->name('validation.user.api');
@@ -142,14 +144,15 @@ Route::middleware(['jwt.apiRest.jsMarket', 'jwt.user.admin'])->group(function ()
     Route::get('/api/v1/admin/reportes-postpago/fechas-data', [ReportesPostpagoController::class, 'obtenerFechasData']);
     Route::post('/api/v1/admin/reportes-postpago/ejecutar-sp', [ReportesPostpagoController::class, 'ejecutarSP']);
     Route::post('/api/v1/admin/reportes-postpago/cierre-postpago', [ReportesPostpagoController::class, 'generarCierrePostpago']);
+    // Rutas para ejecutar y consultar el esquema PDV
+    Route::get('/api/v1/admin/pdv/getFechaMaximaEsquema', [LogicController::class, 'getFechaMaximaEsquemaPDV'])->name('getFechaMaximaEsquema.admin.api');
+    Route::post('/api/v1/admin/pdv/ejecutarActualizarEsquema/{anio}/{mes}', [LogicController::class, 'ejecutarActualizarEsquemaPDV'])->name('ejecutarActualizarEsquema.admin.api');
     Route::post('/api/v1/admin/reportes-postpago/bono-recargas', [ReportesPostpagoController::class, 'generarBonoRecargas']);
     Route::post('/api/v1/admin/reportes-postpago/generar-ambos', [ReportesPostpagoController::class, 'generarAmbos']);
     Route::get('/api/v1/admin/reportes-postpago/descargar/{archivo}', [ReportesPostpagoController::class, 'descargarArchivo'])
         ->name('reportes-postpago.download');
     Route::get('/api/v1/admin/reportes-postpago/ventas-inusuales', [ReportesPostpagoController::class, 'listarVentasInusuales']);
     Route::get('/api/v1/admin/reportes-postpago/ventas-inusuales/export', [ReportesPostpagoController::class, 'exportarVentasInusuales']);
-
-
 });
 Route::post('/api/v1/general/incidencia/create', [IncidenciaController::class, 'create'])->name('create.incidencia.api');
 Route::get('/api/v1/general/incidencia/getList/{typeSearch}/{id}', [IncidenciaController::class, 'getList'])->name('getList.incidencia.api');
@@ -167,8 +170,6 @@ Route::middleware(['jwt.apiRest.jsMarket', 'jwt.user.pdv'])->group(function () {
     Route::get('/api/v1/pdv/getPayment/{dni}/{anio}/{mes}', [LogicController::class, 'getPayment'])->name('payment.user.api');
     Route::get('/api/v1/pdv/getPaymentOptimized/{dni}/{anio}/{mes}', [LogicController::class, 'getPaymentOptimized'])->name('payment.optimized.user.api');
     Route::get('/api/v1/pdv/getIncidencia/{dni}/{anio}/{mes}', [LogicController::class, 'getIncidencia'])->name('incidencia.user.api');
-    Route::get('/api/v1/pdv/getFechaMaximaEsquema', [LogicController::class, 'getFechaMaximaEsquemaPDV'])->name('getFechaMaximaEsquema.user.api');
-    Route::post('/api/v1/pdv/ejecutarActualizarEsquema/{anio}/{mes}', [LogicController::class, 'ejecutarActualizarEsquemaPDV'])->name('ejecutarActualizarEsquema.user.api');
 });
 Route::middleware(['jwt.apiRest.jsMarket', 'jwt.user.multimarca'])->group(function () {
     Route::get('/api/v1/multimarca/getDataMM/{dni}/{anio}/{mes}', [MultimarcaAvanceDiarioController::class, 'getDataMM'])->name('getDataMM.user.api');
