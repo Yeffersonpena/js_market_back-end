@@ -325,8 +325,6 @@ BEGIN
     -- Usar UPDATE directo con subconsultas para garantizar que todos los DNI se actualicen
     UPDATE m
     SET
-        VentaPrepagoLimitada = CASE WHEN m.VENTA_AVANCE_PREPAGO > @MAX_VENTA_GLOBAL THEN @MAX_VENTA_GLOBAL ELSE m.VENTA_AVANCE_PREPAGO END,
-        VentaPrepagoCalidadLimitada = CASE WHEN m.VENTA_PREPAGO_CALIDAD > @MAX_VENTA_GLOBAL THEN @MAX_VENTA_GLOBAL ELSE m.VENTA_PREPAGO_CALIDAD END,
         ratio = CASE
             WHEN m.VENTA_AVANCE_PREPAGO > 0 THEN FLOOR((CAST(m.TOTAL_RECARGAS AS DECIMAL(10,2)) / CAST(m.VENTA_AVANCE_PREPAGO AS DECIMAL(10,2)) * 100))
             ELSE 0
@@ -335,6 +333,18 @@ BEGIN
             WHEN m.VENTA_PREPAGO_CALIDAD > 0 THEN FLOOR((CAST(m.TOTAL_VCALIDAD AS DECIMAL(10,2)) / CAST(m.VENTA_PREPAGO_CALIDAD AS DECIMAL(10,2)) * 100))
             ELSE 0
         END,
+        VentaPrepagoLimitada = CASE
+            -- Validación R9*: Si está en R9 (150-250) pero ratioCalidad < 45%, limitar a R8 (149)
+            WHEN m.VENTA_AVANCE_PREPAGO >= 150
+                 AND m.VENTA_AVANCE_PREPAGO <= 250
+                 AND (CASE WHEN m.VENTA_PREPAGO_CALIDAD > 0 THEN FLOOR((CAST(m.TOTAL_VCALIDAD AS DECIMAL(10,2)) / CAST(m.VENTA_PREPAGO_CALIDAD AS DECIMAL(10,2)) * 100)) ELSE 0 END) < 45
+                 THEN 149
+            -- Si excede el máximo global, limitar al máximo
+            WHEN m.VENTA_AVANCE_PREPAGO > @MAX_VENTA_GLOBAL THEN @MAX_VENTA_GLOBAL
+            -- Caso normal
+            ELSE m.VENTA_AVANCE_PREPAGO
+        END,
+        VentaPrepagoCalidadLimitada = CASE WHEN m.VENTA_PREPAGO_CALIDAD > @MAX_VENTA_GLOBAL THEN @MAX_VENTA_GLOBAL ELSE m.VENTA_PREPAGO_CALIDAD END,
         nivel_rango = ISNULL((
             SELECT TOP 1 be.nivel_rango
             FROM dbo.BonoEscala be
