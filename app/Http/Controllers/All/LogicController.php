@@ -480,7 +480,7 @@ class LogicController extends Controller
                     "status" => Response::HTTP_OK,
                     "message" => "Fechas obtenidas correctamente",
                     "data" => [
-                        "fecha_maxima_actualizacion" => $fechaMaxima,
+                        "fecha_maxima_datos" => $fechaMaxima,
                         "fecha_esquema_pdv" => $fechaEsquemaPDV
                     ]
                 ], Response::HTTP_OK);
@@ -489,7 +489,7 @@ class LogicController extends Controller
                     "status" => Response::HTTP_OK,
                     "message" => "No se encontró información de fechas",
                     "data" => [
-                        "fecha_maxima_actualizacion" => null,
+                        "fecha_maxima_datos" => null,
                         "fecha_esquema_pdv" => null
                     ]
                 ], Response::HTTP_OK);
