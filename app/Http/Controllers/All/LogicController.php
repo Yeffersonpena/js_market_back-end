@@ -94,7 +94,7 @@ class LogicController extends Controller
                 ->whereRaw('? BETWEEN MONTH(fecha_inicio) AND MONTH(fecha_fin)', [$mes])
                 ->where(function ($query) use ($anio) {
                     $query->whereYear('fecha_inicio', $anio)
-                          ->orWhereYear('fecha_fin', $anio);
+                        ->orWhereYear('fecha_fin', $anio);
                 })
                 ->exists();
             if (!$existeAvance) {
@@ -232,6 +232,16 @@ class LogicController extends Controller
     function getPayment($dni, $anio, $mes)
     {
         try {
+            // Lógica de selección: usar optimizado para diciembre 2025 en adelante
+            // Para meses anteriores (noviembre 2025 o antes), usar el SP original
+            $usarOptimizado = ($anio > 2025) || ($anio == 2025 && $mes >= 12);
+
+            if ($usarOptimizado) {
+                // Usar el endpoint optimizado que consulta PDV_OUT_ESQUEMA_RESUMEN
+                return $this->getPaymentOptimized($dni, $anio, $mes);
+            }
+
+            // Para meses anteriores a diciembre 2025, usar el SP original
             $spPayment = DB::select("exec spCalculoPaymentAll ?,?,?,?,?", [$dni, $anio, $mes, 1, 2]);
             if ($spPayment) {
                 $acumuladorPayment = [
@@ -323,6 +333,10 @@ class LogicController extends Controller
     /**
      * Nueva función optimizada que consulta la tabla PDV_OUT_ESQUEMA_RESUMEN
      * Mantiene la misma estructura de respuesta que getPayment para compatibilidad con el frontend
+     *
+     * NOTA: Este método es público para permitir pruebas directas.
+     * El método getPayment() lo utiliza internamente para diciembre 2025 en adelante.
+     * Para meses anteriores (noviembre 2025 o antes), getPayment() usa el SP original.
      */
     function getPaymentOptimized($dni, $anio, $mes)
     {
