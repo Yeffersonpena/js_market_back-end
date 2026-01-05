@@ -469,28 +469,35 @@ class LogicController extends Controller
                 $fechaMaxima = $parametro[0]->valor;
                 $comentario = $parametro[0]->comentario ?? '';
 
+                // Extraer la fecha del esquema PDV del comentario
+                // Formato esperado: "... Actualizado: YYYY-MM-DD"
+                $fechaEsquemaPDV = null;
+                if (!empty($comentario) && preg_match('/Actualizado:\s*(\d{4}-\d{2}-\d{2})/', $comentario, $matches)) {
+                    $fechaEsquemaPDV = $matches[1];
+                }
+
                 return response()->json([
                     "status" => Response::HTTP_OK,
-                    "message" => "Fecha máxima de actualización obtenida correctamente",
+                    "message" => "Fechas obtenidas correctamente",
                     "data" => [
                         "fecha_maxima_actualizacion" => $fechaMaxima,
-                        "comentario" => $comentario
+                        "fecha_esquema_pdv" => $fechaEsquemaPDV
                     ]
                 ], Response::HTTP_OK);
             } else {
                 return response()->json([
                     "status" => Response::HTTP_OK,
-                    "message" => "No se encontró información de fecha máxima de actualización",
+                    "message" => "No se encontró información de fechas",
                     "data" => [
                         "fecha_maxima_actualizacion" => null,
-                        "comentario" => null
+                        "fecha_esquema_pdv" => null
                     ]
                 ], Response::HTTP_OK);
             }
         } catch (\Exception $ex) {
             return response()->json([
                 "status" => Response::HTTP_BAD_REQUEST,
-                "message" => "Error al obtener la fecha máxima: " . $ex->getMessage()
+                "message" => "Error al obtener las fechas: " . $ex->getMessage()
             ], Response::HTTP_BAD_REQUEST);
         }
     }
