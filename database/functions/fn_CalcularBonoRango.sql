@@ -46,15 +46,19 @@ RETURN
         SELECT
             c.*,
             -- NOVIEMBRE 2025: Solo pagar bono_rango si cumple con ratio_min
+            -- CORRECCIÓN: Usar TOP 1 para evitar múltiples filas si hay duplicados en BonoRango
             CASE
-                WHEN c.tipo_bono IS NOT NULL AND @ratio >= c.ratio_min_periodo THEN ISNULL(br.bono, 0)
+                WHEN c.tipo_bono IS NOT NULL AND @ratio >= c.ratio_min_periodo THEN ISNULL((
+                    SELECT TOP 1 br.bono
+                    FROM dbo.BonoRango br
+                    WHERE br.nivel_rango = c.nivel_rango_para_bono
+                      AND br.tipo_bono = c.tipo_bono
+                      AND DATEFROMPARTS(@añoActual, @mesActual, 1) BETWEEN br.fecha_inicio AND ISNULL(br.fecha_fin, DATEFROMPARTS(@añoActual, @mesActual, 1))
+                    ORDER BY br.id DESC  -- Si hay duplicados, tomar el más reciente
+                ), 0)
                 ELSE 0
             END AS bono_rango
         FROM ComparacionRangos c
-        LEFT JOIN dbo.BonoRango br ON
-            br.nivel_rango = c.nivel_rango_para_bono
-            AND br.tipo_bono = c.tipo_bono
-            AND DATEFROMPARTS(@añoActual, @mesActual, 1) BETWEEN br.fecha_inicio AND ISNULL(br.fecha_fin, DATEFROMPARTS(@añoActual, @mesActual, 1))
     )
     SELECT
         rango_mes_anterior,

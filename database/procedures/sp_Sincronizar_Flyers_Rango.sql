@@ -16,24 +16,18 @@ BEGIN
         WHERE AÑO = @año AND MES = @mes AND ESTADO = 'ACTIVO'
     )
     BEGIN
-        -- Si no existe información para el mes solicitado, buscar el último mes disponible para ese año
+        -- Si no existe información para el mes solicitado, buscar el período más reciente anterior
+        -- Busca el año y mes máximo que sea anterior cronológicamente al período solicitado
         SELECT TOP 1
             @año_real = AÑO,
             @mes_real = MES
         FROM PORTAL_COMERCIAL.dbo.PDV_OUT_ENTREGABLE
-        WHERE AÑO = @año AND ESTADO = 'ACTIVO'
-        ORDER BY MES DESC;
-
-        -- Si no hay datos para ese año, buscar el último mes disponible en general
-        IF @mes_real IS NULL
-        BEGIN
-            SELECT TOP 1
-                @año_real = AÑO,
-                @mes_real = MES
-            FROM PORTAL_COMERCIAL.dbo.PDV_OUT_ENTREGABLE
-            WHERE ESTADO = 'ACTIVO'
-            ORDER BY AÑO DESC, MES DESC;
-        END
+        WHERE ESTADO = 'ACTIVO'
+          AND (
+              AÑO < @año
+              OR (AÑO = @año AND MES < @mes)
+          )
+        ORDER BY AÑO DESC, MES DESC;
     END
 
     -- Inserta campañas con todos = 1 (PDV sin validaciones de modo, criterio_filtro y zonales)
