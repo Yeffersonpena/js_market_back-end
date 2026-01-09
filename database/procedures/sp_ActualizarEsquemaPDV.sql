@@ -431,6 +431,9 @@ BEGIN
     FROM #MetricasCalculadas m;
 
     -- Calcular bonos de rango
+    -- AJUSTE DE EMERGENCIA 2026-01-09: El bono rango solo aplica para vendedores con hasta 149 ventas prepago.
+    -- Si tienen 150 o más ventas prepago (VENTA_AVANCE_PREPAGO >= 150), el bono_rango será 0.
+    -- Esto limita el bono rango a los rangos R1-R8 (hasta 149 ventas), excluyendo R9 y superiores.
     UPDATE b
     SET
         rango_actual = m.nivel_rango,
@@ -440,8 +443,11 @@ BEGIN
             ELSE NULL
         END,
         bono_rango = CASE
-            WHEN m.ratio >= m.RATIO_MIN AND m.nivel_rango > ISNULL(rango_ant.RANGO_MES_ANTERIOR, 0) THEN ISNULL(br.bono, 0)
-            WHEN m.ratio >= m.RATIO_MIN AND m.nivel_rango = ISNULL(rango_ant.RANGO_MES_ANTERIOR, 0) AND m.nivel_rango > 0 THEN ISNULL(br.bono, 0)
+            -- NUEVA CONDICIÓN: Solo aplicar bono rango si VENTA_AVANCE_PREPAGO <= 149
+            WHEN m.VENTA_AVANCE_PREPAGO >= 150 THEN 0
+            -- Condiciones originales del bono rango (solo para <= 149 ventas)
+            WHEN m.ratio >= m.RATIO_MIN AND m.nivel_rango > ISNULL(rango_ant.RANGO_MES_ANTERIOR, 0) AND m.VENTA_AVANCE_PREPAGO <= 149 THEN ISNULL(br.bono, 0)
+            WHEN m.ratio >= m.RATIO_MIN AND m.nivel_rango = ISNULL(rango_ant.RANGO_MES_ANTERIOR, 0) AND m.nivel_rango > 0 AND m.VENTA_AVANCE_PREPAGO <= 149 THEN ISNULL(br.bono, 0)
             ELSE 0
         END
     FROM #BonosCalculados b
