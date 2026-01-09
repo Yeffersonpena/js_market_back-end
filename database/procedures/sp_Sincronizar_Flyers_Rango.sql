@@ -31,6 +31,7 @@ BEGIN
     END
 
     -- Inserta campañas con todos = 1 (PDV sin validaciones de modo, criterio_filtro y zonales)
+    -- Cuando es 'TODOS', incluye a todos los PDV sin exclusiones
     INSERT INTO PORTAL_COMERCIAL.dbo.PDV_OUT_FLYERS (
         año,
         mes,
@@ -72,6 +73,7 @@ BEGIN
         );
 
     -- Inserta campañas de PDV (filtradas por RANGO)
+    -- Excluye los PDV TOP cuando criterio_filtro != 'TOP'
     INSERT INTO PORTAL_COMERCIAL.dbo.PDV_OUT_FLYERS (
         año,
         mes,
@@ -115,10 +117,70 @@ BEGIN
         c.activa = 1
         AND YEAR(c.fecha_inicio) = @año
         AND MONTH(c.fecha_inicio) = @mes
+        -- Excluir PDV TOP cuando criterio_filtro != 'TOP'
+        AND UPPER(LTRIM(RTRIM(c.criterio_filtro))) != 'TOP'
+        AND NOT EXISTS (
+            SELECT 1
+            FROM PORTAL_COMERCIAL.dbo.PDV_TOP pt
+            WHERE pt.DNI_RESPONSABLE = e.DNI_RESPONSABLE
+              AND pt.año = @año
+              AND pt.mes = @mes
+        )
         AND NOT EXISTS (
             SELECT 1
             FROM PORTAL_COMERCIAL.dbo.PDV_OUT_FLYERS f
             WHERE f.dni_responsable = CAST(e.DNI_RESPONSABLE AS VARCHAR(50))
+              AND f.foto_esquema = c.foto_esquema
+              AND f.fecha_inicio = c.fecha_inicio
+              AND f.fecha_fin = c.fecha_fin
+        );
+
+    -- Inserta campañas de PDV TOP (solo cuando criterio_filtro = 'TOP')
+    INSERT INTO PORTAL_COMERCIAL.dbo.PDV_OUT_FLYERS (
+        año,
+        mes,
+        dni_responsable,
+        zonal,
+        foto_esquema,
+        fecha_inicio,
+        fecha_fin,
+        tipoImg
+    )
+    SELECT DISTINCT
+        YEAR(c.fecha_inicio) AS año,
+        MONTH(c.fecha_inicio) AS mes,
+        CAST(pt.DNI_RESPONSABLE AS VARCHAR(50)) AS dni_responsable,
+        e.ZONAL,
+        c.foto_esquema,
+        c.fecha_inicio,
+        c.fecha_fin,
+        c.tipoImg
+    FROM PORTAL_COMERCIAL.dbo.PDV_OUT_CAMPAÑAS_FLYERS c
+    INNER JOIN PORTAL_COMERCIAL.dbo.PDV_TOP pt ON (
+        pt.año = @año
+        AND pt.mes = @mes
+    )
+    INNER JOIN PORTAL_COMERCIAL.dbo.PDV_OUT_ENTREGABLE e ON (
+        e.DNI_RESPONSABLE = pt.DNI_RESPONSABLE
+        AND e.AÑO = @año_real
+        AND e.MES = @mes_real
+    )
+    WHERE
+        c.activa = 1
+        AND c.modo = 'PDV'
+        AND UPPER(LTRIM(RTRIM(c.criterio_filtro))) = 'TOP'
+        AND YEAR(c.fecha_inicio) = @año
+        AND MONTH(c.fecha_inicio) = @mes
+        -- Validar zonales
+        AND (
+            (c.zonales IS NULL OR c.zonales = '' OR LTRIM(RTRIM(c.zonales)) = '')
+            OR (LOWER(LTRIM(RTRIM(c.zonales))) = 'todas')
+            OR (', ' + c.zonales + ', ' LIKE '%, ' + e.ZONAL + ', %')
+        )
+        AND NOT EXISTS (
+            SELECT 1
+            FROM PORTAL_COMERCIAL.dbo.PDV_OUT_FLYERS f
+            WHERE f.dni_responsable = CAST(pt.DNI_RESPONSABLE AS VARCHAR(50))
               AND f.foto_esquema = c.foto_esquema
               AND f.fecha_inicio = c.fecha_inicio
               AND f.fecha_fin = c.fecha_fin
