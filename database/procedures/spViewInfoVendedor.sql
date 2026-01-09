@@ -1,5 +1,5 @@
 CREATE PROCEDURE [dbo].[spViewInfoVendedor]
-    @DNI int,  
+    @DNI int,
     @ANIO INT,
     @MES INT
 AS
@@ -18,12 +18,12 @@ BEGIN
 	SET @dateStart = DATEFROMPARTS(@ANIO, @MES, 1);
 
     select @numeroCTA = numero_cuenta_bancaria ,@banco=entidad_bancaria
-	from PORTAL_COMERCIAL.dbo.tblpagos_datos_odoo 
+	from PORTAL_COMERCIAL.dbo.tblpagos_datos_odoo
 	where CAST(numero_de_documento  AS BIGINT)=@DNI;
 
     -- Obtener ZONAL basado en DNI_RESPONSABLE
-    SELECT TOP 1 @ZONAL = ZONAL 
-    FROM dbo.PDV_OUT_ENTREGABLE 
+    SELECT TOP 1 @ZONAL = ZONAL
+    FROM dbo.PDV_OUT_ENTREGABLE
     WHERE DNI_RESPONSABLE = @DNI AND AÑO = @ANIO AND MES = @MES;
     IF EXISTS (
         SELECT 1 FROM dbo.PDV_OUT_ENTREGABLE WHERE DNI_RESPONSABLE = @DNI AND  AÑO= @ANIO AND MES = @MES
@@ -60,7 +60,7 @@ BEGIN
         -- Calcular días de ventas como responsable
         SELECT @DIAS_VENTAS = COUNT(DISTINCT CAST(FECHA AS DATE))
         FROM PORTAL_COMERCIAL.dbo.VentasLog
-        WHERE YEAR(FECHA) = @ANIO AND MONTH(FECHA) = @MES 
+        WHERE YEAR(FECHA) = @ANIO AND MONTH(FECHA) = @MES
           AND PRODUCT_NAME = 'Prepago'
           AND DNI_RESPONSABLE = @DNI
           AND DNI_RESPONSABLE IS NOT NULL;
@@ -76,7 +76,7 @@ BEGIN
             E.ACCION_2,
             @RECARGA_TOTAL AS RECARGA_TOTAL,
             @AVANCE_PREPAGO AS [AVANCE PREPAGO],
-            CASE 
+            CASE
                 WHEN E.ACCION_1 = 'PDV REGULAR' THEN 'PDV'
                 ELSE E.ACCION_1
             END AS ACCION,
@@ -89,8 +89,7 @@ BEGIN
 			@DIAS_VENTAS AS diasVentas,
 			E.RANGO AS RANGO
         FROM dbo.PDV_OUT_ENTREGABLE E
-        WHERE E.DNI_RESPONSABLE = @DNI
-        ORDER BY E.MES DESC;
+        WHERE E.DNI_RESPONSABLE = @DNI AND E.AÑO = @ANIO AND E.MES = @MES;
     END
     ELSE
         BEGIN
@@ -100,16 +99,16 @@ BEGIN
             SET @existeVendedorTblEntre = 1;
         ELSE
             SET @existeVendedorTblEntre = 0;
-        -- 
+        --
         IF EXISTS (
             SELECT 1 FROM dbo.PDV_OUT_FUNNEL WHERE DNI_VENDEDOR= @DNI AND year(fecha) = @ANIO AND month(fecha)= @MES and SOCIO='JS MARKET'
         )
             SET @existeVendedorTblFunnel = 1;
         ELSE
             SET @existeVendedorTblFunnel = 0;
-            
+
         IF @existeVendedorTblEntre = 1
-            begin 
+            begin
             SELECT @RECARGA_TOTAL = sum(RECARGA_TOTAL) FROM dbo.PDV_OUT_FUNNEL_RESUMEN WHERE DNI_RESPONSABLE = @DNI AND ANIO = @ANIO AND MES = @MES and DNI_VENDEDOR=@DNI
             AND (
                 NOT EXISTS (
@@ -131,7 +130,7 @@ BEGIN
             -- Calcular días de ventas basándose en el responsable
             SELECT @DIAS_VENTAS = COUNT(DISTINCT CAST(FECHA AS DATE))
             FROM PORTAL_COMERCIAL.dbo.VentasLog
-            WHERE YEAR(FECHA) = @ANIO AND MONTH(FECHA) = @MES 
+            WHERE YEAR(FECHA) = @ANIO AND MONTH(FECHA) = @MES
               AND PRODUCT_NAME = 'Prepago'
               AND DNI_RESPONSABLE = @DNI
               AND DNI_RESPONSABLE IS NOT NULL;
@@ -148,7 +147,7 @@ BEGIN
                 E.ACCION_2,
                 @RECARGA_TOTAL AS RECARGA_TOTAL,
                 @AVANCE_PREPAGO AS [AVANCE PREPAGO],
-                CASE 
+                CASE
             WHEN E.ACCION_1 = 'PDV REGULAR' THEN 'PDV'
                     ELSE E.ACCION_1
                 END AS ACCION,
@@ -159,12 +158,12 @@ BEGIN
                 @dateUpdateCalidad AS DATE_UPDATE_CALIDAD,
                 @ZONAL AS ZONAL,
                 @DIAS_VENTAS AS diasVentas,
-                E.RANGO AS RANGO
+                R.RANGO AS RANGO
             FROM dbo.PDV_OUT_ENTREGABLE E
-            WHERE E.DNI_VENDEDOR = @DNI
-            ORDER BY E.MES DESC;
+            LEFT JOIN dbo.PDV_OUT_ENTREGABLE R ON R.DNI_RESPONSABLE = E.DNI_RESPONSABLE AND R.AÑO = @ANIO AND R.MES = @MES
+            WHERE E.DNI_VENDEDOR = @DNI AND E.AÑO = @ANIO AND E.MES = @MES;
         END
-        ELSE 
+        ELSE
             begin
             select @dateUpdateCalidad=valor from dbo.parametros where tipo=4;
             SELECT @RECARGA_TOTAL = COUNT(CASE WHEN RECARGA_SI_NO =1 and [RECARGAS>5] = 1 AND PRODUCTO_WEB in ('PREPAGO M7','PORT PREPAGO M7') THEN FECHA END),
@@ -180,13 +179,13 @@ BEGIN
             -- Calcular días de ventas basándose en el responsable
             SELECT @DIAS_VENTAS = COUNT(DISTINCT CAST(FECHA AS DATE))
             FROM PORTAL_COMERCIAL.dbo.VentasLog
-            WHERE YEAR(FECHA) = @ANIO AND MONTH(FECHA) = @MES 
+            WHERE YEAR(FECHA) = @ANIO AND MONTH(FECHA) = @MES
               AND PRODUCT_NAME = 'Prepago'
               AND DNI_RESPONSABLE = @DNI
               AND DNI_RESPONSABLE IS NOT NULL;
 
             SELECT top 1 @nombre_2=DNI_RESPONSABLE, @NOMBRE_RESPONSABLE=NOMBRE_RESPONSABLE, @RANGO=RANGO FROM dbo.PDV_OUT_ENTREGABLE WHERE DNI_RESPONSABLE =@dniResp  AND  AÑO= @ANIO AND MES = @MES
-            
+
             ;WITH paymentOdo AS (
                 select numero_de_documento, nombre_del_vendedor, tipo_plan, entidad_bancaria, numero_cuenta_bancaria from dbo.[tblpagos_datos_odoo] where numero_de_documento=@DNI
             )
@@ -199,7 +198,7 @@ BEGIN
                 pay.nombre_del_vendedor as NOMBRE_VENDEDOR1,
                 (SELECT valor FROM dbo.parametros WHERE tipo = 1) AS ULTIMA_FECHA,
                 -- E.GRUPO AS CLUSTER_PDV_REGULAR,
-                '0' AS CLUSTER_PDV_REGULAR, 
+                '0' AS CLUSTER_PDV_REGULAR,
                 -- ISNULL(E.CELULAR_VENDEDOR, 0) AS CELULAR_VENDEDOR,
                 '' AS CELULAR_VENDEDOR,
                 0 as CUOTA_PREPAGO,
