@@ -219,33 +219,56 @@ class ImagenController extends Controller
                 ];
 
                 // Procesar rango(s) - puede venir como integer, array o string
+                // Soporta números (1-8) que se convierten a "RANGO X" y también "TOP" como string
                 $rangoInput = $request->input('rango');
-                $rangosArray = [];
+                $rangosString = [];
 
                 if ($rangoInput !== null && $rangoInput !== '') {
+                    $rangosArray = [];
+
                     // Si es array, procesarlo directamente
                     if (is_array($rangoInput)) {
-                        $rangosArray = array_map('intval', $rangoInput);
+                        $rangosArray = $rangoInput;
                     }
-                    // Si es string, intentar convertir a array (ej: "1,2,3" o "1, 2, 3")
+                    // Si es string, intentar convertir a array (ej: "1,2,3" o "1, 2, 3" o "TOP")
                     elseif (is_string($rangoInput)) {
-                        $rangosArray = array_map('intval', array_filter(array_map('trim', explode(',', $rangoInput))));
+                        // Si es "TOP", agregarlo directamente
+                        if (strtoupper(trim($rangoInput)) === 'TOP') {
+                            $rangosString[] = 'TOP';
+                        } else {
+                            // Intentar convertir a array de números
+                            $rangosArray = array_filter(array_map('trim', explode(',', $rangoInput)));
+                        }
                     }
-                    // Si es un solo integer
+                    // Si es un solo integer o string "TOP"
                     elseif (is_numeric($rangoInput)) {
                         $rangosArray = [(int) $rangoInput];
                     }
-                }
 
-                // Convertir números de rango a strings "RANGO X" y concatenar
-                $rangosString = [];
-                foreach ($rangosArray as $rangoNum) {
-                    if (isset($rangoMapping[$rangoNum]) && $rangoNum >= 1 && $rangoNum <= 8) {
-                        $rangosString[] = $rangoMapping[$rangoNum];
+                    // Procesar números y convertirlos a "RANGO X", o mantener "TOP" como string
+                    foreach ($rangosArray as $rangoItem) {
+                        // Si es string "TOP", agregarlo directamente
+                        if (is_string($rangoItem) && strtoupper(trim($rangoItem)) === 'TOP') {
+                            $rangosString[] = 'TOP';
+                        }
+                        // Si es numérico, convertirlo a "RANGO X"
+                        elseif (is_numeric($rangoItem)) {
+                            $rangoNum = (int) $rangoItem;
+                            if (isset($rangoMapping[$rangoNum]) && $rangoNum >= 1 && $rangoNum <= 8) {
+                                $rangosString[] = $rangoMapping[$rangoNum];
+                            }
+                        }
+                        // Si es string numérico (ej: "1", "2"), convertirlo también
+                        elseif (is_string($rangoItem) && is_numeric(trim($rangoItem))) {
+                            $rangoNum = (int) trim($rangoItem);
+                            if (isset($rangoMapping[$rangoNum]) && $rangoNum >= 1 && $rangoNum <= 8) {
+                                $rangosString[] = $rangoMapping[$rangoNum];
+                            }
+                        }
                     }
                 }
 
-                // Unir los rangos con comas (ej: "RANGO 1,RANGO 2,RANGO 3")
+                // Unir los rangos con comas (ej: "RANGO 1,RANGO 2,RANGO 3" o "TOP")
                 $pictureRango = !empty($rangosString) ? implode(',', $rangosString) : null;
                 $pictureZonal = $request->input('zonal') ?: null; // Convertir string vacío a NULL
             }
@@ -524,7 +547,7 @@ class ImagenController extends Controller
             return response()->json([
                 'success' => true,
                 'message' => "Comunicación actualizada exitosamente. Se actualizaron " .
-                            $flyers->count() . " flyer(s).",
+                    $flyers->count() . " flyer(s).",
                 'data' => [
                     'flyers_actualizados' => $flyers->count(),
                     'archivo_comunicacion' => $archivoComunicacion,
@@ -533,7 +556,6 @@ class ImagenController extends Controller
                     'download_url' => $result['data']['download_url']
                 ]
             ], 200);
-
         } catch (ValidationException $e) {
             return response()->json([
                 'success' => false,
