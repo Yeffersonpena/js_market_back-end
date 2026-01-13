@@ -7,6 +7,7 @@ use App\Http\Controllers\Admin\GestorEntregableController;
 use App\Http\Controllers\Admin\AbonoInicialPostpagoController;
 use App\Http\Controllers\Admin\AbonosPostpagoLogController;
 use App\Http\Controllers\Admin\ReportesPostpagoController;
+use App\Http\Controllers\Admin\PDVVisitasADController;
 use App\Http\Controllers\All\LogicController;
 use App\Http\Controllers\Controller;
 use App\Http\Controllers\LoginController;
@@ -140,6 +141,20 @@ Route::middleware(['jwt.apiRest.jsMarket', 'jwt.user.admin'])->group(function ()
 
     // Abonos postpago log (Solo lectura - solo admin)
     Route::get('/api/v1/admin/abonos-postpago-log', [AbonosPostpagoLogController::class, 'index']);
+
+    // Programación de Visitas AD (CRUD - solo admin)
+    Route::prefix('admin/pdv-visitas-ad')->group(function () {
+        Route::get('/programacion', [PDVVisitasADController::class, 'index']);
+        Route::get('/programacion/{id}', [PDVVisitasADController::class, 'show']);
+        Route::post('/programacion', [PDVVisitasADController::class, 'store']);
+        Route::put('/programacion/{id}', [PDVVisitasADController::class, 'update']);
+        Route::delete('/programacion/{id}', [PDVVisitasADController::class, 'destroy']);
+
+        Route::post('/programacion/{id}/dias', [PDVVisitasADController::class, 'storeDias']);
+        Route::delete('/programacion/{id}/dias/{diaId}', [PDVVisitasADController::class, 'destroyDia']);
+
+        Route::get('/autocompletar/{dni}', [PDVVisitasADController::class, 'autocompletar']);
+    });
 
     // Reportes Postpago (ejecuta scripts Python - solo admin)
     Route::get('/api/v1/admin/reportes-postpago/fechas-data', [ReportesPostpagoController::class, 'obtenerFechasData']);
