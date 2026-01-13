@@ -8,6 +8,8 @@ use App\Http\Controllers\Admin\AbonoInicialPostpagoController;
 use App\Http\Controllers\Admin\AbonosPostpagoLogController;
 use App\Http\Controllers\Admin\ReportesPostpagoController;
 use App\Http\Controllers\Admin\PDVVisitasADController;
+use App\Http\Controllers\Zonal\PDVVisitasADZonalController;
+use App\Http\Controllers\VvddZonal\PDVVisitasADVendedorController;
 use App\Http\Controllers\All\LogicController;
 use App\Http\Controllers\Controller;
 use App\Http\Controllers\LoginController;
@@ -208,4 +210,23 @@ Route::middleware(['jwt.apiRest.jsMarket', 'jwt.user.multimarca'])->group(functi
     // Rutas para funcionalidad de N's (ventas y recargas)
 
     Route::get('/api/v1/multimarca/getVentasRecargasByN/{dni}/{periodoN}', [VentasRecargasController::class, 'getVentasRecargasByN'])->name('ventasRecargasN.user.api');
+});
+
+// Rutas para Jefe Zonal - Visitas AD
+Route::middleware(['jwt.apiRest.jsMarket', 'jwt.user.zonal'])->group(function () {
+    Route::prefix('api/v1/zonal/pdv-visitas-ad')->group(function () {
+        Route::get('/dashboard/dia/{fecha}', [PDVVisitasADZonalController::class, 'dashboardDia']);
+        Route::get('/detalle/dia/{fecha}', [PDVVisitasADZonalController::class, 'detalleDia']);
+        Route::get('/dias-con-visitas/{año}/{mes}', [PDVVisitasADZonalController::class, 'diasConVisitas']);
+    });
+});
+
+// Rutas para Vendedor Zonificado - Visitas AD
+// Nota: El vendedor zonificado es quien visita los puntos de venta, diferente al usuario PDV
+Route::middleware(['jwt.apiRest.jsMarket', 'jwt.user.vvddzonal'])->group(function () {
+    Route::prefix('api/v1/vvddzonal/pdv-visitas-ad')->group(function () {
+        Route::get('/dashboard/dia/{fecha}', [PDVVisitasADVendedorController::class, 'dashboardDia']);
+        Route::get('/detalle/dia/{fecha}', [PDVVisitasADVendedorController::class, 'detalleDia']);
+        Route::get('/dias-con-visitas/{año}/{mes}', [PDVVisitasADVendedorController::class, 'diasConVisitas']);
+    });
 });
