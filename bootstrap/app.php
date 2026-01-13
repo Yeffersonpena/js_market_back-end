@@ -16,6 +16,8 @@ return Application::configure(basePath: dirname(__DIR__))
             'jwt.user.admin'=>\App\Http\Middleware\AdminMiddleware::class,
             'jwt.user.pdv'=>\App\Http\Middleware\PdvMiddleware::class,
             'jwt.user.multimarca'=>\App\Http\Middleware\MultimarcaMiddleware::class,
+            'jwt.user.zonal'=>\App\Http\Middleware\ZonalMiddleware::class,
+            'jwt.user.vvddzonal'=>\App\Http\Middleware\VvddZonalMiddleware::class,
         ]);
         $middleware->validateCsrfTokens(except: ['*']);
         $middleware->append(Cors::class);
