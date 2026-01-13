@@ -154,6 +154,11 @@ Route::middleware(['jwt.apiRest.jsMarket', 'jwt.user.admin'])->group(function ()
         Route::delete('/programacion/{id}/dias/{diaId}', [PDVVisitasADController::class, 'destroyDia']);
 
         Route::get('/autocompletar/{dni}', [PDVVisitasADController::class, 'autocompletar']);
+
+        // Dashboard y consultas por fecha
+        Route::get('/dashboard/dia/{fecha}', [PDVVisitasADController::class, 'dashboardDia']);
+        Route::get('/detalle/dia/{fecha}', [PDVVisitasADController::class, 'detalleDia']);
+        Route::get('/dias-con-visitas/{año}/{mes}', [PDVVisitasADController::class, 'diasConVisitas']);
     });
 
     // Reportes Postpago (ejecuta scripts Python - solo admin)
