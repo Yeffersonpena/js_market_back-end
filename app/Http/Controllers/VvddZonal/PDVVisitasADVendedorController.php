@@ -261,6 +261,7 @@ class PDVVisitasADVendedorController extends Controller
                     'id' => $dia->id,
                     'programacion_id' => $programacion->id,
                     'dni_responsable' => $programacion->DNI_RESPONSABLE,
+                    'codigo_cum' => $programacion->CODIGO_CUM ?? null,
                     'cod_cliente' => $programacion->COD_CLIENTE,
                     'nombre_punto' => $programacion->NOMBRE_PUNTO,
                     'zonal' => $programacion->ZONAL,
@@ -274,8 +275,8 @@ class PDVVisitasADVendedorController extends Controller
                     'distrito' => $programacion->DISTRITO,
                     'direccion' => $programacion->DIRECCION,
                     'conglomerado' => $programacion->CONGLOMERADO,
-                    'latitud' => $programacion->LATITUD ? (float) $programacion->LATITUD : null,
-                    'longitud' => $programacion->LONGITUD ? (float) $programacion->LONGITUD : null,
+                    'latitud' => $programacion->LATITUD ?? null, // Mantener como string para preservar precisión
+                    'longitud' => $programacion->LONGITUD ?? null, // Mantener como string para preservar precisión
                     'tipo_visita' => $programacion->TIPO_VISITA,
                     'frecuencia' => $programacion->FRECUENCIA,
                     'status' => $programacion->STATUS,

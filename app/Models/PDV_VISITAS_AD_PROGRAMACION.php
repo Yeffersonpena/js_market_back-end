@@ -18,6 +18,7 @@ class PDV_VISITAS_AD_PROGRAMACION extends Model
         'DNI_RESPONSABLE',
         'AÑO',
         'MES',
+        'CODIGO_CUM',
         'COD_CLIENTE',
         'ZONAL',
         'RUTA',
@@ -48,8 +49,8 @@ class PDV_VISITAS_AD_PROGRAMACION extends Model
         'AÑO' => 'integer',
         'MES' => 'integer',
         'COD_VVDD' => 'integer',
-        'LATITUD' => 'decimal:8',
-        'LONGITUD' => 'decimal:8',
+        // LATITUD y LONGITUD son VARCHAR para preservar precisión exacta del Excel
+        // No se hace cast, se mantienen como string
         'FECHA_CREACION' => 'datetime',
         'FECHA_ACTUALIZACION' => 'datetime',
     ];

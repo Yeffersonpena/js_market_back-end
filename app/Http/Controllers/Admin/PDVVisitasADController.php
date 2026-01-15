@@ -30,6 +30,7 @@ class PDVVisitasADController extends Controller
                 'dni_responsable' => $row->DNI_RESPONSABLE,
                 'año' => $row->AÑO,
                 'mes' => $row->MES,
+                'codigo_cum' => $row->CODIGO_CUM ?? null,
                 'cod_cliente' => $row->COD_CLIENTE,
                 'zonal' => $row->ZONAL,
                 'ruta' => $row->RUTA,
@@ -42,8 +43,8 @@ class PDVVisitasADController extends Controller
                 'distrito' => $row->DISTRITO,
                 'direccion' => $row->DIRECCION,
                 'conglomerado' => $row->CONGLOMERADO,
-                'latitud' => $row->LATITUD ? (float) $row->LATITUD : null,
-                'longitud' => $row->LONGITUD ? (float) $row->LONGITUD : null,
+                'latitud' => $row->LATITUD ?? null, // Mantener como string para preservar precisión
+                'longitud' => $row->LONGITUD ?? null, // Mantener como string para preservar precisión
                 'vendedores' => $row->VENDEDORES,
                 'tipo_visita' => $row->TIPO_VISITA,
                 'frecuencia' => $row->FRECUENCIA,
@@ -241,6 +242,7 @@ class PDVVisitasADController extends Controller
                 'dni_responsable' => 'required|integer',
                 'año' => 'required|integer|min:2020|max:2100',
                 'mes' => 'required|integer|min:1|max:12',
+                'codigo_cum' => 'nullable|string|max:50',
                 'cod_cliente' => 'nullable|string|max:50',
                 'zonal' => 'nullable|string|max:70',
                 'ruta' => 'nullable|string|max:50',
@@ -253,8 +255,8 @@ class PDVVisitasADController extends Controller
                 'distrito' => 'nullable|string|max:100',
                 'direccion' => 'nullable|string|max:500',
                 'conglomerado' => 'nullable|string|max:255',
-                'latitud' => 'nullable|numeric',
-                'longitud' => 'nullable|numeric',
+                'latitud' => 'nullable|string|max:50', // VARCHAR para preservar precisión exacta
+                'longitud' => 'nullable|string|max:50', // VARCHAR para preservar precisión exacta
                 'vendedores' => 'nullable|string|max:255',
                 'tipo_visita' => 'nullable|string|max:50',
                 'frecuencia' => 'nullable|string|max:50',
@@ -279,6 +281,7 @@ class PDVVisitasADController extends Controller
             $programacion->DNI_RESPONSABLE = (int) $validated['dni_responsable'];
             $programacion->AÑO = (int) $validated['año'];
             $programacion->MES = (int) $validated['mes'];
+            $programacion->CODIGO_CUM = $validated['codigo_cum'] ?? null;
             $programacion->COD_CLIENTE = $validated['cod_cliente'] ?? null;
             $programacion->ZONAL = $validated['zonal'] ?? null;
             $programacion->RUTA = $validated['ruta'] ?? null;
@@ -291,8 +294,9 @@ class PDVVisitasADController extends Controller
             $programacion->DISTRITO = $validated['distrito'] ?? null;
             $programacion->DIRECCION = $validated['direccion'] ?? null;
             $programacion->CONGLOMERADO = $validated['conglomerado'] ?? null;
-            $programacion->LATITUD = isset($validated['latitud']) ? (float) $validated['latitud'] : null;
-            $programacion->LONGITUD = isset($validated['longitud']) ? (float) $validated['longitud'] : null;
+            // Guardar como string para preservar precisión exacta
+            $programacion->LATITUD = $validated['latitud'] ?? null;
+            $programacion->LONGITUD = $validated['longitud'] ?? null;
             $programacion->VENDEDORES = $validated['vendedores'] ?? null;
             $programacion->TIPO_VISITA = $validated['tipo_visita'] ?? null;
             $programacion->FRECUENCIA = $validated['frecuencia'] ?? null;
@@ -342,6 +346,7 @@ class PDVVisitasADController extends Controller
             }
 
             $validated = $request->validate([
+                'codigo_cum' => 'sometimes|nullable|string|max:50',
                 'cod_cliente' => 'sometimes|nullable|string|max:50',
                 'zonal' => 'sometimes|nullable|string|max:70',
                 'ruta' => 'sometimes|nullable|string|max:50',
@@ -354,8 +359,8 @@ class PDVVisitasADController extends Controller
                 'distrito' => 'sometimes|nullable|string|max:100',
                 'direccion' => 'sometimes|nullable|string|max:500',
                 'conglomerado' => 'sometimes|nullable|string|max:255',
-                'latitud' => 'sometimes|nullable|numeric',
-                'longitud' => 'sometimes|nullable|numeric',
+                'latitud' => 'sometimes|nullable|string|max:50', // VARCHAR para preservar precisión exacta
+                'longitud' => 'sometimes|nullable|string|max:50', // VARCHAR para preservar precisión exacta
                 'vendedores' => 'sometimes|nullable|string|max:255',
                 'tipo_visita' => 'sometimes|nullable|string|max:50',
                 'frecuencia' => 'sometimes|nullable|string|max:50',
@@ -364,6 +369,9 @@ class PDVVisitasADController extends Controller
             ]);
 
             // Actualizar solo campos presentes
+            if (array_key_exists('codigo_cum', $validated)) {
+                $programacion->CODIGO_CUM = $validated['codigo_cum'];
+            }
             if (array_key_exists('cod_cliente', $validated)) {
                 $programacion->COD_CLIENTE = $validated['cod_cliente'];
             }
@@ -401,10 +409,12 @@ class PDVVisitasADController extends Controller
                 $programacion->CONGLOMERADO = $validated['conglomerado'];
             }
             if (array_key_exists('latitud', $validated)) {
-                $programacion->LATITUD = $validated['latitud'] ? (float) $validated['latitud'] : null;
+                // Guardar como string para preservar precisión exacta
+                $programacion->LATITUD = $validated['latitud'] ?? null;
             }
             if (array_key_exists('longitud', $validated)) {
-                $programacion->LONGITUD = $validated['longitud'] ? (float) $validated['longitud'] : null;
+                // Guardar como string para preservar precisión exacta
+                $programacion->LONGITUD = $validated['longitud'] ?? null;
             }
             if (array_key_exists('vendedores', $validated)) {
                 $programacion->VENDEDORES = $validated['vendedores'];
@@ -660,8 +670,8 @@ class PDVVisitasADController extends Controller
                     "distrito" => $result->DISTRITO ?? null,
                     "direccion" => $result->DIRECCION ?? null,
                     "conglomerado" => $result->CONGLOMERADO ?? null,
-                    "latitud" => $result->LATITUD ? (float) $result->LATITUD : null,
-                    "longitud" => $result->LONGITUD ? (float) $result->LONGITUD : null,
+                    "latitud" => $result->LATITUD ?? null, // Mantener como string para preservar precisión
+                    "longitud" => $result->LONGITUD ?? null, // Mantener como string para preservar precisión
                     "vendedores" => $result->NOMBRE_VENDEDOR ?? null,
                 ],
             ], Response::HTTP_OK);
@@ -875,6 +885,7 @@ class PDVVisitasADController extends Controller
                     'id' => $dia->id,
                     'programacion_id' => $programacion->id,
                     'dni_responsable' => $programacion->DNI_RESPONSABLE,
+                    'codigo_cum' => $programacion->CODIGO_CUM ?? null,
                     'cod_cliente' => $programacion->COD_CLIENTE,
                     'nombre_punto' => $programacion->NOMBRE_PUNTO,
                     'zonal' => $programacion->ZONAL,
@@ -888,8 +899,8 @@ class PDVVisitasADController extends Controller
                     'distrito' => $programacion->DISTRITO,
                     'direccion' => $programacion->DIRECCION,
                     'conglomerado' => $programacion->CONGLOMERADO,
-                    'latitud' => $programacion->LATITUD ? (float) $programacion->LATITUD : null,
-                    'longitud' => $programacion->LONGITUD ? (float) $programacion->LONGITUD : null,
+                    'latitud' => $programacion->LATITUD ?? null, // Mantener como string para preservar precisión
+                    'longitud' => $programacion->LONGITUD ?? null, // Mantener como string para preservar precisión
                     'tipo_visita' => $programacion->TIPO_VISITA,
                     'frecuencia' => $programacion->FRECUENCIA,
                     'status' => $programacion->STATUS,
