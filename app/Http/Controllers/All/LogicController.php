@@ -241,6 +241,44 @@ class LogicController extends Controller
                 return $this->getPaymentOptimized($dni, $anio, $mes);
             }
 
+            // Respuesta vacía con defaults para evitar null/undefined en el frontend
+            $emptyPayment = [
+                "bonoPre" => 0.0,
+                "bonoRecargaPre" => 0.0,
+                "bonoPortaPre" => 0.0,
+                "bonoAltaPost" => 0.0,
+                "bonoPortaPostOPost" => 0.0,
+                "bonoPortaPostOPre" => 0.0,
+                "bonoChips" => 0.00,
+                "bonoTotalEfectivo" => 0.00,
+                "bonoTotal" => 0.00,
+                "ventaTotal" => 0.00,
+                //
+                "faltaVenta" => 0.00,
+                "cantidadPortaPre" => 0.00,
+                "precioUniPortaPre" => 0.00,
+                "cantidadAltaPost" => 0.00,
+                "precioUniAltaPost" => 0.00,
+                "cantidadPortaPostOPost" => 0.00,
+                "precioPortaPostOPost" => 0.00,
+                "cantidadPortaPostOPre" => 0.00,
+                "precioPortaPostOPre" => 0.00,
+                "precioUniSchema" => 0.00,
+                "levelUser" => 0.00,
+                "cantidadRecarga" => 0.00,
+                "bonoDevolucionChips" => 0.00,
+                "precioUniCalidadAdi" => 0.00,
+                "cantidadCalidad" => 0.00,
+                "bonoCalidad" => 0.00,
+                "zonal" => "",
+                "nivel_rango" => 0,
+                // Nuevos campos para bonos por rango
+                "rango_mes_anterior" => 0,
+                "tipo_bono" => null,
+                "bono_rango" => 0.00,
+                "ratio_min_requerido" => 0.00,
+            ];
+
             // Para meses anteriores a diciembre 2025, usar el SP original
             $spPayment = DB::select("exec spCalculoPaymentAll ?,?,?,?,?", [$dni, $anio, $mes, 1, 2]);
             if ($spPayment) {
@@ -323,7 +361,7 @@ class LogicController extends Controller
                 $payment = $acumuladorPayment;
                 return response()->json(["status" => Response::HTTP_OK, "message" => "Hay pago para el vendedor Pdv del mes de " . $mes, "data" => $payment], Response::HTTP_OK);
             } else {
-                return response()->json(["status" => Response::HTTP_OK, "message" => "No hay pagos ", "data" => []], Response::HTTP_OK);
+                return response()->json(["status" => Response::HTTP_OK, "message" => "No hay pagos ", "data" => $emptyPayment], Response::HTTP_OK);
             }
         } catch (\Exception $ex) {
             return response()->json(["status" => Response::HTTP_BAD_REQUEST, "message" => $ex->getMessage()], Response::HTTP_BAD_REQUEST);
@@ -341,6 +379,44 @@ class LogicController extends Controller
     function getPaymentOptimized($dni, $anio, $mes)
     {
         try {
+            // Respuesta vacía con defaults para evitar null/undefined en el frontend
+            $emptyPayment = [
+                "bonoPre" => 0.0,
+                "bonoRecargaPre" => 0.0,
+                "bonoPortaPre" => 0.0,
+                "bonoAltaPost" => 0.0,
+                "bonoPortaPostOPost" => 0.0,
+                "bonoPortaPostOPre" => 0.0,
+                "bonoChips" => 0.00,
+                "bonoTotalEfectivo" => 0.00,
+                "bonoTotal" => 0.00,
+                "ventaTotal" => 0.00,
+                //
+                "faltaVenta" => 0.00,
+                "cantidadPortaPre" => 0.00,
+                "precioUniPortaPre" => 0.00,
+                "cantidadAltaPost" => 0.00,
+                "precioUniAltaPost" => 0.00,
+                "cantidadPortaPostOPost" => 0.00,
+                "precioPortaPostOPost" => 0.00,
+                "cantidadPortaPostOPre" => 0.00,
+                "precioPortaPostOPre" => 0.00,
+                "precioUniSchema" => 0.00,
+                "levelUser" => 0.00,
+                "cantidadRecarga" => 0.00,
+                "bonoDevolucionChips" => 0.00,
+                "precioUniCalidadAdi" => 0.00,
+                "cantidadCalidad" => 0.00,
+                "bonoCalidad" => 0.00,
+                "zonal" => "",
+                "nivel_rango" => 0,
+                // Nuevos campos para bonos por rango
+                "rango_mes_anterior" => 0,
+                "tipo_bono" => null,
+                "bono_rango" => 0.00,
+                "ratio_min_requerido" => 0.00,
+            ];
+
             // Consultar directamente la tabla PDV_OUT_ESQUEMA_RESUMEN
             $paymentData = PDV_OUT_ESQUEMA_RESUMEN::where('DNI_RESPONSABLE', $dni)
                 ->where('AÑO', $anio)
@@ -366,8 +442,8 @@ class LogicController extends Controller
                     "bonoPortaPostOPost" => (float) $paymentData->bonoPortaPostOPost,
                     "bonoPortaPostOPre"  => (float) $paymentData->bonoPortaPostOPre,
                     "bonoChips"          => (float) $paymentData->bonoChips,
-                    "bonoTotalEfectivo"  => (float) $paymentData->bonoTotalEfectivo,
-                    "bonoTotal"          => (float) $paymentData->bonoTotal,
+                    "bonoTotalEfectivo"  => (float) ($paymentData->bonoTotalEfectivo ?? 0),
+                    "bonoTotal"          => (float) ($paymentData->bonoTotal ?? 0),
                     "ventaTotal"         => $ventaAvancePrepago,
 
                     // Detalle y métricas
@@ -406,7 +482,7 @@ class LogicController extends Controller
                 return response()->json([
                     "status"  => Response::HTTP_OK,
                     "message" => "No hay pagos",
-                    "data"    => []
+                    "data"    => $emptyPayment
                 ], Response::HTTP_OK);
             }
         } catch (\Exception $ex) {
