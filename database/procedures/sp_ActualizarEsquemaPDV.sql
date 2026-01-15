@@ -334,14 +334,19 @@ BEGIN
             ELSE 0
         END,
         VentaPrepagoLimitada = CASE
-            -- Validación R9*: Si está en R9 (150-250) pero ratioCalidad < 45%, limitar a R8 (149)
+            -- AJUSTE DE EMERGENCIA 2026-01-09: Para vendedores con 150+ ventas, se requiere mínimo 45% de ratioCalidad
+            -- Si tienen 150+ ventas Y ratioCalidad < 45%: se les paga solo por 149 ventas
+            -- Si tienen 150+ ventas Y ratioCalidad >= 45%: se les paga por TODAS sus ventas (hasta el máximo global)
+            -- Ejemplos:
+            --   - Juan: 200 ventas, ratioCalidad 60% → se paga por 200 ventas
+            --   - Ana: 250 ventas, ratioCalidad 20% → se paga solo por 149 ventas
             WHEN m.VENTA_AVANCE_PREPAGO >= 150
-                 AND m.VENTA_AVANCE_PREPAGO <= 250
                  AND (CASE WHEN m.VENTA_PREPAGO_CALIDAD > 0 THEN FLOOR((CAST(m.TOTAL_VCALIDAD AS DECIMAL(10,2)) / CAST(m.VENTA_PREPAGO_CALIDAD AS DECIMAL(10,2)) * 100)) ELSE 0 END) < 45
                  THEN 149
-            -- Si excede el máximo global, limitar al máximo
+            -- Si tienen 150+ ventas Y ratioCalidad >= 45%: usar todas las ventas (aplicar límite máximo global si excede)
+            -- Si tienen < 150 ventas: usar todas las ventas (aplicar límite máximo global si excede)
             WHEN m.VENTA_AVANCE_PREPAGO > @MAX_VENTA_GLOBAL THEN @MAX_VENTA_GLOBAL
-            -- Caso normal
+            -- Caso normal: usar todas las ventas
             ELSE m.VENTA_AVANCE_PREPAGO
         END,
         VentaPrepagoCalidadLimitada = CASE WHEN m.VENTA_PREPAGO_CALIDAD > @MAX_VENTA_GLOBAL THEN @MAX_VENTA_GLOBAL ELSE m.VENTA_PREPAGO_CALIDAD END,

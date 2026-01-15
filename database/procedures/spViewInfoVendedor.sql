@@ -15,7 +15,10 @@ BEGIN
     DECLARE @ZONAL NVARCHAR(255);
     DECLARE @DIAS_VENTAS INT;
     DECLARE @RANGO NVARCHAR(255);
+	DECLARE @fechaInicioMes DATE, @fechaFinMes DATE;
 	SET @dateStart = DATEFROMPARTS(@ANIO, @MES, 1);
+	SET @fechaInicioMes = DATEFROMPARTS(@ANIO, @MES, 1);
+	SET @fechaFinMes = DATEADD(MONTH, 1, @fechaInicioMes);
 
     select @numeroCTA = numero_cuenta_bancaria ,@banco=entidad_bancaria
 	from PORTAL_COMERCIAL.dbo.tblpagos_datos_odoo
@@ -47,23 +50,21 @@ BEGIN
 		select @dateUpdateCalidad=valor from dbo.parametros where tipo=4;
 		select @calidadAllNow=count(*) from dbo.PDV_OUT_FUNNEL where DNI_RESPONSABLE=@DNI and fecha between @dateStart and @dateUpdateCalidad and CALIDAD_CLUSTER in ('Cluster 1: IMEI nuevo', 'Cluster 2: IMEI reutilizado')
 
-        SELECT @AVANCE_PREPAGO = SUM(cantidad) FROM dbo.tbl_venta_log WHERE DNI_RESPONSABLE = @DNI AND YEAR(FECHA) = @ANIO AND MONTH(FECHA) = @MES AND PRODUCT_NAME = 'Prepago'
-		AND (
-			NOT EXISTS (
-					SELECT 1 FROM dbo.PDV_OUT_ENTREGABLE WHERE año = @ANIO AND mes = @MES AND DNI_VENDEDOR = dbo.tbl_venta_log.DNI_VENDEDOR
-				)
-				OR EXISTS (
-					SELECT 1 FROM dbo.PDV_OUT_ENTREGABLE WHERE año = @ANIO AND mes = @MES AND DNI_VENDEDOR = dbo.tbl_venta_log.DNI_VENDEDOR AND DNI_RESPONSABLE = @DNI
-				)
-			  );
+        -- CAMBIO: Usar VentasLog con COUNT(*) igual que sp_ActualizarEsquemaPDV para consistencia con payment
+        SELECT @AVANCE_PREPAGO = COUNT(*)
+        FROM PORTAL_COMERCIAL.dbo.VentasLog
+        WHERE FECHA >= @fechaInicioMes AND FECHA < @fechaFinMes
+          AND PRODUCT_NAME = 'Prepago'
+          AND VALOR_DNI_RESPONSABLE = @DNI
+          AND VALOR_DNI_RESPONSABLE IS NOT NULL;
 
         -- Calcular días de ventas como responsable
         SELECT @DIAS_VENTAS = COUNT(DISTINCT CAST(FECHA AS DATE))
         FROM PORTAL_COMERCIAL.dbo.VentasLog
-        WHERE YEAR(FECHA) = @ANIO AND MONTH(FECHA) = @MES
+        WHERE FECHA >= @fechaInicioMes AND FECHA < @fechaFinMes
           AND PRODUCT_NAME = 'Prepago'
-          AND DNI_RESPONSABLE = @DNI
-          AND DNI_RESPONSABLE IS NOT NULL;
+          AND VALOR_DNI_RESPONSABLE = @DNI
+          AND VALOR_DNI_RESPONSABLE IS NOT NULL;
         SELECT DISTINCT TOP 1
             E.MES,
             E.NOMBRE_RESPONSABLE,
@@ -124,16 +125,30 @@ BEGIN
 
             select @calidadAllNow=count(*) from dbo.PDV_OUT_FUNNEL where DNI_VENDEDOR=@DNI and fecha between @dateStart and @dateUpdateCalidad and CALIDAD_CLUSTER in ('Cluster 1: IMEI nuevo', 'Cluster 2: IMEI reutilizado')
 
-            SELECT @AVANCE_PREPAGO = SUM(cantidad) FROM dbo.tbl_venta_log
-            WHERE DNI_VENDEDOR = @DNI AND YEAR(FECHA) = @ANIO AND MONTH(FECHA) = @MES AND PRODUCT_NAME = 'Prepago'
+            -- CAMBIO: Usar VentasLog con COUNT(*) igual que sp_ActualizarEsquemaPDV para consistencia con payment
+            -- Nota: Para vendedores, usamos el DNI_RESPONSABLE asociado desde PDV_OUT_ENTREGABLE
+            SELECT @AVANCE_PREPAGO = COUNT(*)
+            FROM PORTAL_COMERCIAL.dbo.VentasLog
+            WHERE FECHA >= @fechaInicioMes AND FECHA < @fechaFinMes
+              AND PRODUCT_NAME = 'Prepago'
+              AND VALOR_DNI_RESPONSABLE IN (
+                  SELECT DISTINCT DNI_RESPONSABLE
+                  FROM dbo.PDV_OUT_ENTREGABLE
+                  WHERE DNI_VENDEDOR = @DNI AND AÑO = @ANIO AND MES = @MES
+              )
+              AND VALOR_DNI_RESPONSABLE IS NOT NULL;
 
             -- Calcular días de ventas basándose en el responsable
             SELECT @DIAS_VENTAS = COUNT(DISTINCT CAST(FECHA AS DATE))
             FROM PORTAL_COMERCIAL.dbo.VentasLog
-            WHERE YEAR(FECHA) = @ANIO AND MONTH(FECHA) = @MES
+            WHERE FECHA >= @fechaInicioMes AND FECHA < @fechaFinMes
               AND PRODUCT_NAME = 'Prepago'
-              AND DNI_RESPONSABLE = @DNI
-              AND DNI_RESPONSABLE IS NOT NULL;
+              AND VALOR_DNI_RESPONSABLE IN (
+                  SELECT DISTINCT DNI_RESPONSABLE
+                  FROM dbo.PDV_OUT_ENTREGABLE
+                  WHERE DNI_VENDEDOR = @DNI AND AÑO = @ANIO AND MES = @MES
+              )
+              AND VALOR_DNI_RESPONSABLE IS NOT NULL;
 
             SELECT DISTINCT TOP 1
                 E.MES,
@@ -173,16 +188,22 @@ BEGIN
 
             select @calidadAllNow=count(*) from dbo.PDV_OUT_FUNNEL where DNI_VENDEDOR=@DNI and fecha between @dateStart and @dateUpdateCalidad and CALIDAD_CLUSTER in ('Cluster 1: IMEI nuevo', 'Cluster 2: IMEI reutilizado')
 
-            SELECT @AVANCE_PREPAGO = SUM(cantidad) FROM dbo.tbl_venta_log
-            WHERE DNI_VENDEDOR = @DNI AND YEAR(FECHA) = @ANIO AND MONTH(FECHA) = @MES AND PRODUCT_NAME = 'Prepago'
+            -- CAMBIO: Usar VentasLog con COUNT(*) igual que sp_ActualizarEsquemaPDV para consistencia con payment
+            -- Nota: Para vendedores sin registro en PDV_OUT_ENTREGABLE, usamos el DNI_RESPONSABLE desde PDV_OUT_FUNNEL
+            SELECT @AVANCE_PREPAGO = COUNT(*)
+            FROM PORTAL_COMERCIAL.dbo.VentasLog
+            WHERE FECHA >= @fechaInicioMes AND FECHA < @fechaFinMes
+              AND PRODUCT_NAME = 'Prepago'
+              AND VALOR_DNI_RESPONSABLE = @dniResp
+              AND VALOR_DNI_RESPONSABLE IS NOT NULL;
 
             -- Calcular días de ventas basándose en el responsable
             SELECT @DIAS_VENTAS = COUNT(DISTINCT CAST(FECHA AS DATE))
             FROM PORTAL_COMERCIAL.dbo.VentasLog
-            WHERE YEAR(FECHA) = @ANIO AND MONTH(FECHA) = @MES
+            WHERE FECHA >= @fechaInicioMes AND FECHA < @fechaFinMes
               AND PRODUCT_NAME = 'Prepago'
-              AND DNI_RESPONSABLE = @DNI
-              AND DNI_RESPONSABLE IS NOT NULL;
+              AND VALOR_DNI_RESPONSABLE = @dniResp
+              AND VALOR_DNI_RESPONSABLE IS NOT NULL;
 
             SELECT top 1 @nombre_2=DNI_RESPONSABLE, @NOMBRE_RESPONSABLE=NOMBRE_RESPONSABLE, @RANGO=RANGO FROM dbo.PDV_OUT_ENTREGABLE WHERE DNI_RESPONSABLE =@dniResp  AND  AÑO= @ANIO AND MES = @MES
 
