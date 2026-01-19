@@ -5,7 +5,7 @@ BEGIN
     DECLARE @filasInsertadas INT = 0;
 	DECLARE @AñoActual INT;
     DECLARE @MesActual INT;
-    
+
 -- Query 1: Insertar Responsables de PDV (perfil 2)
 WITH ResponsablesPDV AS (
     SELECT
@@ -27,46 +27,20 @@ WITH ResponsablesPDV AS (
             WHERE u.[user] = CONVERT(VARCHAR(20), e.DNI_RESPONSABLE)
         )
 )
-INSERT INTO users ([user], zonal, idPerfil, created_at, created_by)
+INSERT INTO users ([user], zonal, idPerfil, created_at, created_by, estado)
 SELECT
     ResponsablesPDV.DniVarchar,
     ResponsablesPDV.ZONAL,
     ResponsablesPDV.idPerfil,
     GETDATE(),
-    'admin'
+    'admin',
+    1
 FROM ResponsablesPDV;
 
 
 
--- Query 2: Insertar Vendedores de MULTIMARCA (perfil 3)
-WITH VendedoresMultimarca AS (
-    SELECT
-        distinct
-        CONVERT(VARCHAR(20), e.DNI_VENDEDOR) AS DniVarchar,
-        e.ZONAL,
-        3 AS idPerfil
-    FROM
-        dbo.PDV_OUT_ENTREGABLE e
-    WHERE
-        e.DNI_VENDEDOR IS NOT NULL
-        AND e.ACCION_1 LIKE 'MULTIMARCA%'
-        AND NOT EXISTS (
-            SELECT 1
-            FROM dbo.users u
-            WHERE u.[user] = CONVERT(VARCHAR(20), e.DNI_VENDEDOR)
-        )
-)
-INSERT INTO users ([user], zonal, idPerfil, created_at, created_by)
-SELECT
-    VendedoresMultimarca.DniVarchar,
-    VendedoresMultimarca.ZONAL,
-    VendedoresMultimarca.idPerfil,
-    GETDATE(),
-    'admin'
-FROM VendedoresMultimarca;
-
     SET @filasInsertadas = @@ROWCOUNT;
-    
+
     -- Generar un salt aleatorio para los nuevos usuarios
     UPDATE users
     SET salt = CONVERT(VARCHAR(64), NEWID())
@@ -76,11 +50,11 @@ FROM VendedoresMultimarca;
     UPDATE users
     SET password = HASHBYTES('SHA2_512', [user] + salt)
     WHERE password IS NULL;
-    
+
     -- -------------------------------------------------------------------
     -- Insertar vendedores desde la tabla PDV_OUT_FUNNEL
     WITH MaxFecha AS (
-    SELECT 
+    SELECT
         YEAR(MAX(FECHA)) AS MaxAnio,
         MONTH(MAX(FECHA)) AS MaxMes
 	    FROM dbo.PDV_OUT_FUNNEL
@@ -96,16 +70,14 @@ FROM VendedoresMultimarca;
       AND f.ACCION LIKE '%pdv%'
       AND f.SOCIO LIKE '%JS MARKET%'
     )
-    INSERT INTO users ([user], zonal, idPerfil, created_at, created_by)
+    INSERT INTO users ([user], zonal, idPerfil, created_at, created_by, estado)
     SELECT
-        CONVERT(VARCHAR(20), nf.dni), 
+        CONVERT(VARCHAR(20), nf.dni),
         nf.ZONAL,
-        CASE
-            WHEN nf.ACCION LIKE 'PDV%' THEN 2
-            ELSE NULL
-        END AS perfil,
-        GETDATE() AS fecha, 
-        'admin' AS creado_por
+        2 AS perfil,
+        GETDATE() AS fecha,
+        'admin' AS creado_por,
+        1 AS estado
     FROM newFunnel nf
     LEFT JOIN dbo.users u ON u.[user] = CONVERT(VARCHAR(20), nf.dni)
     WHERE nf.rn = 1 AND u.[user] IS NULL;
@@ -127,52 +99,39 @@ FROM VendedoresMultimarca;
 	delete from PORTAL_COMERCIAL.dbo.PDV_OUT_ENTREGABLE where año>YEAR(GETDATE());
     SELECT @AñoActual = MAX(AÑO) FROM PORTAL_COMERCIAL.dbo.PDV_OUT_ENTREGABLE;
     SELECT @MesActual = MAX(MES) FROM PORTAL_COMERCIAL.dbo.PDV_OUT_ENTREGABLE WHERE AÑO = @AñoActual;
-    
+
     PRINT 'Año actual: ' + CAST(@AñoActual AS VARCHAR(10));
 	PRINT 'Mes actual: ' + CAST(@MesActual AS VARCHAR(10));
+
     -- Actualizar a perfil 2 (PDV) para usuarios con DNI_RESPONSABLE
     UPDATE u
     SET idPerfil = 2,
+        estado = 1,
         updated_at = GETDATE(),
         updated_by = 'admin'
     FROM PORTAL_COMERCIAL.dbo.users u
-    INNER JOIN PORTAL_COMERCIAL.dbo.PDV_OUT_ENTREGABLE e 
+    INNER JOIN PORTAL_COMERCIAL.dbo.PDV_OUT_ENTREGABLE e
         ON u.[user] = CAST(e.DNI_RESPONSABLE AS VARCHAR(255))
     WHERE e.ACCION_1 IN ('PDV REGULAR', 'PDV PREMIUM')
         AND e.AÑO = @AñoActual
-        AND e.MES = @MesActual
-        AND u.idPerfil != 2;
-    
+        AND e.MES = @MesActual;
+
     PRINT 'Registros actualizados en entregable DNI_RESPONSABLE: ' + CAST(@@ROWCOUNT AS VARCHAR(10));
         -- Actualizar a perfil 2 (PDV) para usuarios con DNI_VENDEDOR de funnel
     UPDATE u
     SET idPerfil = 2,
+        estado = 1,
         updated_at = GETDATE(),
         updated_by = 'admin'
     FROM PORTAL_COMERCIAL.dbo.users u
-    INNER JOIN PORTAL_COMERCIAL.dbo.PDV_OUT_FUNNEL f 
+    INNER JOIN PORTAL_COMERCIAL.dbo.PDV_OUT_FUNNEL f
         ON u.[user] = CAST(f.DNI_VENDEDOR AS VARCHAR(255))
     WHERE (f.ACCION LIKE '%PDV%')
         AND f.SOCIO LIKE '%JS MARKET%'
         AND YEAR(f.FECHA) = @AñoActual
-        AND MONTH(f.FECHA) = @MesActual
-        AND u.idPerfil != 2;
-    
+        AND MONTH(f.FECHA) = @MesActual;
+
     PRINT 'Registros actualizados en funnel DNI_VENDEDOR: ' + CAST(@@ROWCOUNT AS VARCHAR(10));
-    -- Actualizar a perfil 3 (MULTIMARCA) para usuarios con DNI_VENDEDOR
-    UPDATE u
-    SET idPerfil = 3,
-        updated_at = GETDATE(),
-        updated_by = 'admin'
-    FROM PORTAL_COMERCIAL.dbo.users u
-    INNER JOIN PORTAL_COMERCIAL.dbo.PDV_OUT_ENTREGABLE e 
-        ON u.[user] = CAST(e.DNI_VENDEDOR AS VARCHAR(255))
-    WHERE e.ACCION_1 = 'MULTIMARCA'
-        AND e.AÑO = @AñoActual
-        AND e.MES = @MesActual
-        AND u.idPerfil != 3;
-    
-    PRINT 'Registros actualizados en entregable DNI_VENDEDOR MULTIMARCA: ' + CAST(@@ROWCOUNT AS VARCHAR(10));
     -- Devolver el número de filas afectadas
     SELECT @filasInsertadas AS filas_afectadas;
 END;
