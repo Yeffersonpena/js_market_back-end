@@ -63,6 +63,7 @@ BEGIN
         AND c.modo = 'TODOS'
         AND YEAR(c.fecha_inicio) = @año
         AND MONTH(c.fecha_inicio) = @mes
+        AND c.id <> 235
         AND NOT EXISTS (
             SELECT 1
             FROM PORTAL_COMERCIAL.dbo.PDV_OUT_FLYERS f
@@ -117,6 +118,7 @@ BEGIN
         c.activa = 1
         AND YEAR(c.fecha_inicio) = @año
         AND MONTH(c.fecha_inicio) = @mes
+        AND c.id <> 235
         -- Excluir PDV TOP cuando criterio_filtro != 'TOP'
         AND UPPER(LTRIM(RTRIM(c.criterio_filtro))) != 'TOP'
         AND NOT EXISTS (
@@ -171,6 +173,9 @@ BEGIN
         AND UPPER(LTRIM(RTRIM(c.criterio_filtro))) = 'TOP'
         AND YEAR(c.fecha_inicio) = @año
         AND MONTH(c.fecha_inicio) = @mes
+        AND c.id <> 235
+        -- Solo sincronizar campañas vigentes en la fecha de creación del TOP
+        AND CAST(pt.created_at AS DATE) BETWEEN CAST(c.fecha_inicio AS DATE) AND CAST(c.fecha_fin AS DATE)
         -- Validar zonales
         AND (
             (c.zonales IS NULL OR c.zonales = '' OR LTRIM(RTRIM(c.zonales)) = '')
