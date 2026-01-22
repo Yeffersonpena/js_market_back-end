@@ -145,18 +145,18 @@ BEGIN
         DatosConCU AS (
             SELECT
                 *,
-                -- CU_ELIMINAR = MODULO + FECHA_INI + IDPDV + MARCACION_EN_PUNTO_FORMULADO (convertido a 'SI'/'NO')
+                -- CU_ELIMINAR = MODULO + FECHA_INI (serial Excel) + IDPDV + MARCACION_EN_PUNTO_FORMULADO
                 CONCAT(
                     ISNULL(MODULO, ''),
-                    ISNULL(CAST(FECHA_INI AS VARCHAR), ''),
+                    ISNULL(CAST(DATEDIFF(DAY, '1899-12-30', CAST(FECHA_INI AS DATE)) AS VARCHAR), ''),
                     ISNULL(IDPDV, ''),
                     CASE WHEN MARCACION_EN_PUNTO_FORMULADO = 1 THEN 'SI' ELSE 'NO' END
                 ) AS CU_ELIMINAR,
-                -- CU_VALIDAR = MODULO + IDPDV + ID_CHECK (sin MARCACION_EN_PUNTO_FORMULADO)
+                -- CU_VALIDAR = MODULO + FECHA_INI (serial Excel) + IDPDV (sin MARCACION_EN_PUNTO_FORMULADO)
                 CONCAT(
                     ISNULL(MODULO, ''),
-                    ISNULL(IDPDV, ''),
-                    ISNULL(CAST(ID_CHECK AS VARCHAR), '')
+                    ISNULL(CAST(DATEDIFF(DAY, '1899-12-30', CAST(FECHA_INI AS DATE)) AS VARCHAR), ''),
+                    ISNULL(IDPDV, '')
                 ) AS CU_VALIDAR
             FROM DatosConMarcacion
         ),
