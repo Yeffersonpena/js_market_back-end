@@ -7,8 +7,8 @@
 CREATE PROCEDURE dbo.sp_SeguimientoIncentivo_CascosCargadoresV8
     @FechaInicio DATE,
     @FechaFin DATE,
-    @MetaTop3 MONEY = 300,
-    @MetaSorteo MONEY = 250
+    @MetaTop3 MONEY = 2500,
+    @MetaSorteo MONEY = 2000
 AS
 BEGIN
     SET NOCOUNT ON;
@@ -30,7 +30,10 @@ BEGIN
     DECLARE @CodigosProductos TABLE (COD_PRODUCTO CHAR(15));
     INSERT INTO @CodigosProductos VALUES
         ('001619'), ('001714'), ('001716'), ('001713'),
-        ('001715'), ('001712'), ('001711');
+        ('001715'), ('001712'), ('001711'),
+        ('001654'), ('001653'), ('001556'), ('001573'),
+        ('001668'), ('001669'), ('001652'), ('001742'),
+        ('001743'), ('001553'), ('001574');
 
     -- Query principal
     SELECT
