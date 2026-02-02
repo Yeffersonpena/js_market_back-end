@@ -41,6 +41,8 @@ CREATE TABLE dbo.PDV_OUT_ESQUEMA_RESUMEN (
     BONO_UNITARIO_EQUIPO DECIMAL(10,2) DEFAULT 0,
     bonoDevolucionChips INT DEFAULT 0,
     precioUniCalidadAdi DECIMAL(10,2) DEFAULT 0,
+    adicional_post_unitario DECIMAL(10,2) DEFAULT 0,
+    bono_prepago_con_adicional DECIMAL(10,2) DEFAULT 0,
     bonoCalidad DECIMAL(10,2) DEFAULT 0,
     bonoRecargaPre DECIMAL(10,2) DEFAULT 0,
     bonoPortaPre DECIMAL(10,2) DEFAULT 0,
