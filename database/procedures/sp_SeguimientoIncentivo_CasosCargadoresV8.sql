@@ -30,10 +30,7 @@ BEGIN
     DECLARE @CodigosProductos TABLE (COD_PRODUCTO CHAR(15));
     INSERT INTO @CodigosProductos VALUES
         ('001619'), ('001714'), ('001716'), ('001713'),
-        ('001715'), ('001712'), ('001711'),
-        ('001654'), ('001653'), ('001556'), ('001573'),
-        ('001668'), ('001669'), ('001652'), ('001742'),
-        ('001743'), ('001553'), ('001574');
+        ('001715'), ('001712'), ('001711');
 
     -- Query principal
     SELECT
@@ -65,7 +62,6 @@ BEGIN
         @MetaSorteo AS [META_SORTEO]
     FROM
         [DISTRIBUTOR_DATAMART].[dbo].[DD_WOLAP_VENTA_ANALISIS_DETALLADO] v
-        INNER JOIN @CodigosProductos cp ON v.[COD_PRODUCTO] = cp.COD_PRODUCTO
         CROSS APPLY (
             VALUES (
                 CASE
@@ -84,6 +80,13 @@ BEGIN
         AND v.[PROD_LINEA] IN ('EQUIPOS', 'ACCESORIOS')
         AND LTRIM(RTRIM(v.[ALMACEN])) <> 'E-COMMERCE'
         AND v.cod_cliente <> '00026087'
+        AND (
+            v.[COD_PRODUCTO] IN (SELECT COD_PRODUCTO FROM @CodigosProductos)
+            OR (
+                v.[NOM_PRODUCTO] LIKE '%moto%'
+                AND REPLACE(UPPER(v.[NOM_PRODUCTO]), ' ', '') NOT LIKE '%MOTOROLAE15%'
+            )
+        )
     GROUP BY
         z.[ZONA],
         v.COD_VENDEDOR,
