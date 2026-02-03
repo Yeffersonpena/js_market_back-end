@@ -311,10 +311,10 @@ class AbonoInicialPostpagoController extends Controller
 
             if (!$result) {
                 return response()->json([
-                    "status" => Response::HTTP_NOT_FOUND,
+                    "status" => Response::HTTP_OK,
                     "message" => "No se encontraron datos para el DNI proporcionado",
                     "data" => null,
-                ], Response::HTTP_NOT_FOUND);
+                ], Response::HTTP_OK);
             }
 
             // Convertir NUM_RECARGA a string y validar formato
