@@ -395,6 +395,8 @@ BEGIN
         BONO_UNITARIO_EQUIPO DECIMAL(10,2) DEFAULT 0,
         bonoDevolucionChips INT DEFAULT 0,
         precioUniCalidadAdi DECIMAL(10,2) DEFAULT 0,
+        adicional_post_unitario DECIMAL(10,2) DEFAULT 0,
+        bono_prepago_con_adicional DECIMAL(10,2) DEFAULT 0,
         bonoCalidad DECIMAL(10,2) DEFAULT 0,
         bonoRecargaPre DECIMAL(10,2) DEFAULT 0,
         bonoPortaPre DECIMAL(10,2) DEFAULT 0,
@@ -409,7 +411,7 @@ BEGIN
 
     -- Calcular bonos unitarios (todos los PDV se tratan igual como PDV REGULAR)
     INSERT INTO #BonosCalculados (
-        DNI_RESPONSABLE, BONO_UNITARIO_EQUIPO, bonoDevolucionChips, precioUniCalidadAdi
+        DNI_RESPONSABLE, BONO_UNITARIO_EQUIPO, bonoDevolucionChips, precioUniCalidadAdi, adicional_post_unitario
     )
     SELECT
         m.DNI_RESPONSABLE,
@@ -432,8 +434,35 @@ BEGIN
             -- R1-R4 (ventas 5-39): S/ 1.0 si ratioCalidad >= 50%
             WHEN m.VentaPrepagoCalidadLimitada BETWEEN 5 AND 39 AND m.ratioCalidad >= 50 THEN 1.0
             ELSE 0
-        END AS precioUniCalidadAdi
+        END AS precioUniCalidadAdi,
+        0 AS adicional_post_unitario
     FROM #MetricasCalculadas m;
+
+    -- Calcular adicional unitario postpago (aplica desde Febrero 2026 en adelante, según tabla de reglas)
+    UPDATE b
+    SET adicional_post_unitario = ISNULL(ap.adicional_unitario, 0)
+    FROM #BonosCalculados b
+    INNER JOIN #MetricasCalculadas m ON b.DNI_RESPONSABLE = m.DNI_RESPONSABLE
+    OUTER APPLY (
+        SELECT MAX(r.adicional_unitario) AS adicional_unitario
+        FROM dbo.BonoUnitarioPostpagoAdicional r
+        WHERE @fechaPeriodo BETWEEN r.fecha_inicio AND ISNULL(r.fecha_fin, @fechaPeriodo)
+          AND (
+              (r.criterio = 'porta_post'
+               AND m.cantidadPortaPostOPost BETWEEN r.rango_min AND ISNULL(r.rango_max, m.cantidadPortaPostOPost))
+              OR
+              (r.criterio = 'porta_pre_post'
+               AND (m.cantidadPortaPostOPost + m.cantidadPortaPostOPre) BETWEEN r.rango_min AND ISNULL(r.rango_max, (m.cantidadPortaPostOPost + m.cantidadPortaPostOPre)))
+              OR
+              (r.criterio = 'altas_post'
+               AND m.cantidadAltaPost BETWEEN r.rango_min AND ISNULL(r.rango_max, m.cantidadAltaPost))
+          )
+    ) ap;
+
+    -- Aplicar adicional al unitario base (desde Febrero 2026 en adelante; antes queda en 0)
+    UPDATE b
+    SET BONO_UNITARIO_EQUIPO = (b.BONO_UNITARIO_EQUIPO + ISNULL(b.adicional_post_unitario, 0))
+    FROM #BonosCalculados b;
 
     -- Calcular bonos de rango
     -- AJUSTE DE EMERGENCIA 2026-01-09: El bono rango solo aplica para vendedores con hasta 149 ventas prepago.
@@ -479,6 +508,7 @@ BEGIN
     -- Calcular bonos totales
     UPDATE b
     SET
+        bono_prepago_con_adicional = (b.BONO_UNITARIO_EQUIPO * m.VentaPrepagoLimitada),
         bonoCalidad = (m.TOTAL_VCALIDAD * b.precioUniCalidadAdi),
         bonoRecargaPre = (m.TOTAL_RECARGAS * 2.00),
         bonoPortaPre = (m.cantPrepagoPorta * 4),
@@ -522,7 +552,7 @@ BEGIN
         TOTAL_RECARGAS, TOTAL_VCALIDAD, PRE_PORTA, PORTAPRE, PORTAPOS,
         DIAS_VENTAS_RESPONSABLE, VENTAS_MES_ANTERIOR, VENTA_AVANCE_PREPAGO, VENTA_PREPAGO_CALIDAD,
         cantidadAltaPost, cantidadPortaPostOPost, cantidadPortaPostOPre, cantPrepagoPorta,
-        bonoChips, BONO_UNITARIO_EQUIPO, bonoDevolucionChips, precioUniCalidadAdi,
+        bonoChips, BONO_UNITARIO_EQUIPO, bonoDevolucionChips, precioUniCalidadAdi, adicional_post_unitario, bono_prepago_con_adicional,
         bonoCalidad, bonoRecargaPre, bonoPortaPre, bonoPortaPostOPost, bonoPortaPostOPre,
         nivel_rango, rango_actual, tipo_bono, bono_rango, ratio_min_requerido,
         bonoTotalEfectivo, bonoTotal,
@@ -557,6 +587,8 @@ BEGIN
         ISNULL(b.BONO_UNITARIO_EQUIPO, 0) AS BONO_UNITARIO_EQUIPO,
         ISNULL(b.bonoDevolucionChips, 0) AS bonoDevolucionChips,
         ISNULL(b.precioUniCalidadAdi, 0) AS precioUniCalidadAdi,
+        ISNULL(b.adicional_post_unitario, 0) AS adicional_post_unitario,
+        ISNULL(b.bono_prepago_con_adicional, 0) AS bono_prepago_con_adicional,
         ISNULL(b.bonoCalidad, 0) AS bonoCalidad,
         ISNULL(b.bonoRecargaPre, 0) AS bonoRecargaPre,
         ISNULL(b.bonoPortaPre, 0) AS bonoPortaPre,
