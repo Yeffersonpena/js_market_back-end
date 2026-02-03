@@ -277,6 +277,7 @@ class LogicController extends Controller
                 "tipo_bono" => null,
                 "bono_rango" => 0.00,
                 "ratio_min_requerido" => 0.00,
+                "adicional_post_unitario" => 0.00,
             ];
 
             // Para meses anteriores a diciembre 2025, usar el SP original
@@ -471,6 +472,7 @@ class LogicController extends Controller
                     "tipo_bono"          => $paymentData->tipo_bono,
                     "bono_rango"         => (float) $paymentData->bono_rango,
                     "ratio_min_requerido" => (float) $paymentData->ratio_min_requerido,
+                    "adicional_post_unitario" => (float) ($paymentData->adicional_post_unitario ?? 0),
                 ];
 
                 return response()->json([
