@@ -9,37 +9,6 @@ BEGIN
     DECLARE @año_real INT = @año;
     DECLARE @mes_real INT = @mes;
 
-    -- DECLARE @DniExcluidos TABLE (dni BIGINT PRIMARY KEY);
-    -- INSERT INTO @DniExcluidos (dni)
-    -- VALUES
-    --     (76975598), (40903411), (40343492), (71717209), (25565140), (40886671), (46478931), (72114419),
-    --     (48729788), (46629625), (41736883), (44353901), (4023647), (44417172), (70333245), (47298032),
-    --     (47656328), (43755637), (47823344), (46742181), (70773977), (74906640), (76399606), (20094635),
-    --     (46198310), (41667506), (40046438), (42617870), (47952684), (47912861), (5584062), (74237248),
-    --     (72516981), (41935076), (47502387), (40232064), (48324120), (20076486), (74952947), (71700037),
-    --     (1235233), (41566245), (76836205), (71253432), (28213248), (70417760), (22081506), (76924978),
-    --     (73244844), (80630857), (70020447), (70321312), (46578934), (74887697), (77270717), (40918555),
-    --     (48226812), (70598264), (2552982), (2299787), (46688548), (42917827), (44533790), (70676677),
-    --     (42655052), (41715229), (47626697), (45096741), (10375343), (23230555), (41707231), (23269812),
-    --     (74403823), (80064600), (70693149), (74453130), (41310223), (28284563), (70361263), (40783781),
-    --     (44703655), (20090996), (41946854), (76809071), (45101795), (75927114), (24485040), (71847682),
-    --     (43014679), (42148573), (28270870), (44347443), (43313957), (48669169), (76914400), (72461188),
-    --     (42002902), (75419183), (47900109), (43154215), (22289239), (46232492), (22495900), (40040199),
-    --     (61385988), (47073697), (41952334), (70236899), (75064228), (74581157), (47431084), (73696375),
-    --     (73045217), (75795393), (72312079), (41541531), (46274125), (73628341), (77377178), (42355425),
-    --     (44299025), (70332430), (70184938), (43106215), (40236973), (47277908), (70299445), (72551952),
-    --     (77478281), (72102717), (42320227), (77387964), (48021612), (47929863), (44813265), (40072178),
-    --     (45314574), (70816735), (21533960), (46116531), (63211667), (44963652), (40342896), (75548794),
-    --     (71806241), (47949912), (42826764), (70927923), (61944222), (72182410), (46699437), (43402567),
-    --     (43862923), (46909821), (6792548), (44289407), (40485564), (80449670), (40107722), (2286397),
-    --     (43004844), (42196038), (2266940), (75909939), (72908166), (80045801), (75316114), (73819122),
-    --     (41667737), (43673186), (42141102), (42601836), (70976898), (44068969), (75545872), (77172950),
-    --     (44762902), (77299896), (43182358), (44879244), (70896462), (24983954), (24719071), (76028723),
-    --     (41611355), (61694036), (71640189), (80454928), (76738791), (48080538), (46486769), (47211233),
-    --     (41129773), (75919447), (45291605), (41608849), (74223935), (20111859), (76168950), (4323648),
-    --     (40963887), (41982506), (46252730), (76412746), (4748858), (44155901), (46451107), (41042998),
-    --     (43401820), (46015478), (80177768), (80446454), (1534959);
-
     -- Verificar si existe información para el mes solicitado
     IF NOT EXISTS (
         SELECT 1
@@ -61,8 +30,8 @@ BEGIN
         ORDER BY AÑO DESC, MES DESC;
     END
 
-    -- Inserta campañas con todos = 1 (PDV sin validaciones de modo, criterio_filtro y zonales)
-    -- Cuando es 'TODOS', incluye a todos los PDV sin exclusiones
+    -- TODOS = TODOS: incluye a TODOS los PDV sin ninguna exclusión (incluye TOP, todos los rangos, todas las zonales)
+    -- Sin validaciones de modo, criterio_filtro ni zonales
     INSERT INTO PORTAL_COMERCIAL.dbo.PDV_OUT_FLYERS (
         año,
         mes,
@@ -109,8 +78,8 @@ BEGIN
               AND f.fecha_fin = c.fecha_fin
         );
 
-    -- Inserta campañas de PDV (filtradas por RANGO)
-    -- Excluye los PDV TOP cuando criterio_filtro != 'TOP'
+    -- Inserta campañas de PDV (filtradas por RANGO). Solo criterios distintos de TOP.
+    -- Regla fija: si un DNI está en PDV_TOP en el periodo de la campaña, NO se le registran incentivos de otros criterios (solo TOP o TODOS).
     INSERT INTO PORTAL_COMERCIAL.dbo.PDV_OUT_FLYERS (
         año,
         mes,
@@ -134,7 +103,6 @@ BEGIN
     INNER JOIN PORTAL_COMERCIAL.dbo.PDV_OUT_ENTREGABLE e ON (
         c.modo = 'PDV'
         AND e.DNI_RESPONSABLE IS NOT NULL
-        -- AND e.ESTADO = 'ACTIVO'
         AND e.AÑO = @año_real
         AND e.MES = @mes_real
         -- Validar RANGO exacto (soporta rangos concatenados como RANGO 1,RANGO 2,RANGO 3)
@@ -149,26 +117,21 @@ BEGIN
             OR (LOWER(LTRIM(RTRIM(c.zonales))) = 'todas')
             OR (', ' + c.zonales + ', ' LIKE '%, ' + e.ZONAL + ', %')
         )
-    )
-    WHERE
-        c.activa = 1
-        AND YEAR(c.fecha_inicio) = @año
-        AND MONTH(c.fecha_inicio) = @mes
-        AND c.id <> 235
-        -- AND NOT EXISTS (
-        --     SELECT 1
-        --     FROM @DniExcluidos d
-        --     WHERE d.dni = e.DNI_RESPONSABLE
-        -- )
-        -- Excluir PDV TOP cuando criterio_filtro != 'TOP'
-        AND UPPER(LTRIM(RTRIM(c.criterio_filtro))) != 'TOP'
+        -- Exclusión obligatoria: si el DNI está en TOP en el periodo de la campaña, no entra (solo reciben TOP o TODOS)
         AND NOT EXISTS (
             SELECT 1
             FROM PORTAL_COMERCIAL.dbo.PDV_TOP pt
             WHERE pt.DNI_RESPONSABLE = e.DNI_RESPONSABLE
-              AND pt.año = @año
-              AND pt.mes = @mes
+              AND pt.año = YEAR(c.fecha_inicio)
+              AND pt.mes = MONTH(c.fecha_inicio)
         )
+    )
+    WHERE
+        c.activa = 1
+        AND UPPER(LTRIM(RTRIM(ISNULL(c.criterio_filtro, '')))) != 'TOP'
+        AND YEAR(c.fecha_inicio) = @año
+        AND MONTH(c.fecha_inicio) = @mes
+        AND c.id <> 235
         AND NOT EXISTS (
             SELECT 1
             FROM PORTAL_COMERCIAL.dbo.PDV_OUT_FLYERS f
