@@ -78,8 +78,8 @@ BEGIN
               AND f.fecha_fin = c.fecha_fin
         );
 
-    -- Inserta campañas de PDV (filtradas por RANGO). Solo criterios distintos de TOP.
-    -- Regla fija: si un DNI está en PDV_TOP en el periodo de la campaña, NO se le registran incentivos de otros criterios (solo TOP o TODOS).
+    -- Inserta campañas de PDV (filtradas por RANGO). Solo criterios distintos de TOP y de RECUPERO.
+    -- Regla: DNI en PDV_TOP o en PDV_RECUPERO (para las fechas de la campaña) no reciben incentivos por rango; solo TOP, RECUPERO o TODOS.
     INSERT INTO PORTAL_COMERCIAL.dbo.PDV_OUT_FLYERS (
         año,
         mes,
@@ -117,7 +117,7 @@ BEGIN
             OR (LOWER(LTRIM(RTRIM(c.zonales))) = 'todas')
             OR (', ' + c.zonales + ', ' LIKE '%, ' + e.ZONAL + ', %')
         )
-        -- Exclusión obligatoria: si el DNI está en TOP en el periodo de la campaña, no entra (solo reciben TOP o TODOS)
+        -- Exclusión: DNI en TOP en el periodo de la campaña no entra (solo reciben TOP o TODOS)
         AND NOT EXISTS (
             SELECT 1
             FROM PORTAL_COMERCIAL.dbo.PDV_TOP pt
@@ -125,10 +125,19 @@ BEGIN
               AND pt.año = YEAR(c.fecha_inicio)
               AND pt.mes = MONTH(c.fecha_inicio)
         )
+        -- Exclusión: DNI en RECUPERO para las mismas fechas de campaña no entra (solo reciben RECUPERO o TODOS)
+        AND NOT EXISTS (
+            SELECT 1
+            FROM PORTAL_COMERCIAL.dbo.PDV_RECUPERO pr
+            WHERE pr.DNI_RESPONSABLE = e.DNI_RESPONSABLE
+              AND pr.fecha_inicio = c.fecha_inicio
+              AND pr.fecha_fin = c.fecha_fin
+        )
     )
     WHERE
         c.activa = 1
         AND UPPER(LTRIM(RTRIM(ISNULL(c.criterio_filtro, '')))) != 'TOP'
+        AND UPPER(LTRIM(RTRIM(ISNULL(c.criterio_filtro, '')))) != 'RECUPERO'
         AND YEAR(c.fecha_inicio) = @año
         AND MONTH(c.fecha_inicio) = @mes
         AND c.id <> 235
@@ -194,6 +203,59 @@ BEGIN
             SELECT 1
             FROM PORTAL_COMERCIAL.dbo.PDV_OUT_FLYERS f
             WHERE f.dni_responsable = CAST(pt.DNI_RESPONSABLE AS VARCHAR(50))
+              AND f.foto_esquema = c.foto_esquema
+              AND f.fecha_inicio = c.fecha_inicio
+              AND f.fecha_fin = c.fecha_fin
+        );
+
+    -- Inserta campañas de PDV RECUPERO (solo cuando criterio_filtro = 'RECUPERO')
+    -- Solo los DNI que están en PDV_RECUPERO para las mismas fecha_inicio/fecha_fin de la campaña
+    INSERT INTO PORTAL_COMERCIAL.dbo.PDV_OUT_FLYERS (
+        año,
+        mes,
+        dni_responsable,
+        zonal,
+        foto_esquema,
+        fecha_inicio,
+        fecha_fin,
+        tipoImg
+    )
+    SELECT DISTINCT
+        YEAR(c.fecha_inicio) AS año,
+        MONTH(c.fecha_inicio) AS mes,
+        CAST(pr.DNI_RESPONSABLE AS VARCHAR(50)) AS dni_responsable,
+        e.ZONAL,
+        c.foto_esquema,
+        c.fecha_inicio,
+        c.fecha_fin,
+        c.tipoImg
+    FROM PORTAL_COMERCIAL.dbo.PDV_OUT_CAMPAÑAS_FLYERS c
+    INNER JOIN PORTAL_COMERCIAL.dbo.PDV_RECUPERO pr ON (
+        pr.fecha_inicio = c.fecha_inicio
+        AND pr.fecha_fin = c.fecha_fin
+    )
+    LEFT JOIN PORTAL_COMERCIAL.dbo.PDV_OUT_ENTREGABLE e ON (
+        e.DNI_RESPONSABLE = pr.DNI_RESPONSABLE
+        AND e.AÑO = @año_real
+        AND e.MES = @mes_real
+    )
+    WHERE
+        c.activa = 1
+        AND c.modo = 'PDV'
+        AND UPPER(LTRIM(RTRIM(ISNULL(c.criterio_filtro, '')))) = 'RECUPERO'
+        AND YEAR(c.fecha_inicio) = @año
+        AND MONTH(c.fecha_inicio) = @mes
+        AND c.id <> 235
+        AND (
+            (c.zonales IS NULL OR c.zonales = '' OR LTRIM(RTRIM(c.zonales)) = '')
+            OR (LOWER(LTRIM(RTRIM(c.zonales))) = 'todas')
+            OR e.ZONAL IS NULL
+            OR (', ' + c.zonales + ', ' LIKE '%, ' + e.ZONAL + ', %')
+        )
+        AND NOT EXISTS (
+            SELECT 1
+            FROM PORTAL_COMERCIAL.dbo.PDV_OUT_FLYERS f
+            WHERE f.dni_responsable = CAST(pr.DNI_RESPONSABLE AS VARCHAR(50))
               AND f.foto_esquema = c.foto_esquema
               AND f.fecha_inicio = c.fecha_inicio
               AND f.fecha_fin = c.fecha_fin
