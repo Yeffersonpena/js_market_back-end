@@ -30,8 +30,7 @@ BEGIN
         ORDER BY AÑO DESC, MES DESC;
     END
 
-    -- TODOS = TODOS: incluye a TODOS los PDV sin ninguna exclusión (incluye TOP, todos los rangos, todas las zonales)
-    -- Sin validaciones de modo, criterio_filtro ni zonales
+    -- TODOS = TODOS: incluye a TODOS los PDV excepto los que están en RECUPERO (esos solo reciben criterio RECUPERO)
     INSERT INTO PORTAL_COMERCIAL.dbo.PDV_OUT_FLYERS (
         año,
         mes,
@@ -54,9 +53,16 @@ BEGIN
     FROM PORTAL_COMERCIAL.dbo.PDV_OUT_CAMPAÑAS_FLYERS c
     INNER JOIN PORTAL_COMERCIAL.dbo.PDV_OUT_ENTREGABLE e ON (
         e.DNI_RESPONSABLE IS NOT NULL
-        -- AND e.ESTADO = 'ACTIVO'
         AND e.AÑO = @año_real
         AND e.MES = @mes_real
+        -- PDV recupero no reciben TODOS: solo reciben campañas con criterio RECUPERO
+        AND NOT EXISTS (
+            SELECT 1
+            FROM PORTAL_COMERCIAL.dbo.PDV_RECUPERO pr
+            WHERE pr.DNI_RESPONSABLE = e.DNI_RESPONSABLE
+              AND c.fecha_inicio <= pr.fecha_fin
+              AND c.fecha_fin >= pr.fecha_inicio
+        )
     )
     WHERE
         c.activa = 1
@@ -64,11 +70,6 @@ BEGIN
         AND YEAR(c.fecha_inicio) = @año
         AND MONTH(c.fecha_inicio) = @mes
         AND c.id <> 235
-        -- AND NOT EXISTS (
-        --     SELECT 1
-        --     FROM @DniExcluidos d
-        --     WHERE d.dni = e.DNI_RESPONSABLE
-        -- )
         AND NOT EXISTS (
             SELECT 1
             FROM PORTAL_COMERCIAL.dbo.PDV_OUT_FLYERS f
@@ -125,13 +126,13 @@ BEGIN
               AND pt.año = YEAR(c.fecha_inicio)
               AND pt.mes = MONTH(c.fecha_inicio)
         )
-        -- Exclusión: DNI en RECUPERO para las mismas fechas de campaña no entra (solo reciben RECUPERO o TODOS)
+        -- Exclusión: DNI en RECUPERO con periodo que SOLAPA la campaña no entra (solo reciben RECUPERO)
         AND NOT EXISTS (
             SELECT 1
             FROM PORTAL_COMERCIAL.dbo.PDV_RECUPERO pr
             WHERE pr.DNI_RESPONSABLE = e.DNI_RESPONSABLE
-              AND pr.fecha_inicio = c.fecha_inicio
-              AND pr.fecha_fin = c.fecha_fin
+              AND c.fecha_inicio <= pr.fecha_fin
+              AND c.fecha_fin >= pr.fecha_inicio
         )
     )
     WHERE
@@ -187,12 +188,14 @@ BEGIN
         AND YEAR(c.fecha_inicio) = @año
         AND MONTH(c.fecha_inicio) = @mes
         AND c.id <> 235
-        -- AND NOT EXISTS (
-        --     SELECT 1
-        --     FROM @DniExcluidos d
-        --     WHERE d.dni = pt.DNI_RESPONSABLE
-        -- )
-        -- Validar zonales
+        -- PDV recupero no reciben TOP: solo reciben campañas con criterio RECUPERO
+        AND NOT EXISTS (
+            SELECT 1
+            FROM PORTAL_COMERCIAL.dbo.PDV_RECUPERO pr
+            WHERE pr.DNI_RESPONSABLE = pt.DNI_RESPONSABLE
+              AND c.fecha_inicio <= pr.fecha_fin
+              AND c.fecha_fin >= pr.fecha_inicio
+        )
         AND (
             (c.zonales IS NULL OR c.zonales = '' OR LTRIM(RTRIM(c.zonales)) = '')
             OR (LOWER(LTRIM(RTRIM(c.zonales))) = 'todas')
