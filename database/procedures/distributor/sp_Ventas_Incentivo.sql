@@ -11,7 +11,6 @@ BEGIN
     SELECT
         FEC_EMISION,
         ALMACEN,
-        COD_VENDEDOR,
         NOM_VENDEDOR,
         PROD_LINEA,
         precio_vta,
@@ -20,9 +19,8 @@ BEGIN
         -- WOLAP: mismo WHERE y CROSS APPLY que la query de referencia (monto total igual)
         SELECT
             CAST(v.[FEC_EMISION] AS DATE) AS FEC_EMISION,
-            z.[ZONA] AS ALMACEN,
-            v.COD_VENDEDOR,
-            LTRIM(RTRIM(v.[NOM_VENDEDOR])) AS NOM_VENDEDOR,
+            UPPER(z.[ZONA]) AS ALMACEN,
+            UPPER(LTRIM(RTRIM(v.[NOM_VENDEDOR]))) AS NOM_VENDEDOR,
             LTRIM(RTRIM(v.[PROD_LINEA])) AS PROD_LINEA,
             CAST(SUM(v.[PRECIO_VTA]) AS DECIMAL(18,4)) AS precio_vta,
             'WOLAP' AS Origen
@@ -49,9 +47,8 @@ BEGIN
             AND v.cdoc_ide NOT IN ('20612606405', '20615283607')
         GROUP BY
             CAST(v.[FEC_EMISION] AS DATE),
-            z.[ZONA],
-            v.COD_VENDEDOR,
-            LTRIM(RTRIM(v.[NOM_VENDEDOR])),
+            UPPER(z.[ZONA]),
+            UPPER(LTRIM(RTRIM(v.[NOM_VENDEDOR]))),
             LTRIM(RTRIM(v.[PROD_LINEA]))
 
         UNION ALL
@@ -59,9 +56,8 @@ BEGIN
         -- YALI: ventas canal Yali (EQUIPOS), agrupado por fecha, zonal, vendedor
         SELECT
             CAST(y.[Fecha] AS DATE) AS FEC_EMISION,
-            LTRIM(RTRIM(y.[x_zonal])) AS ALMACEN,
-            CAST(NULL AS CHAR(6)) AS COD_VENDEDOR,
-            LTRIM(RTRIM(y.[x_vendedor])) AS NOM_VENDEDOR,
+            UPPER(LTRIM(RTRIM(y.[x_zonal]))) AS ALMACEN,
+            UPPER(LTRIM(RTRIM(y.[x_vendedor]))) AS NOM_VENDEDOR,
             'EQUIPOS' AS PROD_LINEA,
             CAST(SUM(y.[X_SALDO]) AS DECIMAL(18,4)) AS precio_vta,
             'YALI' AS Origen
@@ -70,8 +66,8 @@ BEGIN
             AND CAST(y.[Fecha] AS DATE) <= @FechaFin
         GROUP BY
             CAST(y.[Fecha] AS DATE),
-            LTRIM(RTRIM(y.[x_zonal])),
-            LTRIM(RTRIM(y.[x_vendedor]))
+            UPPER(LTRIM(RTRIM(y.[x_zonal]))),
+            UPPER(LTRIM(RTRIM(y.[x_vendedor])))
     ) u
     ORDER BY u.Origen, u.FEC_EMISION, u.ALMACEN, u.NOM_VENDEDOR, u.PROD_LINEA;
 END
