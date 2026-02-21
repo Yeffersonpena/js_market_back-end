@@ -6,3 +6,7 @@
 - Siempre preguntar antes de modificar, crear o eliminar archivos
 - Esperar confirmación explícita antes de realizar cualquier cambio
 
+## SQL / Procedimientos almacenados
+- **NUNCA** usar la sentencia `GO` en scripts SQL (genera error en este entorno).
+- **NUNCA** definir la base de datos en el nombre del procedimiento: usar solo el nombre del SP (ej. `sp_Nombre`), no `dbo.sp_Nombre` ni `NombreBD.dbo.sp_Nombre`.
+
