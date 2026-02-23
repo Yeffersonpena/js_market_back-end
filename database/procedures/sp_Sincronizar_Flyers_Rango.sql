@@ -30,7 +30,40 @@ BEGIN
         ORDER BY AÑO DESC, MES DESC;
     END
 
-    -- TODOS = TODOS: incluye a TODOS los PDV excepto los que están en RECUPERO (esos solo reciben criterio RECUPERO)
+    -- Saneo preventivo:
+    -- Si un DNI está en RECUPERO para las MISMAS fechas de la campaña,
+    -- se eliminan de PDV_OUT_FLYERS los incentivos PDV que NO son RECUPERO.
+    -- Excepción: campañas modo TODOS siempre se conservan.
+    DELETE f
+    FROM PORTAL_COMERCIAL.dbo.PDV_OUT_FLYERS f
+    WHERE YEAR(f.fecha_inicio) = @año
+      AND MONTH(f.fecha_inicio) = @mes
+      AND EXISTS (
+          SELECT 1
+          FROM PORTAL_COMERCIAL.dbo.PDV_RECUPERO pr
+          WHERE pr.DNI_RESPONSABLE = TRY_CAST(f.dni_responsable AS INT)
+            AND pr.fecha_inicio = f.fecha_inicio
+            AND pr.fecha_fin = f.fecha_fin
+      )
+      AND EXISTS (
+          SELECT 1
+          FROM PORTAL_COMERCIAL.dbo.PDV_OUT_CAMPAÑAS_FLYERS c
+          WHERE c.foto_esquema = f.foto_esquema
+            AND c.fecha_inicio = f.fecha_inicio
+            AND c.fecha_fin = f.fecha_fin
+            AND c.modo = 'PDV'
+            AND UPPER(LTRIM(RTRIM(ISNULL(c.criterio_filtro, '')))) <> 'RECUPERO'
+      )
+      AND NOT EXISTS (
+          SELECT 1
+          FROM PORTAL_COMERCIAL.dbo.PDV_OUT_CAMPAÑAS_FLYERS c
+          WHERE c.foto_esquema = f.foto_esquema
+            AND c.fecha_inicio = f.fecha_inicio
+            AND c.fecha_fin = f.fecha_fin
+            AND c.modo = 'TODOS'
+      );
+
+    -- TODOS = TODOS: incluye a TODOS los PDV sin excepción (incluye RECUPERO)
     INSERT INTO PORTAL_COMERCIAL.dbo.PDV_OUT_FLYERS (
         año,
         mes,
@@ -55,14 +88,6 @@ BEGIN
         e.DNI_RESPONSABLE IS NOT NULL
         AND e.AÑO = @año_real
         AND e.MES = @mes_real
-        -- PDV recupero no reciben TODOS: solo reciben campañas con criterio RECUPERO
-        AND NOT EXISTS (
-            SELECT 1
-            FROM PORTAL_COMERCIAL.dbo.PDV_RECUPERO pr
-            WHERE pr.DNI_RESPONSABLE = e.DNI_RESPONSABLE
-              AND c.fecha_inicio <= pr.fecha_fin
-              AND c.fecha_fin >= pr.fecha_inicio
-        )
     )
     WHERE
         c.activa = 1
@@ -80,7 +105,8 @@ BEGIN
         );
 
     -- Inserta campañas de PDV (filtradas por RANGO). Solo criterios distintos de TOP y de RECUPERO.
-    -- Regla: DNI en PDV_TOP o en PDV_RECUPERO (para las fechas de la campaña) no reciben incentivos por rango; solo TOP, RECUPERO o TODOS.
+    -- Regla: DNI en PDV_TOP o en PDV_RECUPERO (con mismas fechas de la campaña)
+    -- no reciben incentivos por rango; solo TOP, RECUPERO o TODOS.
     INSERT INTO PORTAL_COMERCIAL.dbo.PDV_OUT_FLYERS (
         año,
         mes,
@@ -126,13 +152,13 @@ BEGIN
               AND pt.año = YEAR(c.fecha_inicio)
               AND pt.mes = MONTH(c.fecha_inicio)
         )
-        -- Exclusión: DNI en RECUPERO con periodo que SOLAPA la campaña no entra (solo reciben RECUPERO)
+        -- Exclusión: DNI en RECUPERO con mismas fechas exactas de campaña no entra
         AND NOT EXISTS (
             SELECT 1
             FROM PORTAL_COMERCIAL.dbo.PDV_RECUPERO pr
             WHERE pr.DNI_RESPONSABLE = e.DNI_RESPONSABLE
-              AND c.fecha_inicio <= pr.fecha_fin
-              AND c.fecha_fin >= pr.fecha_inicio
+              AND c.fecha_inicio = pr.fecha_inicio
+              AND c.fecha_fin = pr.fecha_fin
         )
     )
     WHERE
@@ -188,13 +214,13 @@ BEGIN
         AND YEAR(c.fecha_inicio) = @año
         AND MONTH(c.fecha_inicio) = @mes
         AND c.id <> 235
-        -- PDV recupero no reciben TOP: solo reciben campañas con criterio RECUPERO
+        -- PDV recupero con mismas fechas exactas no reciben TOP
         AND NOT EXISTS (
             SELECT 1
             FROM PORTAL_COMERCIAL.dbo.PDV_RECUPERO pr
             WHERE pr.DNI_RESPONSABLE = pt.DNI_RESPONSABLE
-              AND c.fecha_inicio <= pr.fecha_fin
-              AND c.fecha_fin >= pr.fecha_inicio
+              AND c.fecha_inicio = pr.fecha_inicio
+              AND c.fecha_fin = pr.fecha_fin
         )
         AND (
             (c.zonales IS NULL OR c.zonales = '' OR LTRIM(RTRIM(c.zonales)) = '')
