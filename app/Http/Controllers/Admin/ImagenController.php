@@ -207,19 +207,8 @@ class ImagenController extends Controller
                 $pictureType = (string) $request->input('type');
                 $pictureModo = (string) $request->input('modo');
 
-                $rangoMapping = [
-                    1 => "RANGO 1",
-                    2 => "RANGO 2",
-                    3 => "RANGO 3",
-                    4 => "RANGO 4",
-                    5 => "RANGO 5",
-                    6 => "RANGO 6",
-                    7 => "RANGO 7",
-                    8 => "RANGO 8"
-                ];
-
                 // Procesar rango(s) - puede venir como integer, array o string
-                // Soporta números (1-8) que se convierten a "RANGO X" y también "TOP" como string
+                // Soporta números (1, 2, 3, ... 9, etc.) que se convierten a "RANGO X" y también "TOP" como string
                 $rangoInput = $request->input('rango');
                 $rangosString = [];
 
@@ -230,11 +219,13 @@ class ImagenController extends Controller
                     if (is_array($rangoInput)) {
                         $rangosArray = $rangoInput;
                     }
-                    // Si es string, intentar convertir a array (ej: "1,2,3" o "1, 2, 3" o "TOP")
+                    // Si es string, intentar convertir a array (ej: "1,2,3" o "TOP" o "RECUPERO")
                     elseif (is_string($rangoInput)) {
-                        // Si es "TOP", agregarlo directamente
-                        if (strtoupper(trim($rangoInput)) === 'TOP') {
+                        $rangoTrimmed = strtoupper(trim($rangoInput));
+                        if ($rangoTrimmed === 'TOP') {
                             $rangosString[] = 'TOP';
+                        } elseif ($rangoTrimmed === 'RECUPERO') {
+                            $rangosString[] = 'RECUPERO';
                         } else {
                             // Intentar convertir a array de números
                             $rangosArray = array_filter(array_map('trim', explode(',', $rangoInput)));
@@ -245,24 +236,28 @@ class ImagenController extends Controller
                         $rangosArray = [(int) $rangoInput];
                     }
 
-                    // Procesar números y convertirlos a "RANGO X", o mantener "TOP" como string
+                    // Procesar números y convertirlos a "RANGO X", o mantener "TOP"/"RECUPERO" como string
                     foreach ($rangosArray as $rangoItem) {
-                        // Si es string "TOP", agregarlo directamente
-                        if (is_string($rangoItem) && strtoupper(trim($rangoItem)) === 'TOP') {
-                            $rangosString[] = 'TOP';
-                        }
-                        // Si es numérico, convertirlo a "RANGO X"
-                        elseif (is_numeric($rangoItem)) {
-                            $rangoNum = (int) $rangoItem;
-                            if (isset($rangoMapping[$rangoNum]) && $rangoNum >= 1 && $rangoNum <= 8) {
-                                $rangosString[] = $rangoMapping[$rangoNum];
+                        if (is_string($rangoItem)) {
+                            $itemTrimmed = strtoupper(trim($rangoItem));
+                            if ($itemTrimmed === 'TOP') {
+                                $rangosString[] = 'TOP';
+                            } elseif ($itemTrimmed === 'RECUPERO') {
+                                $rangosString[] = 'RECUPERO';
                             }
                         }
-                        // Si es string numérico (ej: "1", "2"), convertirlo también
+                        // Si es numérico, convertirlo a "RANGO X" (soporta 1, 2, ... 9 y más)
+                        elseif (is_numeric($rangoItem)) {
+                            $rangoNum = (int) $rangoItem;
+                            if ($rangoNum >= 1) {
+                                $rangosString[] = 'RANGO ' . $rangoNum;
+                            }
+                        }
+                        // Si es string numérico (ej: "1", "2", "9"), convertirlo también
                         elseif (is_string($rangoItem) && is_numeric(trim($rangoItem))) {
                             $rangoNum = (int) trim($rangoItem);
-                            if (isset($rangoMapping[$rangoNum]) && $rangoNum >= 1 && $rangoNum <= 8) {
-                                $rangosString[] = $rangoMapping[$rangoNum];
+                            if ($rangoNum >= 1) {
+                                $rangosString[] = 'RANGO ' . $rangoNum;
                             }
                         }
                     }

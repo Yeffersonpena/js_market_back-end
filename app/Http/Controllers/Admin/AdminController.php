@@ -71,7 +71,7 @@ class AdminController extends Controller
 
     /**
      * Obtiene el listado de rangos únicos del último período disponible de los PDV
-     * Incluye los rangos de la tabla PDV_OUT_ENTREGABLE y agrega "TOP" como opción
+     * Incluye los rangos de la tabla PDV_OUT_ENTREGABLE y agrega "TOP" y "RECUPERO" como opciones
      *
      * @return JsonResponse
      */
@@ -98,8 +98,9 @@ class AdminController extends Controller
                 return $item->RANGO;
             }, $rangos);
 
-            // Agregar "TOP" al final de la lista
+            // Agregar "TOP" y "RECUPERO" al final de la lista
             $rangosList[] = 'TOP';
+            $rangosList[] = 'RECUPERO';
 
             return response()->json([
                 "status" => Response::HTTP_OK,
