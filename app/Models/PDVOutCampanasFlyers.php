@@ -26,7 +26,9 @@ class PDVOutCampanasFlyers extends Model
         'todos',
         'comunicado',
         'archivo_comunicacion',
-        'fecha_comunicacion'
+        'fecha_comunicacion',
+        'hora_inicio',
+        'hora_fin'
     ];
 
     // 👇 Quitar casts de fechas para no romper el formato
