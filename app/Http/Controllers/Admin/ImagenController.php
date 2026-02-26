@@ -171,7 +171,9 @@ class ImagenController extends Controller
                     'namePicture' => 'required|string',
                     'rango'       => 'nullable', // Puede ser integer, array o string
                     'zonal'       => 'nullable|string|max:500',
-                    'todos'       => 'required|string|in:0,1'
+                    'todos'       => 'required|string|in:0,1',
+                    'hora_inicio' => 'nullable|date_format:H:i',
+                    'hora_fin'    => 'nullable|date_format:H:i'
                 ]);
             } else {
                 // Cuando todos = 0, validación normal
@@ -186,7 +188,9 @@ class ImagenController extends Controller
                     'namePicture' => 'required|string',
                     'rango'       => 'nullable', // Puede ser integer, array o string
                     'zonal'       => 'nullable|string|max:500',
-                    'todos'       => 'required|string|in:0,1'
+                    'todos'       => 'required|string|in:0,1',
+                    'hora_inicio' => 'nullable|date_format:H:i',
+                    'hora_fin'    => 'nullable|date_format:H:i'
                 ]);
             }
 
@@ -305,6 +309,8 @@ class ImagenController extends Controller
             $campanaFlyer->comunicado = 0;
             $campanaFlyer->archivo_comunicacion = null;
             $campanaFlyer->fecha_comunicacion = null;
+            $campanaFlyer->hora_inicio = $request->input('hora_inicio') ?: null;
+            $campanaFlyer->hora_fin = $request->input('hora_fin') ?: null;
             $campanaFlyer->save();
 
             try {
