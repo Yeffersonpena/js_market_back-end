@@ -11,6 +11,7 @@ use App\Models\PDV_OUT_ESQUEMA_RESUMEN;
 use App\Models\VI_AVANCES_DIARIOS;
 use App\Models\VI_FLYERS;
 use App\Models\VI_PDV_PAYMENT;
+use App\Models\PDVOutCampanasFlyers;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -130,6 +131,46 @@ class LogicController extends Controller
             return response()->json(["status" => Response::HTTP_BAD_REQUEST, "message" => $ex->getMessage()], Response::HTTP_BAD_REQUEST);
         }
     }
+
+    /**
+     * Campañas vigentes en este momento por ventana horaria (hora_inicio–hora_fin).
+     * Consulta directa a PDV_OUT_CAMPAÑAS_FLYERS; aplica a todos los usuarios.
+     * Incluye server_datetime y timezone en la respuesta.
+     */
+    public function campanasVigentesPorHorario(Request $request)
+    {
+        try {
+            $now = Carbon::now(config('app.timezone'));
+            $today = $now->toDateString();
+            $time = $now->format('H:i:s');
+
+            $campanas = PDVOutCampanasFlyers::where('activa', 1)
+                ->whereNotNull('hora_inicio')
+                ->whereNotNull('hora_fin')
+                ->whereDate('fecha_inicio', '<=', $today)
+                ->whereDate('fecha_fin', '>=', $today)
+                ->where('hora_inicio', '<=', $time)
+                ->where('hora_fin', '>=', $time)
+                ->get(['id', 'nombre_campaña', 'foto_esquema', 'tipoImg', 'fecha_inicio', 'fecha_fin', 'hora_inicio', 'hora_fin']);
+
+            $serverTimezone = config('app.timezone', 'America/Lima');
+            $serverDatetime = $now->format('Y-m-d H:i:s');
+
+            return response()->json([
+                'status' => Response::HTTP_OK,
+                'message' => 'Campañas vigentes por horario',
+                'server_datetime' => $serverDatetime,
+                'timezone' => $serverTimezone,
+                'data' => $campanas,
+            ], Response::HTTP_OK);
+        } catch (\Exception $ex) {
+            return response()->json([
+                'status' => Response::HTTP_BAD_REQUEST,
+                'message' => $ex->getMessage(),
+            ], Response::HTTP_BAD_REQUEST);
+        }
+    }
+
     public function getAbono($dni, $anio, $mes)
     {
         try {

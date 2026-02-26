@@ -61,6 +61,7 @@ Route::middleware(['jwt.apiRest.jsMarket'])->group(function () {
     Route::get('/api/v1/users/view-token-user', [LoginController::class, 'viewToken'])->name('viewPerfil.user.api');
     Route::get('/api/v1/menu-perfil/permisos', [MenuPerfilController::class, 'getPermisosPerfil']);
     Route::patch('/api/v1/users/actualizar-clave', [GestorController::class, 'actualizaClave'])->name('actualizaClave.user.api');
+    Route::get('/api/v1/campanas-vigentes-por-horario', [LogicController::class, 'campanasVigentesPorHorario'])->name('campanasVigentesPorHorario.api');
 });
 
 
