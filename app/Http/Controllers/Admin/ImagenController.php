@@ -207,40 +207,30 @@ class ImagenController extends Controller
                 $pictureRango = "TODOS";  // Más claro que NULL
                 $pictureZonal = "TODOS";  // Más claro que NULL
             } else {
-                // Lógica normal cuando todos = "0"
                 $pictureType = (string) $request->input('type');
                 $pictureModo = (string) $request->input('modo');
 
-                // Procesar rango(s) - puede venir como integer, array o string
-                // Soporta números (1, 2, 3, ... 9, etc.) que se convierten a "RANGO X" y también "TOP" como string
+                // Siempre derivar pictureRango de rango (rango[] llega bien); criterio_filtro solo como override por si el servidor no lo recibe (encoding/multipart)
                 $rangoInput = $request->input('rango');
                 $rangosString = [];
 
                 if ($rangoInput !== null && $rangoInput !== '') {
                     $rangosArray = [];
-
-                    // Si es array, procesarlo directamente
                     if (is_array($rangoInput)) {
                         $rangosArray = $rangoInput;
-                    }
-                    // Si es string, intentar convertir a array (ej: "1,2,3" o "TOP" o "RECUPERO")
-                    elseif (is_string($rangoInput)) {
+                    } elseif (is_string($rangoInput)) {
                         $rangoTrimmed = strtoupper(trim($rangoInput));
                         if ($rangoTrimmed === 'TOP') {
                             $rangosString[] = 'TOP';
                         } elseif ($rangoTrimmed === 'RECUPERO') {
                             $rangosString[] = 'RECUPERO';
                         } else {
-                            // Intentar convertir a array de números
                             $rangosArray = array_filter(array_map('trim', explode(',', $rangoInput)));
                         }
-                    }
-                    // Si es un solo integer o string "TOP"
-                    elseif (is_numeric($rangoInput)) {
+                    } elseif (is_numeric($rangoInput)) {
                         $rangosArray = [(int) $rangoInput];
                     }
 
-                    // Procesar números y convertirlos a "RANGO X", o mantener "TOP"/"RECUPERO" como string
                     foreach ($rangosArray as $rangoItem) {
                         if (is_string($rangoItem)) {
                             $itemTrimmed = strtoupper(trim($rangoItem));
@@ -249,16 +239,12 @@ class ImagenController extends Controller
                             } elseif ($itemTrimmed === 'RECUPERO') {
                                 $rangosString[] = 'RECUPERO';
                             }
-                        }
-                        // Si es numérico, convertirlo a "RANGO X" (soporta 1, 2, ... 9 y más)
-                        elseif (is_numeric($rangoItem)) {
+                        } elseif (is_numeric($rangoItem)) {
                             $rangoNum = (int) $rangoItem;
                             if ($rangoNum >= 1) {
                                 $rangosString[] = 'RANGO ' . $rangoNum;
                             }
-                        }
-                        // Si es string numérico (ej: "1", "2", "9"), convertirlo también
-                        elseif (is_string($rangoItem) && is_numeric(trim($rangoItem))) {
+                        } elseif (is_string($rangoItem) && is_numeric(trim($rangoItem))) {
                             $rangoNum = (int) trim($rangoItem);
                             if ($rangoNum >= 1) {
                                 $rangosString[] = 'RANGO ' . $rangoNum;
@@ -267,9 +253,14 @@ class ImagenController extends Controller
                     }
                 }
 
-                // Unir los rangos con comas (ej: "RANGO 1,RANGO 2,RANGO 3" o "TOP")
                 $pictureRango = !empty($rangosString) ? implode(',', $rangosString) : null;
-                $pictureZonal = $request->input('zonal') ?: null; // Convertir string vacío a NULL
+
+                $criterioFiltroInput = $request->input('criterio_filtro');
+                if ($criterioFiltroInput !== null && trim((string) $criterioFiltroInput) !== '') {
+                    $pictureRango = trim((string) $criterioFiltroInput);
+                }
+
+                $pictureZonal = $request->input('zonal') ?: null;
             }
 
             $pictureFile     = $request->file('image');
