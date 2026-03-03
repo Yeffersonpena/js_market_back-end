@@ -27,7 +27,7 @@ BEGIN
     );
 
     INSERT INTO #Base
-    EXEC sp_Stock_JS_Yali @linea;
+    EXEC sp_Stock_JS_Yali @linea = @linea, @almacen = @almacen;
 
     SELECT
         EMPRESA,
