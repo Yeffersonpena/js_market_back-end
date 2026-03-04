@@ -45,7 +45,7 @@ BEGIN
         RTRIM(LTRIM(p.MODELO)) AS MODELO,
         RTRIM(LTRIM(w.LINEA)) AS LINEA,
         RTRIM(LTRIM(w.SUBLINEA)) AS SUBLINEA,
-        UPPER(LTRIM(RTRIM(w.ALMACEN))) AS ALMACEN,
+        CASE WHEN UPPER(LTRIM(RTRIM(w.ALMACEN))) COLLATE Latin1_General_CI_AI = 'HUANUCO' THEN 'HUANUCO' ELSE UPPER(LTRIM(RTRIM(w.ALMACEN))) END AS ALMACEN,
         'JS' AS EMPRESA,
         pv.PRECIO AS PRECIO_VTA
     FROM [192.168.3.101,1800\MSSQL_NEW].[Distribuidora].[dbo].[WOLAP_CONSULTA_SERIES] w
@@ -63,14 +63,14 @@ BEGIN
             (
                 @almacen IS NULL OR RTRIM(LTRIM(@almacen)) = ''
             )
-            AND UPPER(LTRIM(RTRIM(w.ALMACEN))) IN (
-                'AREQUIPA', 'AYACUCHO', 'CUSCO', 'HUANCAYO', 'HUÁNUCO',
+            AND ( UPPER(LTRIM(RTRIM(w.ALMACEN))) IN (
+                'AREQUIPA', 'AYACUCHO', 'CUSCO', 'HUANCAYO', 'HUANUCO', 'HUÁNUCO',
                 'ICA', 'LA MERCED', 'LIMA SUR', 'PUCALLPA', 'PUNO'
-            )
+            ) OR UPPER(LTRIM(RTRIM(w.ALMACEN))) COLLATE Latin1_General_CI_AI = 'HUANUCO' )
             OR
             (
                 @almacen IS NOT NULL AND RTRIM(LTRIM(@almacen)) <> ''
-                AND UPPER(LTRIM(RTRIM(w.ALMACEN))) = UPPER(LTRIM(RTRIM(@almacen)))
+                AND UPPER(LTRIM(RTRIM(w.ALMACEN))) COLLATE Latin1_General_CI_AI = UPPER(LTRIM(RTRIM(@almacen))) COLLATE Latin1_General_CI_AI
             )
         )
         --'E-COMMERCE',
@@ -97,7 +97,11 @@ BEGIN
         RTRIM(LTRIM(m.MODELO)) AS MODELO,
         'EQUIPOS' AS LINEA,
         'EQUIPOS' AS SUBLINEA,
-        UPPER(LTRIM(RTRIM(COALESCE(t.ALMACEN, REPLACE(y.NombrePV, 'YALI-', ''))))) AS ALMACEN,
+        CASE
+            WHEN UPPER(LTRIM(RTRIM(COALESCE(t.ALMACEN, REPLACE(y.NombrePV, 'YALI-', ''))))) = 'UCAYALI' THEN 'PUCALLPA'
+            WHEN UPPER(LTRIM(RTRIM(COALESCE(t.ALMACEN, REPLACE(y.NombrePV, 'YALI-', ''))))) COLLATE Latin1_General_CI_AI = 'HUANUCO' THEN 'HUANUCO'
+            ELSE UPPER(LTRIM(RTRIM(COALESCE(t.ALMACEN, REPLACE(y.NombrePV, 'YALI-', '')))))
+        END AS ALMACEN,
         'AMAZONÍA' AS EMPRESA,
         pv.PRECIO AS PRECIO_VTA
     FROM DISTRIBUTOR_DATAMART.dbo.YALI_STOCK y
@@ -135,6 +139,15 @@ BEGIN
     )
         AND (
             @almacen IS NULL OR RTRIM(LTRIM(@almacen)) = ''
-            OR UPPER(LTRIM(RTRIM(COALESCE(t.ALMACEN, REPLACE(y.NombrePV, 'YALI-', ''))))) = UPPER(LTRIM(RTRIM(@almacen)))
+            OR (
+                CASE WHEN UPPER(LTRIM(RTRIM(COALESCE(t.ALMACEN, REPLACE(y.NombrePV, 'YALI-', ''))))) = 'UCAYALI' THEN 'PUCALLPA'
+                     WHEN UPPER(LTRIM(RTRIM(COALESCE(t.ALMACEN, REPLACE(y.NombrePV, 'YALI-', ''))))) COLLATE Latin1_General_CI_AI = 'HUANUCO' THEN 'HUANUCO'
+                     ELSE UPPER(LTRIM(RTRIM(COALESCE(t.ALMACEN, REPLACE(y.NombrePV, 'YALI-', '')))))
+                END
+                = CASE WHEN UPPER(LTRIM(RTRIM(@almacen))) = 'UCAYALI' THEN 'PUCALLPA'
+                       WHEN UPPER(LTRIM(RTRIM(@almacen))) COLLATE Latin1_General_CI_AI = 'HUANUCO' THEN 'HUANUCO'
+                       ELSE UPPER(LTRIM(RTRIM(@almacen)))
+                  END
+            )
         );
 END
