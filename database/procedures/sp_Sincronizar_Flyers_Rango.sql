@@ -95,6 +95,8 @@ BEGIN
         AND YEAR(c.fecha_inicio) = @año
         AND MONTH(c.fecha_inicio) = @mes
         AND c.id <> 235
+        -- Excluir campañas con horario hasta implementar sincronización con horas (buscar "hora_inicio IS NULL" para quitar filtro)
+        AND c.hora_inicio IS NULL AND c.hora_fin IS NULL
         AND NOT EXISTS (
             SELECT 1
             FROM PORTAL_COMERCIAL.dbo.PDV_OUT_FLYERS f
@@ -168,6 +170,8 @@ BEGIN
         AND YEAR(c.fecha_inicio) = @año
         AND MONTH(c.fecha_inicio) = @mes
         AND c.id <> 235
+        -- Excluir campañas con horario hasta implementar sincronización con horas (buscar "hora_inicio IS NULL" para quitar filtro)
+        AND c.hora_inicio IS NULL AND c.hora_fin IS NULL
         AND NOT EXISTS (
             SELECT 1
             FROM PORTAL_COMERCIAL.dbo.PDV_OUT_FLYERS f
@@ -214,6 +218,8 @@ BEGIN
         AND YEAR(c.fecha_inicio) = @año
         AND MONTH(c.fecha_inicio) = @mes
         AND c.id <> 235
+        -- Excluir campañas con horario hasta implementar sincronización con horas (buscar "hora_inicio IS NULL" para quitar filtro)
+        AND c.hora_inicio IS NULL AND c.hora_fin IS NULL
         -- PDV recupero con mismas fechas exactas no reciben TOP
         AND NOT EXISTS (
             SELECT 1
@@ -275,6 +281,8 @@ BEGIN
         AND YEAR(c.fecha_inicio) = @año
         AND MONTH(c.fecha_inicio) = @mes
         AND c.id <> 235
+        -- Excluir campañas con horario hasta implementar sincronización con horas (buscar "hora_inicio IS NULL" para quitar filtro)
+        AND c.hora_inicio IS NULL AND c.hora_fin IS NULL
         AND (
             (c.zonales IS NULL OR c.zonales = '' OR LTRIM(RTRIM(c.zonales)) = '')
             OR (LOWER(LTRIM(RTRIM(c.zonales))) = 'todas')
