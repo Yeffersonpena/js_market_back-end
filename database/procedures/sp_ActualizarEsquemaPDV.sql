@@ -512,14 +512,15 @@ BEGIN
         bonoCalidad = (m.TOTAL_VCALIDAD * b.precioUniCalidadAdi),
         bonoRecargaPre = (m.TOTAL_RECARGAS * 2.00),
         bonoPortaPre = (m.cantPrepagoPorta * 4),
-        bonoPortaPostOPost = (m.cantidadPortaPostOPost * 35),
-        bonoPortaPostOPre = (m.cantidadPortaPostOPre * 20),
+        -- Desde marzo 2026 ya no se pagan estos bonos; las cantidades se siguen guardando
+        bonoPortaPostOPost = CASE WHEN @fechaPeriodo >= DATEFROMPARTS(2026, 3, 1) THEN 0 ELSE (m.cantidadPortaPostOPost * 35) END,
+        bonoPortaPostOPre = CASE WHEN @fechaPeriodo >= DATEFROMPARTS(2026, 3, 1) THEN 0 ELSE (m.cantidadPortaPostOPre * 20) END,
         bonoTotalEfectivo = (
             ISNULL((b.BONO_UNITARIO_EQUIPO * m.VentaPrepagoLimitada), 0) +
             ISNULL((m.TOTAL_RECARGAS * 2.00), 0) +
             ISNULL((m.cantPrepagoPorta * 4), 0) +
-            ISNULL((m.cantidadPortaPostOPost * 35), 0) +
-            ISNULL((m.cantidadPortaPostOPre * 20), 0) +
+            ISNULL(CASE WHEN @fechaPeriodo >= DATEFROMPARTS(2026, 3, 1) THEN 0 ELSE (m.cantidadPortaPostOPost * 35) END, 0) +
+            ISNULL(CASE WHEN @fechaPeriodo >= DATEFROMPARTS(2026, 3, 1) THEN 0 ELSE (m.cantidadPortaPostOPre * 20) END, 0) +
             ISNULL((m.TOTAL_VCALIDAD * b.precioUniCalidadAdi), 0) +
             ISNULL(b.bono_rango, 0)
         ),
@@ -527,8 +528,8 @@ BEGIN
             ISNULL((b.BONO_UNITARIO_EQUIPO * m.VentaPrepagoLimitada), 0) +
             ISNULL((m.TOTAL_RECARGAS * 2.00), 0) +
             ISNULL((m.cantPrepagoPorta * 4), 0) +
-            ISNULL((m.cantidadPortaPostOPost * 35), 0) +
-            ISNULL((m.cantidadPortaPostOPre * 20), 0) +
+            ISNULL(CASE WHEN @fechaPeriodo >= DATEFROMPARTS(2026, 3, 1) THEN 0 ELSE (m.cantidadPortaPostOPost * 35) END, 0) +
+            ISNULL(CASE WHEN @fechaPeriodo >= DATEFROMPARTS(2026, 3, 1) THEN 0 ELSE (m.cantidadPortaPostOPre * 20) END, 0) +
             ISNULL((m.TOTAL_VCALIDAD * b.precioUniCalidadAdi), 0) +
             ISNULL(b.bonoDevolucionChips, 0) +
             ISNULL(b.bono_rango, 0)
