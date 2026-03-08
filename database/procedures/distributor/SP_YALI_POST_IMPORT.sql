@@ -9,9 +9,6 @@ BEGIN
     update YALI_VENTAS_cabecera_TEMPO set Comercial = 'WILLIAMS ALEGRIA VELA' where [número] = 'BV10-00000009'
     update YALI_VENTAS_cabecera_TEMPO set Comercial = 'DIANA MAURICIO MORENO' where [número]= 'BV30-00000026'
     update YALI_VENTAS_cabecera_TEMPO set Comercial = 'BILLY SALVADOR ARTEAGA' where [número]= 'BV30-00000028'
-    update YALI_VENTAS_cabecera_TEMPO set Comercial = 'WILLIAMS ALEGRIA VELA' where [número] = 'FV10-00000037'
-    update YALI_VENTAS_cabecera_TEMPO set Comercial = 'ELIZABETH ROJAS FREYRE' where [número] = 'BV10-00000040'
-	update YALI_VENTAS_cabecera_TEMPO set Comercial = 'Espinoza Huaman Wilma' where [número] = 'FV20-00000040'
 
     --formateando el documento
     UPDATE YALI_VENTAS_TEMPO SET Num_Documento = REPLACE(NUM_DOCUMENTO, ';', '')
@@ -48,4 +45,10 @@ BEGIN
     where Num_Documento not in (select Num_Documento from [yali_ventas_resumen] )
     group by
     fecha, Punto_Venta, Num_Documento, NombreCliente, Nif_Cliente_Prov, Autor, Comercial, estado, x_vendedor, x_zonal, FormaPago
+
+    insert into [yali_ventas_resumen]
+    select t.fecha, t.[Punto de venta], t.[Número], t.cliente, t.[DNI/RUC], t.Autor, t.Comercial, 0, t.Base, t.Base, null, t.Comercial, v.ZONAL as zonal, t.base, t.[Forma pago]
+    from [dbo].YALI_VENTAS_CABECERA_TEMPO as t inner join
+    YALI_VENDEDOR as v on t.Comercial = v.NOMBRE_VENDEDOR
+    where t.serie like 'NC%'
 END;
