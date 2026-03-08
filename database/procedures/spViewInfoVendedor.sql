@@ -37,15 +37,12 @@ BEGIN
 
     IF @existeResponsable = 1
     BEGIN
-        SELECT @RECARGA_TOTAL = sum(RECARGA_TOTAL) FROM dbo.PDV_OUT_FUNNEL_RESUMEN WHERE DNI_RESPONSABLE = @DNI AND ANIO = @ANIO AND MES = @MES
-		AND (
-			NOT EXISTS (
-					SELECT 1 FROM dbo.PDV_OUT_ENTREGABLE WHERE año = @ANIO AND mes = @MES AND DNI_VENDEDOR = dbo.PDV_OUT_FUNNEL_RESUMEN.DNI_VENDEDOR
-				)
-				OR EXISTS (
-					SELECT 1 FROM dbo.PDV_OUT_ENTREGABLE WHERE año = @ANIO AND mes = @MES AND DNI_VENDEDOR = dbo.PDV_OUT_FUNNEL_RESUMEN.DNI_VENDEDOR AND DNI_RESPONSABLE = @DNI
-				)
-			  );
+        -- Para DNI responsable en entregable: usar datos de PDV_OUT_ESQUEMA_RESUMEN (misma fuente que sp_ActualizarEsquemaPDV y bonos)
+        SELECT @RECARGA_TOTAL = ISNULL(TOTAL_RECARGAS, 0)
+        FROM dbo.PDV_OUT_ESQUEMA_RESUMEN
+        WHERE DNI_RESPONSABLE = @DNI AND AÑO = @ANIO AND MES = @MES;
+        IF @RECARGA_TOTAL IS NULL
+            SET @RECARGA_TOTAL = 0;
 
 		select @dateUpdateCalidad=valor from dbo.parametros where tipo=4;
 		select @calidadAllNow=count(*) from dbo.PDV_OUT_FUNNEL where DNI_RESPONSABLE=@DNI and fecha between @dateStart and @dateUpdateCalidad and CALIDAD_CLUSTER in ('Cluster 1: IMEI nuevo', 'Cluster 2: IMEI reutilizado')
