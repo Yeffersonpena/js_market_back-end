@@ -20,35 +20,38 @@ class LoginController extends Controller
     {
         try {
             $request->validate([
-                'user' => 'required|max:10|min:3',
-                'password' => 'required|max:10|min:3',
+                'user' => 'required|max:50|min:3',
+                'password' => 'required|max:100|min:3',
             ], [
                 'user.min' => 'El usuario debe tener al menos 3 caracteres.',
-                'password.min' => 'La contraseña debe tener al menos 4 caracteres.',
-                'password.max' => 'La contraseña no puede tener más de 10 caracteres.',
-                'user.max' => 'El usuario no puede tener más de 10 caracteres.',
+                'password.min' => 'La contraseña debe tener al menos 3 caracteres.',
+                'password.max' => 'La contraseña no puede tener más de 100 caracteres.',
+                'user.max' => 'El usuario no puede tener más de 50 caracteres.',
             ]);
-           
-            $userData = DB::selectOne("EXEC sp_LoginUser ?, ?", [$request->user, $request->password]);
+
+            $user = trim((string) $request->user);
+            $password = trim((string) $request->password);
+
+            $userData = DB::selectOne("EXEC sp_LoginUser ?, ?", [$user, $password]);
             if (!$userData) {
-                $userConsulta = User::where('user', $request->user)->exists();
+                $userConsulta = User::where('user', $user)->exists();
                 $messageUser=$userConsulta?'La contraseña es incorrecta, por favor vuelve a ingresar la contraseña correcta':'Usuario no encontrado';
                 return response()->json(["status" => Response::HTTP_OK, "message" => $messageUser], Response::HTTP_OK);
             }
 
-            $user = User::where('user', $userData->user)->first();
-            if (!$user) {
+            $userModel = User::where('user', $userData->user)->first();
+            if (!$userModel) {
                 return response()->json(["status" => Response::HTTP_OK, "message" => "Error al cargar el usuario"], Response::HTTP_UNAUTHORIZED);
             }
 
             try {
-                $token = JWTAuth::fromUser($user);
+                $token = JWTAuth::fromUser($userModel);
             } catch (JWTException $e) {
                 return response()->json(["status" => Response::HTTP_INTERNAL_SERVER_ERROR, "message" => "No se pudo generar el token"], Response::HTTP_INTERNAL_SERVER_ERROR);
             }
-         
-            $ingreso=new IngresoUser();
-            $ingreso->user=$request->user;
+
+            $ingreso = new IngresoUser();
+            $ingreso->user = $user;
             $ingreso->ip=$request->ip();
             $ingreso->fecha=Carbon::now();
             $ingreso->save();
