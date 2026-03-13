@@ -24,6 +24,7 @@ BEGIN
         CAST(w.FCOMPRA AS DATE) AS FCOMPRA,
         DATEDIFF(day, w.FCOMPRA, GETDATE()) AS DIAS,
         CASE
+            WHEN w.FCOMPRA IS NULL THEN '-'
             WHEN DATEDIFF(day, w.FCOMPRA, GETDATE()) BETWEEN 0 AND 15 THEN '0 - 15'
             WHEN DATEDIFF(day, w.FCOMPRA, GETDATE()) > 15 AND DATEDIFF(day, w.FCOMPRA, GETDATE()) <= 30 THEN '15 - 30'
             WHEN DATEDIFF(day, w.FCOMPRA, GETDATE()) > 30 AND DATEDIFF(day, w.FCOMPRA, GETDATE()) <= 70 THEN '30 - 70'
@@ -70,6 +71,7 @@ BEGIN
         CAST(y.FechaFactura AS DATE) AS FCOMPRA,
         DATEDIFF(day, y.FechaFactura, GETDATE()) AS DIAS,
         CASE
+            WHEN y.FechaFactura IS NULL THEN '-'
             WHEN DATEDIFF(day, y.FechaFactura, GETDATE()) BETWEEN 0 AND 15 THEN '0 - 15'
             WHEN DATEDIFF(day, y.FechaFactura, GETDATE()) > 15 AND DATEDIFF(day, y.FechaFactura, GETDATE()) <= 30 THEN '15 - 30'
             WHEN DATEDIFF(day, y.FechaFactura, GETDATE()) > 30 AND DATEDIFF(day, y.FechaFactura, GETDATE()) <= 70 THEN '30 - 70'
@@ -88,6 +90,8 @@ BEGIN
             WHEN UPPER(LTRIM(RTRIM(COALESCE(t.ALMACEN, REPLACE(y.NombrePV, 'YALI-', ''))))) = 'UCAYALI' THEN 'PUCALLPA'
             WHEN UPPER(LTRIM(RTRIM(COALESCE(t.ALMACEN, REPLACE(y.NombrePV, 'YALI-', ''))))) COLLATE Latin1_General_CI_AI = 'HUANUCO' THEN 'HUANUCO'
             WHEN UPPER(LTRIM(RTRIM(COALESCE(t.ALMACEN, REPLACE(y.NombrePV, 'YALI-', ''))))) = 'PICHANAQUI' THEN 'LA MERCED'
+            WHEN UPPER(LTRIM(RTRIM(COALESCE(t.ALMACEN, REPLACE(y.NombrePV, 'YALI-', ''))))) = 'PICHARI' THEN 'AYACUCHO'
+            WHEN UPPER(LTRIM(RTRIM(COALESCE(t.ALMACEN, REPLACE(y.NombrePV, 'YALI-', ''))))) = 'QUILLABAMBA' THEN 'CUSCO'
             ELSE UPPER(LTRIM(RTRIM(COALESCE(t.ALMACEN, REPLACE(y.NombrePV, 'YALI-', '')))))
         END AS ALMACEN,
         'AMAZONÍA' AS EMPRESA
@@ -126,12 +130,16 @@ BEGIN
                     WHEN UPPER(LTRIM(RTRIM(COALESCE(t.ALMACEN, REPLACE(y.NombrePV, 'YALI-', ''))))) = 'UCAYALI' THEN 'PUCALLPA'
                     WHEN UPPER(LTRIM(RTRIM(COALESCE(t.ALMACEN, REPLACE(y.NombrePV, 'YALI-', ''))))) COLLATE Latin1_General_CI_AI = 'HUANUCO' THEN 'HUANUCO'
                     WHEN UPPER(LTRIM(RTRIM(COALESCE(t.ALMACEN, REPLACE(y.NombrePV, 'YALI-', ''))))) = 'PICHANAQUI' THEN 'LA MERCED'
+                    WHEN UPPER(LTRIM(RTRIM(COALESCE(t.ALMACEN, REPLACE(y.NombrePV, 'YALI-', ''))))) = 'PICHARI' THEN 'AYACUCHO'
+                    WHEN UPPER(LTRIM(RTRIM(COALESCE(t.ALMACEN, REPLACE(y.NombrePV, 'YALI-', ''))))) = 'QUILLABAMBA' THEN 'CUSCO'
                     ELSE UPPER(LTRIM(RTRIM(COALESCE(t.ALMACEN, REPLACE(y.NombrePV, 'YALI-', '')))))
                 END
                 = CASE
                     WHEN UPPER(LTRIM(RTRIM(@almacen))) = 'UCAYALI' THEN 'PUCALLPA'
                     WHEN UPPER(LTRIM(RTRIM(@almacen))) COLLATE Latin1_General_CI_AI = 'HUANUCO' THEN 'HUANUCO'
                     WHEN UPPER(LTRIM(RTRIM(@almacen))) = 'PICHANAQUI' THEN 'LA MERCED'
+                    WHEN UPPER(LTRIM(RTRIM(@almacen))) = 'PICHARI' THEN 'AYACUCHO'
+                    WHEN UPPER(LTRIM(RTRIM(@almacen))) = 'QUILLABAMBA' THEN 'CUSCO'
                     ELSE UPPER(LTRIM(RTRIM(@almacen)))
                   END
             )
