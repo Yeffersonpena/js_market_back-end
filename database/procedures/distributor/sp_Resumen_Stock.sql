@@ -48,19 +48,7 @@ BEGIN
         d.PRECIO
     FROM [192.168.3.101,1800\MSSQL_NEW].[Distribuidora].[dbo].[WOLAP_PRECIOS_DETALLISTA] d;
 
-    -- Precios YALI: una sola consulta al linked server 1900. Match por prefijo de CNOM_PROD (stock = modelo base, precios = modelo + variante ej. color).
-    -- RTRIM/LTRIM en CNOM_PROD del linked para normalizar espacios de más.
-    CREATE TABLE #PreciosYali (
-        CNOM_PROD VARCHAR(200),
-        PRECIO DECIMAL(18,4)
-    );
-    INSERT INTO #PreciosYali (CNOM_PROD, PRECIO)
-    SELECT
-        RTRIM(LTRIM(REPLACE(ISNULL(d.CNOM_PROD, ''), '&quot;', '"'))),
-        d.PRECIO
-    FROM [192.168.3.101,1900\MSSQL_log].[Distribuidora].[dbo].[WOLAP_PRECIOS_DETALLISTA] d;
-
-    -- Asignar PRECIO_VTA a #Base: JS por CCOD_PROD + ALMACEN, YALI por prefijo CNOM_PROD (precios.CNOM_PROD LIKE base.CNOM_PROD + '%', MAX(PRECIO)).
+    -- Asignar PRECIO_VTA a #Base: JS por CCOD_PROD + ALMACEN.
     UPDATE b
     SET b.PRECIO_VTA = p.PRECIO
     FROM #Base b
@@ -72,7 +60,49 @@ BEGIN
         AND RTRIM(LTRIM(ISNULL(b.ALMACEN, ''))) = RTRIM(LTRIM(ISNULL(p.TIPO_VENTA_NORM, '')))
     WHERE b.EMPRESA = 'JS';
 
-    -- YALI (Amazonía): precio una vez por producto distinto (no por serie) para agilizar; mismo criterio en dos pasos (CNOM_PROD, luego MODELO).
+    -- YALI (Amazonía): primera opción tabla local YALI_PRECIO_VENTA. PUNTO_VENTA sin 'YALI-' y mismo CASE que sp_Stock_General (UCAYALI→PUCALLPA, PICHANAQUI→LA MERCED, PICHARI→AYACUCHO, QUILLABAMBA→CUSCO).
+    CREATE TABLE #PreciosYaliLocal (
+        COD_SAP VARCHAR(50),
+        ALMACEN_NORM VARCHAR(100),
+        PRECIO DECIMAL(18,4)
+    );
+    INSERT INTO #PreciosYaliLocal (COD_SAP, ALMACEN_NORM, PRECIO)
+    SELECT
+        RTRIM(LTRIM(v.COD_SAP)),
+        CASE
+            WHEN UPPER(LTRIM(RTRIM(REPLACE(ISNULL(v.PUNTO_VENTA, ''), 'YALI-', '')))) = 'UCAYALI' THEN 'PUCALLPA'
+            WHEN UPPER(LTRIM(RTRIM(REPLACE(ISNULL(v.PUNTO_VENTA, ''), 'YALI-', '')))) COLLATE Latin1_General_CI_AI = 'HUANUCO' THEN 'HUANUCO'
+            WHEN UPPER(LTRIM(RTRIM(REPLACE(ISNULL(v.PUNTO_VENTA, ''), 'YALI-', '')))) = 'PICHANAQUI' THEN 'LA MERCED'
+            WHEN UPPER(LTRIM(RTRIM(REPLACE(ISNULL(v.PUNTO_VENTA, ''), 'YALI-', '')))) = 'PICHARI' THEN 'AYACUCHO'
+            WHEN UPPER(LTRIM(RTRIM(REPLACE(ISNULL(v.PUNTO_VENTA, ''), 'YALI-', '')))) = 'QUILLABAMBA' THEN 'CUSCO'
+            ELSE UPPER(LTRIM(RTRIM(REPLACE(ISNULL(v.PUNTO_VENTA, ''), 'YALI-', ''))))
+        END,
+        v.PRECIO_VENTA
+    FROM DISTRIBUTOR_DATAMART.dbo.YALI_PRECIO_VENTA v;
+
+    UPDATE b
+    SET b.PRECIO_VTA = p.PRECIO
+    FROM #Base b
+    INNER JOIN (
+        SELECT COD_SAP, ALMACEN_NORM, MAX(PRECIO) AS PRECIO
+        FROM #PreciosYaliLocal
+        GROUP BY COD_SAP, ALMACEN_NORM
+    ) p ON RTRIM(LTRIM(ISNULL(b.CCOD_PROD, ''))) = RTRIM(LTRIM(p.COD_SAP))
+        AND RTRIM(LTRIM(ISNULL(b.ALMACEN, ''))) = RTRIM(LTRIM(p.ALMACEN_NORM))
+    WHERE b.EMPRESA = 'AMAZONÍA';
+
+    -- YALI: por ahora solo tabla YALI_PRECIO_VENTA; linked 1900 comentado.
+    /*
+    CREATE TABLE #PreciosYali (
+        CNOM_PROD VARCHAR(200),
+        PRECIO DECIMAL(18,4)
+    );
+    INSERT INTO #PreciosYali (CNOM_PROD, PRECIO)
+    SELECT
+        RTRIM(LTRIM(REPLACE(ISNULL(d.CNOM_PROD, ''), '&quot;', '"'))),
+        d.PRECIO
+    FROM [192.168.3.101,1900\MSSQL_log].[Distribuidora].[dbo].[WOLAP_PRECIOS_DETALLISTA] d;
+
     CREATE TABLE #PreciosYaliAsignados (
         CNOM_PROD VARCHAR(200),
         MODELO VARCHAR(200),
@@ -102,7 +132,8 @@ BEGIN
     INNER JOIN #PreciosYaliAsignados pa
         ON b.CNOM_PROD = pa.CNOM_PROD
         AND (b.MODELO = pa.MODELO OR (b.MODELO IS NULL AND pa.MODELO IS NULL))
-    WHERE b.EMPRESA = 'AMAZONÍA' AND pa.PRECIO IS NOT NULL;
+    WHERE b.EMPRESA = 'AMAZONÍA' AND b.PRECIO_VTA IS NULL AND pa.PRECIO IS NOT NULL;
+    */
 
     SELECT
         EMPRESA,
