@@ -21,6 +21,7 @@ use App\Http\Controllers\Admin\MenuPerfilController;
 use App\Http\Controllers\Admin\ImportacionController;
 use App\Http\Controllers\Admin\ReporteController;
 use App\Http\Controllers\General\IncidenciaController;
+use App\Http\Controllers\RecopilacionController;
 use App\Http\Controllers\Multimarca\MultimarcaControlller;
 use App\Http\Controllers\Multimarca\VentasRecargasController;
 use App\Http\Controllers\SupervisorController;
@@ -64,6 +65,9 @@ Route::middleware(['jwt.apiRest.jsMarket'])->group(function () {
     Route::get('/api/v1/campanas-vigentes-por-horario', [LogicController::class, 'campanasVigentesPorHorario'])->name('campanasVigentesPorHorario.api');
 });
 
+Route::middleware(['jwt.apiRest.jsMarket', 'jwt.user.recopilacion'])->prefix('api/v1/recopilacion')->group(function () {
+    Route::get('/puntos-pendientes', [RecopilacionController::class, 'puntosPendientes'])->name('recopilacion.puntosPendientes.api');
+});
 
 Route::middleware(['jwt.apiRest.jsMarket', 'jwt.user.admin'])->group(function () {
     Route::post('/api/v1/users', [LoginController::class, 'createUserSp'])->name('create.user.api');
