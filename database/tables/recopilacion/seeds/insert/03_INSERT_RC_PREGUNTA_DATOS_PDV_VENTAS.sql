@@ -59,16 +59,16 @@ VALUES
 ('PASO_2_CAPA_2', 'P12', '¿Cuánto estima que vende en accesorios por mes?', 'Pedir rango: < S/500 / S/500-2K / S/2K-5K / +S/5K', 'opcion_unica', 1, 0, 0, 0, 0, 2, NULL, NULL, NULL),
 ('PASO_2_CAPA_2', 'P13', '¿Qué accesorios se venden más en su local?', 'Top 3 productos: cables, audífonos, cargadores, etc.', 'texto_largo', 1, 0, 0, 0, 0, 3, NULL, NULL, NULL),
 ('PASO_2_CAPA_2', 'P14', '¿A quién le compra accesorios hoy?', 'Anotar nombre de proveedor o distribuidor. ¿Cuántos proveedores tiene?', 'texto_largo', 1, 0, 0, 0, 0, 4, NULL, NULL, NULL),
-('PASO_2_CAPA_2', 'P15', '¿Qué marcas maneja en góndola?', 'Observar y anotar. Si puede, fotografiar los precios visibles.', 'texto_largo', 1, 0, 0, 0, 0, 5, NULL, NULL, NULL),
+('PASO_2_CAPA_2', 'P15', '¿Qué marcas maneja en góndola?', 'Observar y anotar. Si puede, fotografiar los precios visibles.', 'texto_largo', 1, 0, 1, 0, 10, 5, NULL, NULL, NULL),
 ('PASO_2_CAPA_2', 'P16', '¿Qué valora más de su proveedor actual?', 'Precio / rapidez / crédito / garantía / variedad', 'opcion_multiple', 1, 0, 0, 0, 0, 6, NULL, NULL, NULL),
 ('PASO_2_CAPA_2', 'E02', 'EVIDENCIA: Foto de la góndola de accesorios con marcas y precios visibles.', NULL, 'texto_largo', 1, 0, 1, 1, 3, 7, NULL, NULL, NULL),
 
 -- PASO 2 - CAPA 3
 ('PASO_2_CAPA_3', 'P17', 'Tamaño del local', 'Pequeño (<20m²) / Mediano (20-50m²) / Grande (+50m²). Indicador directo de capacidad de inventario.', 'opcion_unica', 1, 0, 0, 0, 0, 1, NULL, NULL, NULL),
 ('PASO_2_CAPA_3', 'P18', 'Tráfico visible al momento de la visita', 'Sin clientes / 1-3 clientes / +3 clientes. Anota hora de visita para contexto.', 'opcion_unica', 1, 0, 0, 0, 0, 2, NULL, NULL, NULL),
-('PASO_2_CAPA_3', 'P19', '¿Tiene vitrina o display activo de accesorios?', 'Sí, bien organizado / Sí, desordenado / No tiene. Este dato predice receptividad al kit de muestra.', 'opcion_unica', 1, 0, 0, 0, 0, 3, NULL, NULL, NULL),
+('PASO_2_CAPA_3', 'P19', '¿Tiene vitrina o display activo de accesorios?', 'Sí, bien organizado / Sí, desordenado / No tiene. Este dato predice receptividad al kit de muestra.', 'opcion_unica', 1, 0, 1, 0, 10, 3, NULL, NULL, NULL),
 ('PASO_2_CAPA_3', 'P20', 'Nivel de organización general del local', 'Alto / Medio / Bajo. Un local organizado sugiere un dueño que cuida su imagen — más abierto a trabajar con marca.', 'opcion_unica', 1, 0, 0, 0, 0, 4, NULL, NULL, NULL),
-('PASO_2_CAPA_3', 'P21', '¿Tiene letrero o señalización visible de operador?', 'Anotar qué operadores tiene señalizados (Claro, Entel, Bitel). Indica alineación comercial actual.', 'texto_largo', 1, 1, 0, 0, 0, 5, NULL, NULL, NULL),
+('PASO_2_CAPA_3', 'P21', '¿Tiene letrero o señalización visible de operador?', 'Anotar qué operadores tiene señalizados (Claro, Entel, Bitel). Indica alineación comercial actual.', 'texto_largo', 1, 1, 1, 0, 10, 5, NULL, NULL, NULL),
 ('PASO_2_CAPA_3', 'P22', 'Observación libre del jefe zonal', 'Cualquier dato relevante que no encaje en las preguntas anteriores. Intuición sobre el potencial del canal.', 'texto_largo', 0, 1, 0, 0, 0, 6, NULL, NULL, NULL),
 ('PASO_2_CAPA_3', 'E03', 'EVIDENCIA: Foto frontal del local + foto interior mostrando organización y display de accesorios.', NULL, 'texto_largo', 1, 0, 1, 2, 4, 7, NULL, NULL, NULL),
 
