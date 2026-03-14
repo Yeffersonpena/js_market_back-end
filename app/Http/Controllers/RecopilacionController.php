@@ -6,9 +6,11 @@ use App\Models\RcClientePdv;
 use App\Models\RcFormulario;
 use App\Models\RcPregunta;
 use App\Models\RcRespuesta;
+use App\Models\RcRespuestaMedia;
 use App\Models\RcRespuestaOpcion;
 use App\Models\RcSeccion;
 use App\Models\RcVisitaFormulario;
+use App\Services\RecopilacionMediaStorage;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Symfony\Component\HttpFoundation\Response;
@@ -510,6 +512,161 @@ class RecopilacionController extends Controller
         return response()->json([
             'status' => Response::HTTP_OK,
             'message' => 'Respuestas guardadas correctamente',
+        ], Response::HTTP_OK);
+    }
+
+    /**
+     * POST visita/{visitaId}/respuestas/{preguntaId}/media
+     * Sube una o más fotos para la respuesta de una pregunta. Crea la respuesta si no existe.
+     * Body: multipart con "fotos[]" (array de archivos) o "foto" (un archivo).
+     */
+    public function postMedia(Request $request, int $visitaId, int $preguntaId)
+    {
+        $zonal = $this->getZonalUsuario();
+        $user = $this->getUsuarioRecopilacion();
+        if (!$zonal || !$user) {
+            return response()->json([
+                'status' => Response::HTTP_UNAUTHORIZED,
+                'message' => 'No se pudo obtener la zonal o usuario',
+            ], Response::HTTP_UNAUTHORIZED);
+        }
+
+        $visita = RcVisitaFormulario::find($visitaId);
+        if (!$visita || !$this->visitaPerteneceAZonal($visita, $zonal)) {
+            return response()->json([
+                'status' => Response::HTTP_FORBIDDEN,
+                'message' => 'Visita no encontrada o no pertenece a su zonal',
+            ], Response::HTTP_FORBIDDEN);
+        }
+
+        $pregunta = RcPregunta::where('id', $preguntaId)
+            ->whereHas('seccion', fn ($q) => $q->where('formulario_id', $visita->formulario_id))
+            ->first();
+        if (!$pregunta) {
+            return response()->json([
+                'status' => Response::HTTP_NOT_FOUND,
+                'message' => 'Pregunta no encontrada o no pertenece al formulario de esta visita',
+            ], Response::HTTP_NOT_FOUND);
+        }
+
+        $maxFotos = (int) $pregunta->max_fotos;
+        if ($maxFotos < 1) {
+            $maxFotos = 10;
+        }
+        $archivos = $request->allFiles();
+        $fotos = isset($archivos['fotos']) && is_array($archivos['fotos'])
+            ? array_values($archivos['fotos'])
+            : (isset($archivos['foto']) ? [$archivos['foto']] : []);
+        $fotos = array_filter($fotos, fn ($f) => $f instanceof \Illuminate\Http\UploadedFile);
+
+        if (empty($fotos)) {
+            return response()->json([
+                'status' => Response::HTTP_UNPROCESSABLE_ENTITY,
+                'message' => 'Debe enviar al menos un archivo (foto o fotos[])',
+            ], Response::HTTP_UNPROCESSABLE_ENTITY);
+        }
+
+        $respuesta = RcRespuesta::firstOrCreate(
+            [
+                'visita_id' => $visitaId,
+                'pregunta_id' => $preguntaId,
+            ],
+            [
+                'valor_texto' => null,
+                'valor_numero' => null,
+                'valor_decimal' => null,
+                'valor_booleano' => null,
+                'valor_fecha' => null,
+                'valor_hora' => null,
+                'observacion' => null,
+                'no_aplica' => false,
+            ]
+        );
+
+        $countActual = RcRespuestaMedia::where('respuesta_id', $respuesta->id)->where('tipo_media', 'foto')->count();
+        if ($countActual + count($fotos) > $maxFotos) {
+            return response()->json([
+                'status' => Response::HTTP_UNPROCESSABLE_ENTITY,
+                'message' => "Máximo {$maxFotos} fotos para esta pregunta. Actualmente tiene {$countActual}.",
+            ], Response::HTTP_UNPROCESSABLE_ENTITY);
+        }
+
+        $storage = app(RecopilacionMediaStorage::class);
+        $usuarioSubida = $user->user ?? (string) $this->getDniUsuario($user);
+        $creados = [];
+        $ordenBase = $countActual + 1;
+
+        foreach ($fotos as $i => $file) {
+            $errors = $storage->validatePhoto($file);
+            if (!empty($errors)) {
+                return response()->json([
+                    'status' => Response::HTTP_UNPROCESSABLE_ENTITY,
+                    'message' => $errors[0] ?? 'Archivo no válido',
+                ], Response::HTTP_UNPROCESSABLE_ENTITY);
+            }
+            $meta = $storage->savePhoto($file, $visitaId, $preguntaId);
+            $media = RcRespuestaMedia::create([
+                'respuesta_id' => $respuesta->id,
+                'tipo_media' => 'foto',
+                'ruta_archivo' => $meta['ruta_archivo'],
+                'nombre_archivo' => $meta['nombre_archivo'],
+                'mime_type' => $meta['mime_type'],
+                'tamano_bytes' => $meta['tamano_bytes'],
+                'orden' => $ordenBase + $i,
+                'usuario_subida' => $usuarioSubida,
+            ]);
+            $creados[] = [
+                'id' => $media->id,
+                'tipo_media' => $media->tipo_media,
+                'nombre_archivo' => $media->nombre_archivo,
+                'ruta_archivo' => $media->ruta_archivo,
+                'orden' => $media->orden,
+            ];
+        }
+
+        return response()->json([
+            'status' => Response::HTTP_OK,
+            'message' => count($creados) === 1 ? 'Foto subida correctamente' : 'Fotos subidas correctamente',
+            'data' => ['media' => $creados],
+        ], Response::HTTP_OK);
+    }
+
+    /**
+     * DELETE media/{id}
+     * Elimina una foto/audio de una respuesta. Comprueba que la visita pertenezca a la zonal del usuario.
+     */
+    public function deleteMedia(int $id)
+    {
+        $zonal = $this->getZonalUsuario();
+        if (!$zonal) {
+            return response()->json([
+                'status' => Response::HTTP_UNAUTHORIZED,
+                'message' => 'No se pudo obtener la zonal del usuario',
+            ], Response::HTTP_UNAUTHORIZED);
+        }
+
+        $media = RcRespuestaMedia::with('respuesta.visita')->find($id);
+        if (!$media || !$media->respuesta || !$media->respuesta->visita) {
+            return response()->json([
+                'status' => Response::HTTP_NOT_FOUND,
+                'message' => 'Recurso no encontrado',
+            ], Response::HTTP_NOT_FOUND);
+        }
+
+        $visita = $media->respuesta->visita;
+        if (!$this->visitaPerteneceAZonal($visita, $zonal)) {
+            return response()->json([
+                'status' => Response::HTTP_FORBIDDEN,
+                'message' => 'No puede eliminar archivos de esta visita',
+            ], Response::HTTP_FORBIDDEN);
+        }
+
+        app(RecopilacionMediaStorage::class)->deleteByPath($media->ruta_archivo);
+        $media->delete();
+
+        return response()->json([
+            'status' => Response::HTTP_OK,
+            'message' => 'Archivo eliminado',
         ], Response::HTTP_OK);
     }
 }
