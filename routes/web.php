@@ -72,6 +72,8 @@ Route::middleware(['jwt.apiRest.jsMarket', 'jwt.user.recopilacion'])->prefix('ap
     Route::post('/visita/{visitaId}/seccion/{seccionId}/asegurar-respuestas', [RecopilacionController::class, 'asegurarRespuestas'])->name('recopilacion.asegurarRespuestas.api');
     Route::get('/visita/{visitaId}/respuestas', [RecopilacionController::class, 'getRespuestas'])->name('recopilacion.getRespuestas.api');
     Route::put('/visita/{visitaId}/respuestas', [RecopilacionController::class, 'putRespuestas'])->name('recopilacion.putRespuestas.api');
+    Route::post('/visita/{visitaId}/respuestas/{preguntaId}/media', [RecopilacionController::class, 'postMedia'])->name('recopilacion.postMedia.api');
+    Route::delete('/media/{id}', [RecopilacionController::class, 'deleteMedia'])->name('recopilacion.deleteMedia.api');
 });
 
 Route::middleware(['jwt.apiRest.jsMarket', 'jwt.user.admin'])->group(function () {
