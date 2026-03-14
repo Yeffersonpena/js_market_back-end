@@ -143,7 +143,7 @@ class RecopilacionController extends Controller
             ->where('activo', 1)
             ->orderByDesc('version')
             ->with(['secciones' => function ($q) {
-                $q->where('activo', 1)->orderBy('orden');
+                $q->where('activo', 1);
             }])
             ->first();
 
