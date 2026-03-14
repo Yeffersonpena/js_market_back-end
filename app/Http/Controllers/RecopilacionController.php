@@ -178,6 +178,8 @@ class RecopilacionController extends Controller
                     'max_fotos' => (int) $p->max_fotos,
                     'orden' => $p->orden,
                     'max_longitud' => $p->max_longitud,
+                    'valor_minimo' => $p->valor_minimo !== null ? (float) $p->valor_minimo : null,
+                    'valor_maximo' => $p->valor_maximo !== null ? (float) $p->valor_maximo : null,
                     'opciones' => $p->opciones->where('activo', 1)->map(fn ($o) => [
                         'id' => $o->id,
                         'codigo' => $o->codigo,
