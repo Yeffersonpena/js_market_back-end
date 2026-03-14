@@ -53,4 +53,14 @@ class RcVisitaFormulario extends Model
     {
         return $this->belongsTo(RcFormulario::class, 'formulario_id', 'id');
     }
+
+    public function respuestas()
+    {
+        return $this->hasMany(RcRespuesta::class, 'visita_id', 'id');
+    }
+
+    public function seccionEstados()
+    {
+        return $this->hasMany(RcVisitaSeccionEstado::class, 'visita_id', 'id');
+    }
 }

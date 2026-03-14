@@ -35,4 +35,9 @@ class RcFormulario extends Model
     {
         return $this->hasMany(RcVisitaFormulario::class, 'formulario_id', 'id');
     }
+
+    public function secciones()
+    {
+        return $this->hasMany(RcSeccion::class, 'formulario_id', 'id')->orderBy('orden');
+    }
 }
