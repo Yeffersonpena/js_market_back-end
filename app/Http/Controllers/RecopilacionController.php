@@ -317,29 +317,38 @@ class RecopilacionController extends Controller
             ], Response::HTTP_UNPROCESSABLE_ENTITY);
         }
 
-        $preguntas = RcPregunta::where('seccion_id', $seccionId)->where('activo', 1)->orderBy('orden')->pluck('id');
-        $existentes = RcRespuesta::where('visita_id', $visitaId)->whereIn('pregunta_id', $preguntas)->pluck('pregunta_id');
-        $faltantes = $preguntas->diff($existentes);
+        $preguntas = RcPregunta::where('seccion_id', $seccionId)
+            ->where('activo', 1)
+            ->orderBy('orden')
+            ->pluck('id');
 
-        foreach ($faltantes as $preguntaId) {
-            RcRespuesta::create([
-                'visita_id' => $visitaId,
-                'pregunta_id' => $preguntaId,
-                'valor_texto' => null,
-                'valor_numero' => null,
-                'valor_decimal' => null,
-                'valor_booleano' => null,
-                'valor_fecha' => null,
-                'valor_hora' => null,
-                'observacion' => null,
-                'no_aplica' => false,
-            ]);
+        $insertadas = 0;
+        foreach ($preguntas as $preguntaId) {
+            $created = RcRespuesta::firstOrCreate(
+                [
+                    'visita_id' => $visitaId,
+                    'pregunta_id' => $preguntaId,
+                ],
+                [
+                    'valor_texto' => null,
+                    'valor_numero' => null,
+                    'valor_decimal' => null,
+                    'valor_booleano' => null,
+                    'valor_fecha' => null,
+                    'valor_hora' => null,
+                    'observacion' => null,
+                    'no_aplica' => false,
+                ]
+            );
+            if ($created->wasRecentlyCreated) {
+                $insertadas++;
+            }
         }
 
         return response()->json([
             'status' => Response::HTTP_OK,
             'message' => 'Respuestas aseguradas para la sección',
-            'data' => ['insertadas' => $faltantes->count()],
+            'data' => ['insertadas' => $insertadas],
         ], Response::HTTP_OK);
     }
 
