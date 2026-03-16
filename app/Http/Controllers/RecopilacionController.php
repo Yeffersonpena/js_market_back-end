@@ -11,6 +11,7 @@ use App\Models\RcRespuestaOpcion;
 use App\Models\RcSeccion;
 use App\Models\RcVisitaFormulario;
 use App\Services\RecopilacionMediaStorage;
+use Illuminate\Database\QueryException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Symfony\Component\HttpFoundation\Response;
@@ -324,24 +325,34 @@ class RecopilacionController extends Controller
 
         $insertadas = 0;
         foreach ($preguntas as $preguntaId) {
-            $created = RcRespuesta::firstOrCreate(
-                [
-                    'visita_id' => $visitaId,
-                    'pregunta_id' => $preguntaId,
-                ],
-                [
-                    'valor_texto' => null,
-                    'valor_numero' => null,
-                    'valor_decimal' => null,
-                    'valor_booleano' => null,
-                    'valor_fecha' => null,
-                    'valor_hora' => null,
-                    'observacion' => null,
-                    'no_aplica' => false,
-                ]
-            );
-            if ($created->wasRecentlyCreated) {
-                $insertadas++;
+            try {
+                $created = RcRespuesta::firstOrCreate(
+                    [
+                        'visita_id' => $visitaId,
+                        'pregunta_id' => $preguntaId,
+                    ],
+                    [
+                        'valor_texto' => null,
+                        'valor_numero' => null,
+                        'valor_decimal' => null,
+                        'valor_booleano' => null,
+                        'valor_fecha' => null,
+                        'valor_hora' => null,
+                        'observacion' => null,
+                        'no_aplica' => false,
+                    ]
+                );
+                if ($created->wasRecentlyCreated) {
+                    $insertadas++;
+                }
+            } catch (QueryException $e) {
+                // Si otra transacción insertó la misma combinación (visita_id, pregunta_id)
+                // entre el SELECT y el INSERT de firstOrCreate, ignoramos el error
+                // para mantener la idempotencia del endpoint.
+                if (str_contains($e->getMessage(), 'UQ_RC_RESPUESTA_VISITA_PREGUNTA')) {
+                    continue;
+                }
+                throw $e;
             }
         }
 
