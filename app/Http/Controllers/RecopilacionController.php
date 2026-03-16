@@ -515,7 +515,6 @@ class RecopilacionController extends Controller
                 }
             }
 
-            $visita->fecha_ultima_edicion = now();
             $visita->usuario_actualizacion = $usuarioGuardado;
             $visita->save();
 
