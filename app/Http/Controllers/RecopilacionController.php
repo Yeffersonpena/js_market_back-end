@@ -500,7 +500,6 @@ class RecopilacionController extends Controller
                 $respuesta->valor_hora = $item['valor_hora'] ?? $respuesta->valor_hora;
                 $respuesta->observacion = $item['observacion'] ?? $respuesta->observacion;
                 $respuesta->no_aplica = isset($item['no_aplica']) ? (bool) $item['no_aplica'] : $respuesta->no_aplica;
-                $respuesta->fecha_guardado = now();
                 $respuesta->usuario_guardado = $usuarioGuardado;
                 $respuesta->save();
 
