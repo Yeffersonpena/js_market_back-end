@@ -38,11 +38,12 @@ BEGIN
         AND p.rn = 1
     WHERE CAST(v.FEC_EMISION AS DATE) >= @FechaInicio
         AND CAST(v.FEC_EMISION AS DATE) <= @FechaFin
+        AND UPPER(LTRIM(RTRIM(v.ALMACEN))) <> 'AMAZONIA'
         AND LTRIM(RTRIM(v.PROD_LINEA)) <> 'CHIPS'
-        AND v.cod_cliente <> '00026087'
-        AND v.REPARTO NOT LIKE 'CANAL MASIVO%'
-        AND v.cdoc_ide NOT IN ('20612606405', '20615283607')
-        AND LTRIM(RTRIM(v.PROD_LINEA)) = COALESCE(NULLIF(LTRIM(RTRIM(@ProdLinea)), ''), 'EQUIPOS')
+        -- AND v.cod_cliente <> '00026087'
+        -- AND v.REPARTO NOT LIKE 'CANAL MASIVO%'
+        -- AND v.cdoc_ide NOT IN ('20612606405', '20615283607')
+     AND LTRIM(RTRIM(v.PROD_LINEA)) = COALESCE(NULLIF(LTRIM(RTRIM(@ProdLinea)), ''), 'EQUIPOS')
 
     UNION ALL
 
@@ -56,7 +57,14 @@ BEGIN
         CAST(y.Coste_Total AS DECIMAL(18,4)) AS NCOSTO,
         CAST(y.Coste_Total AS DECIMAL(18,4)) AS COSTO,
         y.Imei_Icc_Sn AS IMEI,
-        UPPER(LTRIM(RTRIM(COALESCE(t.ALMACEN, y.x_zonal)))) AS ALMACEN,
+        CASE
+            WHEN UPPER(LTRIM(RTRIM(COALESCE(t.ALMACEN, REPLACE(y.Punto_Venta, 'YALI-', ''))))) = 'UCAYALI' THEN 'PUCALLPA'
+            WHEN UPPER(LTRIM(RTRIM(COALESCE(t.ALMACEN, REPLACE(y.Punto_Venta, 'YALI-', ''))))) COLLATE Latin1_General_CI_AI = 'HUANUCO' THEN 'HUANUCO'
+            WHEN UPPER(LTRIM(RTRIM(COALESCE(t.ALMACEN, REPLACE(y.Punto_Venta, 'YALI-', ''))))) = 'PICHANAQUI' THEN 'LA MERCED'
+            WHEN UPPER(LTRIM(RTRIM(COALESCE(t.ALMACEN, REPLACE(y.Punto_Venta, 'YALI-', ''))))) = 'PICHARI' THEN 'AYACUCHO'
+            WHEN UPPER(LTRIM(RTRIM(COALESCE(t.ALMACEN, REPLACE(y.Punto_Venta, 'YALI-', ''))))) = 'QUILLABAMBA' THEN 'CUSCO'
+            ELSE UPPER(LTRIM(RTRIM(COALESCE(t.ALMACEN, REPLACE(y.Punto_Venta, 'YALI-', '')))))
+        END AS ALMACEN,
         'EQUIPOS' AS PROD_CATEGORIA,
         'EQUIPOS' AS PROD_LINEA,
         'AMAZONÍA' AS EMPRESA,
