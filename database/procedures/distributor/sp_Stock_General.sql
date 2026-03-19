@@ -25,11 +25,12 @@ BEGIN
         DATEDIFF(day, w.FCOMPRA, GETDATE()) AS DIAS,
         CASE
             WHEN w.FCOMPRA IS NULL THEN '-'
-            WHEN DATEDIFF(day, w.FCOMPRA, GETDATE()) BETWEEN 0 AND 15 THEN '0 - 15'
-            WHEN DATEDIFF(day, w.FCOMPRA, GETDATE()) > 15 AND DATEDIFF(day, w.FCOMPRA, GETDATE()) <= 30 THEN '15 - 30'
-            WHEN DATEDIFF(day, w.FCOMPRA, GETDATE()) > 30 AND DATEDIFF(day, w.FCOMPRA, GETDATE()) <= 70 THEN '30 - 70'
-            WHEN DATEDIFF(day, w.FCOMPRA, GETDATE()) > 70 AND DATEDIFF(day, w.FCOMPRA, GETDATE()) <= 90 THEN '70 - 90'
-            ELSE '> 90'
+            WHEN DATEDIFF(day, w.FCOMPRA, GETDATE()) < 15 THEN '<15'
+            WHEN DATEDIFF(day, w.FCOMPRA, GETDATE()) >= 15 AND DATEDIFF(day, w.FCOMPRA, GETDATE()) <= 30 THEN '15-30'
+            WHEN DATEDIFF(day, w.FCOMPRA, GETDATE()) > 30 AND DATEDIFF(day, w.FCOMPRA, GETDATE()) <= 45 THEN '30-45'
+            WHEN DATEDIFF(day, w.FCOMPRA, GETDATE()) > 45 AND DATEDIFF(day, w.FCOMPRA, GETDATE()) <= 60 THEN '45-60'
+            WHEN DATEDIFF(day, w.FCOMPRA, GETDATE()) > 60 AND DATEDIFF(day, w.FCOMPRA, GETDATE()) <= 90 THEN '60-90'
+            ELSE '>90'
         END AS EDAD,
         w.NCOSTO AS NCOSTO,
         CAST(w.NCOSTO * 1.18 AS DECIMAL(18,4)) AS COSTO,
@@ -72,11 +73,12 @@ BEGIN
         DATEDIFF(day, y.FechaFactura, GETDATE()) AS DIAS,
         CASE
             WHEN y.FechaFactura IS NULL THEN '-'
-            WHEN DATEDIFF(day, y.FechaFactura, GETDATE()) BETWEEN 0 AND 15 THEN '0 - 15'
-            WHEN DATEDIFF(day, y.FechaFactura, GETDATE()) > 15 AND DATEDIFF(day, y.FechaFactura, GETDATE()) <= 30 THEN '15 - 30'
-            WHEN DATEDIFF(day, y.FechaFactura, GETDATE()) > 30 AND DATEDIFF(day, y.FechaFactura, GETDATE()) <= 70 THEN '30 - 70'
-            WHEN DATEDIFF(day, y.FechaFactura, GETDATE()) > 70 AND DATEDIFF(day, y.FechaFactura, GETDATE()) <= 90 THEN '70 - 90'
-            ELSE '> 90'
+            WHEN DATEDIFF(day, y.FechaFactura, GETDATE()) < 15 THEN '<15'
+            WHEN DATEDIFF(day, y.FechaFactura, GETDATE()) >= 15 AND DATEDIFF(day, y.FechaFactura, GETDATE()) <= 30 THEN '15-30'
+            WHEN DATEDIFF(day, y.FechaFactura, GETDATE()) > 30 AND DATEDIFF(day, y.FechaFactura, GETDATE()) <= 45 THEN '30-45'
+            WHEN DATEDIFF(day, y.FechaFactura, GETDATE()) > 45 AND DATEDIFF(day, y.FechaFactura, GETDATE()) <= 60 THEN '45-60'
+            WHEN DATEDIFF(day, y.FechaFactura, GETDATE()) > 60 AND DATEDIFF(day, y.FechaFactura, GETDATE()) <= 90 THEN '60-90'
+            ELSE '>90'
         END AS EDAD,
         COALESCE(y.CosteTotal, y.Precio) AS NCOSTO,
         COALESCE(y.CosteTotal, y.Precio) AS COSTO,
