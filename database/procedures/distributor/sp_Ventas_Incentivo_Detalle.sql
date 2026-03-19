@@ -3,7 +3,11 @@
 CREATE PROCEDURE sp_Ventas_Incentivo_Detalle
     @NombreProducto NVARCHAR(255),
     @FechaInicio DATE,
-    @FechaFin DATE
+    @FechaFin DATE,
+    -- Filtro opcional por zonal (compara contra el ALMACEN final del SP).
+    @Zonal NVARCHAR(100) = NULL,
+    -- Filtro opcional por línea de producto (EQUIPOS/ACCESORIOS/UTILES...).
+    @ProdLinea NVARCHAR(50) = NULL
 AS
 BEGIN
     SET NOCOUNT ON;
@@ -44,6 +48,16 @@ BEGIN
         WHERE CAST(v.[FEC_EMISION] AS DATE) >= @FechaInicio
             AND CAST(v.[FEC_EMISION] AS DATE) <= @FechaFin
             AND v.[PROD_LINEA] != 'CHIPS'
+            AND (
+                @ProdLinea IS NULL
+                OR LTRIM(RTRIM(@ProdLinea)) = ''
+                OR UPPER(LTRIM(RTRIM(v.[PROD_LINEA]))) = UPPER(LTRIM(RTRIM(@ProdLinea)))
+            )
+            AND (
+                @Zonal IS NULL
+                OR LTRIM(RTRIM(@Zonal)) = ''
+                OR UPPER(z.[ZONA]) COLLATE Latin1_General_CI_AI = UPPER(@Zonal) COLLATE Latin1_General_CI_AI
+            )
             AND v.cod_cliente <> '00026087'
             AND v.REPARTO NOT LIKE 'CANAL MASIVO%'
             AND v.cdoc_ide NOT IN ('20612606405', '20615283607')
@@ -63,6 +77,16 @@ BEGIN
         FROM [DISTRIBUTOR_DATAMART].[dbo].[YALI_VENTAS] y
         WHERE CAST(y.[Fecha] AS DATE) >= @FechaInicio
             AND CAST(y.[Fecha] AS DATE) <= @FechaFin
+            AND (
+                @ProdLinea IS NULL
+                OR LTRIM(RTRIM(@ProdLinea)) = ''
+                OR UPPER(LTRIM(RTRIM(@ProdLinea))) COLLATE Latin1_General_CI_AI = 'EQUIPOS'
+            )
+            AND (
+                @Zonal IS NULL
+                OR LTRIM(RTRIM(@Zonal)) = ''
+                OR UPPER(LTRIM(RTRIM(y.[x_zonal]))) COLLATE Latin1_General_CI_AI = UPPER(@Zonal) COLLATE Latin1_General_CI_AI
+            )
             AND y.[Descripcion] LIKE '%' + LTRIM(RTRIM(@NombreProducto)) + '%'
     ) u
     ORDER BY u.Origen, u.FEC_EMISION, u.ALMACEN, u.NOM_VENDEDOR, u.PROD_LINEA, u.NombreProducto;
