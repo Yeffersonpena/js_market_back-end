@@ -79,5 +79,6 @@ CREATE TABLE DISTRIBUTOR_DATAMART.dbo.YALI_VENTAS (
 	operadorDonante nvarchar(255) COLLATE Modern_Spanish_CI_AS NULL,
 	x_vendedor nvarchar(255) COLLATE Modern_Spanish_CI_AS NULL,
 	x_zonal nvarchar(255) COLLATE Modern_Spanish_CI_AS NULL,
-	X_SALDO decimal(18,4) NULL
+	X_SALDO decimal(18,4) NULL,
+	x_forma_pago varchar(50) COLLATE Modern_Spanish_CI_AS NULL
 );
