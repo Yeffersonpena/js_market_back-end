@@ -1,13 +1,15 @@
 -- =============================================
 -- Stored Procedure: sp_CuotasIncentivosLogistica_Resumen
--- Descripción: Obtiene resumen de ventas por zonal con cuotas e incentivos
---              Muestra ventas por día del mes, totales, cuotas y bonos alcanzados
+-- Descripción: Resumen por zonal con ventas (WOLAP + YALI), cuotas y bono
+-- Cuotas: DISTRIBUTOR_DATAMART.dbo.incentivo_cuotas_detalle (por @incentivo_id)
 -- Parámetros:
---   @fecha_inicio: Fecha de inicio del período
---   @fecha_fin: Fecha de fin del período
---   @categoria: 'EQUIPOS' o 'ACCESORIOS'
+--   @incentivo_id: Id en incentivo_cabecera (cuotas vigentes de ese incentivo)
+--   @fecha_inicio: Fecha de inicio del período de ventas a sumar
+--   @fecha_fin: Fecha de fin del período de ventas a sumar
+--   @categoria: 'EQUIPOS', 'ACCESORIOS' o 'TODAS'
 -- =============================================
-CREATE PROCEDURE [dbo].[sp_CuotasIncentivosLogistica_Resumen]
+CREATE OR ALTER PROCEDURE sp_CuotasIncentivosLogistica_Resumen
+    @incentivo_id INT,
     @fecha_inicio DATE,
     @fecha_fin DATE,
     @categoria VARCHAR(20) = 'EQUIPOS'
@@ -15,34 +17,51 @@ AS
 BEGIN
     SET NOCOUNT ON;
 
-    -- Validar parámetros
+    IF @incentivo_id IS NULL OR @incentivo_id <= 0
+    BEGIN
+        RAISERROR('@incentivo_id es obligatorio y debe ser mayor a 0', 16, 1);
+        RETURN;
+    END;
+
+    IF NOT EXISTS (
+        SELECT 1
+        FROM [DISTRIBUTOR_DATAMART].[dbo].[incentivo_cabecera]
+        WHERE [id] = @incentivo_id
+          AND [activo] = 1
+    )
+    BEGIN
+        RAISERROR('No existe incentivo activo con el id indicado', 16, 1);
+        RETURN;
+    END;
+
     IF @fecha_inicio IS NULL OR @fecha_fin IS NULL
     BEGIN
         RAISERROR('Las fechas de inicio y fin son obligatorias', 16, 1);
         RETURN;
-    END
+    END;
 
     IF @fecha_inicio > @fecha_fin
     BEGIN
         RAISERROR('La fecha de inicio no puede ser mayor a la fecha de fin', 16, 1);
         RETURN;
-    END
+    END;
 
-    IF @categoria NOT IN ('EQUIPOS', 'ACCESORIOS')
+    SET @categoria = UPPER(LTRIM(RTRIM(@categoria)));
+
+    IF @categoria NOT IN ('EQUIPOS', 'ACCESORIOS', 'TODAS')
     BEGIN
-        RAISERROR('La categoría debe ser EQUIPOS o ACCESORIOS', 16, 1);
+        RAISERROR('La categoría debe ser EQUIPOS, ACCESORIOS o TODAS', 16, 1);
         RETURN;
-    END
+    END;
 
-    -- Variables para SQL dinámico
     DECLARE @sql NVARCHAR(MAX);
     DECLARE @columnasPivot NVARCHAR(MAX) = '';
-    DECLARE @columnasSelect NVARCHAR(MAX) = '';
-    DECLARE @columnasSuma NVARCHAR(MAX) = '';
+    DECLARE @columnasSelectPivot NVARCHAR(MAX) = '';
+    DECLARE @columnasSelectFinal NVARCHAR(MAX) = '';
+    DECLARE @columnasSumaPivot NVARCHAR(MAX) = '';
     DECLARE @columnasSumaTotal NVARCHAR(MAX) = '';
     DECLARE @fechaActual DATE = @fecha_inicio;
 
-    -- Construir lista de días del período para PIVOT
     WHILE @fechaActual <= @fecha_fin
     BEGIN
         DECLARE @dia INT = DAY(@fechaActual);
@@ -52,110 +71,143 @@ BEGIN
             SET @columnasPivot = @columnasPivot + ', ';
         SET @columnasPivot = @columnasPivot + '[' + @diaStr + ']';
 
-        IF @columnasSelect <> ''
-            SET @columnasSelect = @columnasSelect + ', ';
-        SET @columnasSelect = @columnasSelect + 'ISNULL([' + @diaStr + '], 0) AS [DIA_' + @diaStr + ']';
+        IF @columnasSelectPivot <> ''
+            SET @columnasSelectPivot = @columnasSelectPivot + ', ';
+        SET @columnasSelectPivot = @columnasSelectPivot + 'ISNULL(pv.[' + @diaStr + '], 0) AS [DIA_' + @diaStr + ']';
 
-        IF @columnasSuma <> ''
-            SET @columnasSuma = @columnasSuma + ' + ';
-        SET @columnasSuma = @columnasSuma + 'ISNULL([' + @diaStr + '], 0)';
+        IF @columnasSelectFinal <> ''
+            SET @columnasSelectFinal = @columnasSelectFinal + ', ';
+        SET @columnasSelectFinal = @columnasSelectFinal + '[DIA_' + @diaStr + ']';
+
+        IF @columnasSumaPivot <> ''
+            SET @columnasSumaPivot = @columnasSumaPivot + ' + ';
+        SET @columnasSumaPivot = @columnasSumaPivot + 'ISNULL(pv.[' + @diaStr + '], 0)';
 
         IF @columnasSumaTotal <> ''
             SET @columnasSumaTotal = @columnasSumaTotal + ', ';
         SET @columnasSumaTotal = @columnasSumaTotal + 'SUM([DIA_' + @diaStr + ']) AS [DIA_' + @diaStr + ']';
 
         SET @fechaActual = DATEADD(DAY, 1, @fechaActual);
-    END
+    END;
 
-    -- Construir SQL dinámico
     SET @sql = N'
-    WITH VentasPorDia AS (
+    ;WITH VentasBase AS (
         SELECT
-            CAST([FEC_EMISION] AS DATE) AS [FECHA],
-            DAY(CAST([FEC_EMISION] AS DATE)) AS [DIA_MES],
-            CASE
-                WHEN LTRIM(RTRIM([ALMACEN])) = ''LOG - AREQUIPA'' THEN ''AREQUIPA''
-                WHEN LTRIM(RTRIM([ALMACEN])) = ''La Merced'' THEN ''HUANCAYO''
-                WHEN LTRIM(RTRIM([ALMACEN])) LIKE ''%LIMA SUR%'' THEN ''LIMASUR''
-                ELSE UPPER(LTRIM(RTRIM([ALMACEN])))
-            END AS [ZONAL],
-            SUM([PRECIO_VTA]) AS [PRECIO_VTA]
-        FROM [DISTRIBUTOR_DATAMART].[dbo].[DD_WOLAP_VENTA_ANALISIS_DETALLADO]
-        WHERE CAST([FEC_EMISION] AS DATE) >= @fecha_inicio
-          AND CAST([FEC_EMISION] AS DATE) <= @fecha_fin
-          AND [PROD_LINEA] = @categoria
-          AND LTRIM(RTRIM([ALMACEN])) <> ''E-COMMERCE''
-          AND LTRIM(RTRIM([ALMACEN])) IS NOT NULL
-          AND LTRIM(RTRIM([ALMACEN])) <> ''''
+            CAST(v.[FEC_EMISION] AS DATE) AS FECHA,
+            DAY(CAST(v.[FEC_EMISION] AS DATE)) AS DIA_MES,
+            UPPER(z.ZONA) AS ZONAL,
+            UPPER(LTRIM(RTRIM(v.[PROD_LINEA]))) AS PROD_LINEA,
+            CAST(SUM(v.[PRECIO_VTA]) AS DECIMAL(18,4)) AS PRECIO_VTA
+        FROM [DISTRIBUTOR_DATAMART].[dbo].[DD_WOLAP_VENTA_ANALISIS_DETALLADO] v
+        CROSS APPLY (
+            VALUES (
+                CASE
+                    WHEN v.COD_VENDEDOR IN (148, 225, 279, 280) THEN ''HUANUCO''
+                    WHEN v.COD_VENDEDOR IN (185, 277, 278) THEN ''PUCALLPA''
+                    WHEN v.COD_VENDEDOR IN (221, 276) THEN ''HUANCAYO''
+                    WHEN v.COD_VENDEDOR IN (198) THEN ''AYACUCHO''
+                    WHEN v.COD_VENDEDOR IN (281) THEN ''CUSCO''
+                    WHEN LTRIM(RTRIM(v.[ALMACEN])) = ''LOG - AREQUIPA'' THEN ''AREQUIPA''
+                    WHEN LTRIM(RTRIM(v.[ALMACEN])) = ''La Merced'' THEN ''HUANCAYO''
+                    WHEN UPPER(LTRIM(RTRIM(v.[ALMACEN]))) LIKE ''%LIMA SUR%'' THEN ''LIMASUR''
+                    ELSE UPPER(LTRIM(RTRIM(v.[ALMACEN])))
+                END
+            )
+        ) z(ZONA)
+        WHERE CAST(v.[FEC_EMISION] AS DATE) >= @fecha_inicio
+          AND CAST(v.[FEC_EMISION] AS DATE) <= @fecha_fin
+          AND v.[PROD_LINEA] != ''CHIPS''
+          AND v.cod_cliente <> ''00026087''
+          AND v.REPARTO NOT LIKE ''CANAL MASIVO%''
+          AND v.cdoc_ide NOT IN (''20612606405'', ''20615283607'')
         GROUP BY
-            CAST([FEC_EMISION] AS DATE),
-            DAY(CAST([FEC_EMISION] AS DATE)),
-            CASE
-                WHEN LTRIM(RTRIM([ALMACEN])) = ''LOG - AREQUIPA'' THEN ''AREQUIPA''
-                WHEN LTRIM(RTRIM([ALMACEN])) = ''La Merced'' THEN ''HUANCAYO''
-                WHEN LTRIM(RTRIM([ALMACEN])) LIKE ''%LIMA SUR%'' THEN ''LIMASUR''
-                ELSE UPPER(LTRIM(RTRIM([ALMACEN])))
-            END
-    ),
-    VentasAgrupadas AS (
+            CAST(v.[FEC_EMISION] AS DATE),
+            DAY(CAST(v.[FEC_EMISION] AS DATE)),
+            UPPER(z.ZONA),
+            UPPER(LTRIM(RTRIM(v.[PROD_LINEA])))
+
+        UNION ALL
+
         SELECT
-            [ZONAL],
-            [DIA_MES],
-            SUM([PRECIO_VTA]) AS [PRECIO_VTA]
-        FROM VentasPorDia
-        GROUP BY [ZONAL], [DIA_MES]
+            CAST(y.[Fecha] AS DATE) AS FECHA,
+            DAY(CAST(y.[Fecha] AS DATE)) AS DIA_MES,
+            UPPER(LTRIM(RTRIM(y.[x_zonal]))) AS ZONAL,
+            ''EQUIPOS'' AS PROD_LINEA,
+            CAST(SUM(y.[X_SALDO]) AS DECIMAL(18,4)) AS PRECIO_VTA
+        FROM [DISTRIBUTOR_DATAMART].[dbo].[YALI_VENTAS] y
+        WHERE CAST(y.[Fecha] AS DATE) >= @fecha_inicio
+          AND CAST(y.[Fecha] AS DATE) <= @fecha_fin
+        GROUP BY
+            CAST(y.[Fecha] AS DATE),
+            DAY(CAST(y.[Fecha] AS DATE)),
+            UPPER(LTRIM(RTRIM(y.[x_zonal])))
+    ),
+    VentasFiltradas AS (
+        SELECT
+            ZONAL,
+            DIA_MES,
+            SUM(PRECIO_VTA) AS PRECIO_VTA
+        FROM VentasBase
+        WHERE
+            (@categoria = ''TODAS'')
+            OR (@categoria = ''EQUIPOS'' AND PROD_LINEA = ''EQUIPOS'')
+            OR (@categoria = ''ACCESORIOS'' AND PROD_LINEA = ''ACCESORIOS'')
+        GROUP BY ZONAL, DIA_MES
     ),
     VentasPivot AS (
         SELECT
-            [ZONAL],
-            ' + @columnasSelect + ',
-            (' + @columnasSuma + ') AS [TOTAL_GENERAL]
+            pv.[ZONAL],
+            ' + @columnasSelectPivot + ',
+            (' + @columnasSumaPivot + ') AS [TOTAL_GENERAL]
         FROM (
             SELECT [ZONAL], [DIA_MES], [PRECIO_VTA]
-            FROM VentasAgrupadas
-        ) AS SourceTable
+            FROM VentasFiltradas
+        ) AS src
         PIVOT (
             SUM([PRECIO_VTA])
             FOR [DIA_MES] IN (' + @columnasPivot + ')
-        ) AS PivotTable
+        ) AS pv
     ),
-    CuotasIncentivos AS (
+    Cuotas AS (
         SELECT
-            [zonal],
-            [categoria],
-            [cuota1],
-            [bono1],
-            [cuota2],
-            [bono2]
-        FROM [dbo].[cuotas_incentivos_logistica]
-        WHERE [categoria] = @categoria
-          AND [fecha_inicio] <= @fecha_fin
-          AND [fecha_fin] >= @fecha_inicio
-          AND [activo] = 1
+            UPPER(LTRIM(RTRIM(d.[zonal]))) AS zonal,
+            UPPER(LTRIM(RTRIM(d.[categoria]))) AS categoria,
+            d.[cuota1],
+            d.[bono1],
+            d.[cuota2],
+            d.[bono2]
+        FROM [DISTRIBUTOR_DATAMART].[dbo].[incentivo_cuotas_detalle] d
+        INNER JOIN [DISTRIBUTOR_DATAMART].[dbo].[incentivo_cabecera] cab
+            ON cab.[id] = d.[incentivo_id]
+        WHERE d.[incentivo_id] = @incentivo_id
+          AND UPPER(LTRIM(RTRIM(d.[categoria]))) = @categoria
+          AND d.[activo] = 1
+          AND cab.[activo] = 1
     ),
     VentasConCuotas AS (
         SELECT
             vp.[ZONAL],
-            ' + @columnasSelect + ',
+            ' + @columnasSelectFinal + ',
             vp.[TOTAL_GENERAL],
-            ci.[cuota1],
-            ci.[cuota2],
+            c.[cuota1],
+            c.[cuota2],
             CASE
-                WHEN vp.[TOTAL_GENERAL] >= ci.[cuota2] THEN ''CUOTA 2''
-                WHEN vp.[TOTAL_GENERAL] >= ci.[cuota1] THEN ''CUOTA 1''
+                WHEN vp.[TOTAL_GENERAL] >= c.[cuota2] THEN ''CUOTA 2''
+                WHEN vp.[TOTAL_GENERAL] >= c.[cuota1] THEN ''CUOTA 1''
                 ELSE ''-''
             END AS [CUOTA_ALCANZADA],
             CASE
-                WHEN vp.[TOTAL_GENERAL] >= ci.[cuota2] THEN ci.[bono2]
-                WHEN vp.[TOTAL_GENERAL] >= ci.[cuota1] THEN ci.[bono1]
+                WHEN vp.[TOTAL_GENERAL] >= c.[cuota2] THEN c.[bono2]
+                WHEN vp.[TOTAL_GENERAL] >= c.[cuota1] THEN c.[bono1]
                 ELSE 0
             END AS [BONO]
         FROM VentasPivot vp
-        LEFT JOIN CuotasIncentivos ci ON vp.[ZONAL] = ci.[zonal]
+        LEFT JOIN Cuotas c
+            ON vp.[ZONAL] COLLATE Latin1_General_CI_AI = c.[zonal] COLLATE Latin1_General_CI_AI
     )
     SELECT
         [ZONAL],
-        ' + @columnasSelect + ',
+        ' + @columnasSelectFinal + ',
         [TOTAL_GENERAL],
         [cuota1] AS [CUOTA_1],
         [cuota2] AS [CUOTA_2],
@@ -174,13 +226,14 @@ BEGIN
     FROM VentasConCuotas
     ORDER BY
         CASE WHEN [ZONAL] = ''Total general'' THEN 1 ELSE 0 END,
-        [ZONAL];
-    ';
+        [ZONAL];';
 
-    -- Ejecutar SQL dinámico
-    EXEC sp_executesql @sql,
-        N'@fecha_inicio DATE, @fecha_fin DATE, @categoria VARCHAR(20)',
-        @fecha_inicio, @fecha_fin, @categoria;
-
+    EXEC sp_executesql
+        @sql,
+        N'@incentivo_id INT, @fecha_inicio DATE, @fecha_fin DATE, @categoria VARCHAR(20)',
+        @incentivo_id,
+        @fecha_inicio,
+        @fecha_fin,
+        @categoria;
 END;
 
