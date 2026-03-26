@@ -1,6 +1,7 @@
 -- Unifica ventas de WOLAP (DD_WOLAP_VENTA_ANALISIS_DETALLADO) y YALI (YALI_VENTAS).
 -- Agrupación: fecha, zonal, vendedor, línea. Sin detalle por producto. Origen WOLAP/YALI.
 -- Filtros WOLAP idénticos a la query de referencia para que el monto total coincida.
+-- NOM_VENDEDOR: nombre normalizado; si hay fila en vendedor_nombre_diccionario se usa nombre_canonico (un solo nombre).
 CREATE PROCEDURE sp_Ventas_Incentivo
     @FechaInicio DATE,
     @FechaFin DATE
@@ -20,7 +21,7 @@ BEGIN
         SELECT
             CAST(v.[FEC_EMISION] AS DATE) AS FEC_EMISION,
             UPPER(z.[ZONA]) AS ALMACEN,
-            UPPER(LTRIM(RTRIM(v.[NOM_VENDEDOR]))) AS NOM_VENDEDOR,
+            COALESCE(dict.[nombre_canonico], vn.[nom_norm]) AS NOM_VENDEDOR,
             LTRIM(RTRIM(v.[PROD_LINEA])) AS PROD_LINEA,
             CAST(SUM(v.[PRECIO_VTA]) AS DECIMAL(18,4)) AS precio_vta,
             'WOLAP' AS Origen
@@ -39,6 +40,14 @@ BEGIN
                 END
             )
         ) z([ZONA])
+        CROSS APPLY (
+            SELECT UPPER(LTRIM(RTRIM(
+                REPLACE(REPLACE(ISNULL(v.[NOM_VENDEDOR], N''), CHAR(160), N' '), CHAR(9), N' ')
+            ))) AS nom_norm
+        ) vn
+        LEFT JOIN [DISTRIBUTOR_DATAMART].[dbo].[vendedor_nombre_diccionario] dict
+            ON dict.[nombre_alias] = vn.[nom_norm]
+            AND dict.[activo] = 1
         WHERE CAST(v.[FEC_EMISION] AS DATE) >= @FechaInicio
             AND CAST(v.[FEC_EMISION] AS DATE) <= @FechaFin
             AND v.[PROD_LINEA] != 'CHIPS'
@@ -48,7 +57,7 @@ BEGIN
         GROUP BY
             CAST(v.[FEC_EMISION] AS DATE),
             UPPER(z.[ZONA]),
-            UPPER(LTRIM(RTRIM(v.[NOM_VENDEDOR]))),
+            COALESCE(dict.[nombre_canonico], vn.[nom_norm]),
             LTRIM(RTRIM(v.[PROD_LINEA]))
 
         UNION ALL
@@ -57,17 +66,25 @@ BEGIN
         SELECT
             CAST(y.[Fecha] AS DATE) AS FEC_EMISION,
             UPPER(LTRIM(RTRIM(y.[x_zonal]))) AS ALMACEN,
-            UPPER(LTRIM(RTRIM(y.[x_vendedor]))) AS NOM_VENDEDOR,
+            COALESCE(dict.[nombre_canonico], vn.[nom_norm]) AS NOM_VENDEDOR,
             'EQUIPOS' AS PROD_LINEA,
             CAST(SUM(y.[X_SALDO]) AS DECIMAL(18,4)) AS precio_vta,
             'YALI' AS Origen
         FROM [DISTRIBUTOR_DATAMART].[dbo].[YALI_VENTAS] y
+        CROSS APPLY (
+            SELECT UPPER(LTRIM(RTRIM(
+                REPLACE(REPLACE(ISNULL(y.[x_vendedor], N''), CHAR(160), N' '), CHAR(9), N' ')
+            ))) AS nom_norm
+        ) vn
+        LEFT JOIN [DISTRIBUTOR_DATAMART].[dbo].[vendedor_nombre_diccionario] dict
+            ON dict.[nombre_alias] = vn.[nom_norm]
+            AND dict.[activo] = 1
         WHERE CAST(y.[Fecha] AS DATE) >= @FechaInicio
             AND CAST(y.[Fecha] AS DATE) <= @FechaFin
         GROUP BY
             CAST(y.[Fecha] AS DATE),
             UPPER(LTRIM(RTRIM(y.[x_zonal]))),
-            UPPER(LTRIM(RTRIM(y.[x_vendedor])))
+            COALESCE(dict.[nombre_canonico], vn.[nom_norm])
     ) u
     ORDER BY u.Origen, u.FEC_EMISION, u.ALMACEN, u.NOM_VENDEDOR, u.PROD_LINEA;
 END
