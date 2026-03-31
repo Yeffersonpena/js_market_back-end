@@ -112,6 +112,10 @@ class RecopilacionController extends Controller
                 'c.nro_documento',
                 'c.nombre_pdv',
                 'c.zonal',
+                'c.vendedor',
+                'c.total_s_venta_equipo',
+                'c.total_s_venta_accesorio',
+                'c.vende_accesorios',
                 'v.id as visita_id',
                 'v.estado as estado_visita',
                 'v.porcentaje_avance',
@@ -492,20 +496,34 @@ class RecopilacionController extends Controller
                     continue;
                 }
 
-                $respuesta->valor_texto = $item['valor_texto'] ?? $respuesta->valor_texto;
+                $respuesta->valor_texto = array_key_exists('valor_texto', $item) ? $item['valor_texto'] : $respuesta->valor_texto;
                 $respuesta->valor_numero = isset($item['valor_numero']) ? (int) $item['valor_numero'] : $respuesta->valor_numero;
                 $respuesta->valor_decimal = array_key_exists('valor_decimal', $item) ? $item['valor_decimal'] : $respuesta->valor_decimal;
                 $respuesta->valor_booleano = array_key_exists('valor_booleano', $item) ? (bool) $item['valor_booleano'] : $respuesta->valor_booleano;
                 $respuesta->valor_fecha = isset($item['valor_fecha']) ? $item['valor_fecha'] : $respuesta->valor_fecha;
-                $respuesta->valor_hora = $item['valor_hora'] ?? $respuesta->valor_hora;
-                $respuesta->observacion = $item['observacion'] ?? $respuesta->observacion;
+                $respuesta->valor_hora = array_key_exists('valor_hora', $item) ? $item['valor_hora'] : $respuesta->valor_hora;
+                if (array_key_exists('observacion', $item)) {
+                    $obs = $item['observacion'];
+                    if (is_string($obs)) {
+                        $obs = trim($obs);
+                    }
+                    $respuesta->observacion = ($obs === '' || $obs === null) ? null : $obs;
+                }
                 $respuesta->no_aplica = isset($item['no_aplica']) ? (bool) $item['no_aplica'] : $respuesta->no_aplica;
                 $respuesta->usuario_guardado = $usuarioGuardado;
                 $respuesta->save();
 
-                if (isset($item['opcion_ids']) && is_array($item['opcion_ids'])) {
+                if (array_key_exists('opcion_ids', $item) && is_array($item['opcion_ids'])) {
+                    $opcionIds = array_values(array_unique(array_map('intval', $item['opcion_ids'])));
+                    $opcionIds = array_values(array_filter($opcionIds, fn ($id) => $id > 0));
+
+                    // En opcion_unica (ej. P08) forzamos una sola opción.
+                    if ($pregunta->tipo_respuesta === 'opcion_unica' && count($opcionIds) > 1) {
+                        $opcionIds = [reset($opcionIds)];
+                    }
+
                     RcRespuestaOpcion::where('respuesta_id', $respuesta->id)->delete();
-                    foreach ($item['opcion_ids'] as $opcionId) {
+                    foreach ($opcionIds as $opcionId) {
                         RcRespuestaOpcion::create([
                             'respuesta_id' => $respuesta->id,
                             'opcion_id' => (int) $opcionId,
