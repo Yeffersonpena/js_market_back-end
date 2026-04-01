@@ -115,7 +115,14 @@ class LogicController extends Controller
 
                 $dni = $getDniResp[0]->DNI_RESPONSABLE ?? 0;
             }
-            $avances = VI_FLYERS::where('DNI_Responsable', $dni)->whereRaw('? BETWEEN MONTH(fecha_inicio) AND MONTH(fecha_fin)', [$mes])->orderBy('fecha_fin', 'asc')->get();
+        $avances = VI_FLYERS::where('DNI_Responsable', $dni)
+            ->whereRaw('? BETWEEN MONTH(fecha_inicio) AND MONTH(fecha_fin)', [$mes])
+            ->where(function ($query) use ($anio) {
+                $query->whereYear('fecha_inicio', $anio)
+                    ->orWhereYear('fecha_fin', $anio);
+            })
+            ->orderBy('fecha_fin', 'asc')
+            ->get();
             if (!$avances->isEmpty()) {
                 $agrupados = $avances->groupBy('tipoImg');
                 $agrupados->each(function ($items) {
