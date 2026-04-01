@@ -113,7 +113,7 @@ class RecopilacionController extends Controller
                 'c.nombre_pdv',
                 'c.zonal',
                 'c.vendedor',
-                'c.total_s_venta_equipo',
+                'c.promedio_equipo',
                 'c.total_s_venta_accesorio',
                 'c.vende_accesorios',
                 'v.id as visita_id',
