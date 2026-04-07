@@ -22,10 +22,11 @@ class ReporteController extends Controller
      *
      * @return \Symfony\Component\HttpFoundation\StreamedResponse
      */
-   
 
-    public function reporteAll(){
-        try{
+
+    public function reporteAll()
+    {
+        try {
             // $reporte=Reporte::all();
             // return $reporte;
             // $nombreArchivo = match ($tipo) {
@@ -34,29 +35,32 @@ class ReporteController extends Controller
             //     default => 'reporteCompleto.xlsx',
             // };
             return Excel::download(new ReporteExport(1), 'reporte.xlsx');
-        }catch(\Exception $ex){
-            return response()->json(["status" => Response::HTTP_BAD_REQUEST, "message" => $ex->getMessage()], Response::HTTP_BAD_REQUEST);
-        }
-    }
-    
-    public function reportePdvRegular(){
-        try{
-            return Excel::download(new ReporteExport(2), 'reportePdvRegular.xlsx');
-        }catch(\Exception $ex){
+        } catch (\Exception $ex) {
             return response()->json(["status" => Response::HTTP_BAD_REQUEST, "message" => $ex->getMessage()], Response::HTTP_BAD_REQUEST);
         }
     }
 
-    public function reportePremiun(){
-        try{
-            return Excel::download(new ReporteExport(3), 'reportePremiun.xlsx');
-        }catch(\Exception $ex){
+    public function reportePdvRegular()
+    {
+        try {
+            return Excel::download(new ReporteExport(2), 'reportePdvRegular.xlsx');
+        } catch (\Exception $ex) {
             return response()->json(["status" => Response::HTTP_BAD_REQUEST, "message" => $ex->getMessage()], Response::HTTP_BAD_REQUEST);
         }
     }
-    
-    public function getReporte($typeReporte){
-        try{
+
+    public function reportePremiun()
+    {
+        try {
+            return Excel::download(new ReporteExport(3), 'reportePremiun.xlsx');
+        } catch (\Exception $ex) {
+            return response()->json(["status" => Response::HTTP_BAD_REQUEST, "message" => $ex->getMessage()], Response::HTTP_BAD_REQUEST);
+        }
+    }
+
+    public function getReporte($typeReporte)
+    {
+        try {
             // $reporte=ReporteMultimarca::all();
             // return $reporte;
             $nameFile = match ($typeReporte) {
@@ -65,34 +69,36 @@ class ReporteController extends Controller
                 default => 'reporteCompletoMm.xlsx',
             };
             // return $nameFile;
-            return Excel::download(new ReporteMultimarcaExport($typeReporte), ''.$nameFile);
-        }catch(\Exception $ex){
+            return Excel::download(new ReporteMultimarcaExport($typeReporte), '' . $nameFile);
+        } catch (\Exception $ex) {
             return response()->json(["status" => Response::HTTP_BAD_REQUEST, "message" => $ex->getMessage()], Response::HTTP_BAD_REQUEST);
         }
     }
-    public function getReportePdv($typeReporte){
-        try{
+    public function getReportePdv($typeReporte)
+    {
+        try {
             $nameFile = match ($typeReporte) {
                 2 => 'reportePdvRegular.xlsx',
                 3 => 'reportePdvPremium.xlsx',
                 default => 'reporteCompletoPdv.xlsx',
             };
-            return Excel::download(new ReportePdvExport($typeReporte), ''.$nameFile);
-        }catch(\Exception $ex){
+            return Excel::download(new ReportePdvExport($typeReporte), '' . $nameFile);
+        } catch (\Exception $ex) {
             return response()->json(["status" => Response::HTTP_BAD_REQUEST, "message" => $ex->getMessage()], Response::HTTP_BAD_REQUEST);
         }
     }
-    
-    public function getReporteFinanza($typeReporte, $anio, $mes){
-        try{
-            $dateFileLoad='2025-05-22';
+
+    public function getReporteFinanza($typeReporte, $anio, $mes)
+    {
+        try {
+            $dateFileLoad = '2025-05-22';
             $nameFile = match ($typeReporte) {
                 2 => 'reportePdvRegular.xlsx',
                 3 => 'reportePdvPremium.xlsx',
                 default => 'reporteCompletoFinanza.xlsx',
             };
-            return Excel::download(new ReporteFinanzaExport($typeReporte, $anio, $mes, $dateFileLoad), ''.$nameFile);
-        }catch(\Exception $ex){
+            return Excel::download(new ReporteFinanzaExport($typeReporte, $anio, $mes, $dateFileLoad), '' . $nameFile);
+        } catch (\Exception $ex) {
             return response()->json(["status" => Response::HTTP_BAD_REQUEST, "message" => $ex->getMessage()], Response::HTTP_BAD_REQUEST);
         }
     }
