@@ -40,7 +40,17 @@ class RecopilacionController extends Controller
 
     private function getDniUsuario(object $user): int
     {
+        $dniToken = $user->user ?? null;
+        if ($dniToken !== null && is_numeric((string) $dniToken)) {
+            return (int) $dniToken;
+        }
         return (int) ($user->dni ?? $user->id ?? 0);
+    }
+
+    private function getDniUsuarioDesdeToken(object $user): ?string
+    {
+        $dni = trim((string) ($user->user ?? ''));
+        return $dni !== '' ? $dni : null;
     }
 
     private function visitaPerteneceAZonal(RcVisitaFormulario $visita, ?string $zonal): bool
@@ -54,11 +64,19 @@ class RecopilacionController extends Controller
      */
     public function puntosPendientes(Request $request)
     {
-        $zonal = $this->getZonalUsuario();
-        if (!$zonal) {
+        $user = $this->getUsuarioRecopilacion();
+        if (!$user) {
             return response()->json([
                 'status' => Response::HTTP_UNAUTHORIZED,
-                'message' => 'No se pudo obtener la zonal del usuario',
+                'message' => 'No se pudo obtener el usuario autenticado',
+            ], Response::HTTP_UNAUTHORIZED);
+        }
+
+        $dniUsuario = $this->getDniUsuarioDesdeToken($user);
+        if (!$dniUsuario) {
+            return response()->json([
+                'status' => Response::HTTP_UNAUTHORIZED,
+                'message' => 'No se pudo obtener el DNI del usuario',
             ], Response::HTTP_UNAUTHORIZED);
         }
 
@@ -82,15 +100,24 @@ class RecopilacionController extends Controller
             ], Response::HTTP_UNPROCESSABLE_ENTITY);
         }
 
+        $asignadosQuery = DB::connection('sqlsrv')
+            ->table('RC_PDV_ASIGNACION_VISITA')
+            ->select('pdv_id')
+            ->where('dni_ejecutor', $dniUsuario)
+            ->whereNotNull('fecha_visita_tentativa')
+            ->distinct();
+
         $query = DB::connection('sqlsrv')
             ->table('RC_CLIENTE_PDV as c')
+            ->joinSub($asignadosQuery, 'a', function ($join) {
+                $join->on('a.pdv_id', '=', 'c.id');
+            })
             ->leftJoin('RC_VISITA_FORMULARIO as v', function ($join) use ($formulario, $anio, $mes) {
                 $join->on('v.cliente_id', '=', 'c.id')
                     ->where('v.formulario_id', $formulario->id)
                     ->where('v.anio', $anio)
                     ->where('v.mes', $mes);
             })
-            ->where('c.zonal', $zonal)
             ->where(function ($q) {
                 $q->whereNull('v.id')
                     ->orWhere('v.estado', '!=', 'finalizado');
@@ -237,10 +264,31 @@ class RecopilacionController extends Controller
         $mes = (int) ($validated['mes'] ?? now()->month);
 
         $cliente = RcClientePdv::find($clienteId);
-        if (!$cliente || $cliente->zonal !== $zonal) {
+        if (!$cliente) {
             return response()->json([
                 'status' => Response::HTTP_FORBIDDEN,
-                'message' => 'Cliente no encontrado o no pertenece a su zonal',
+                'message' => 'Cliente no encontrado',
+            ], Response::HTTP_FORBIDDEN);
+        }
+
+        $dniToken = $this->getDniUsuarioDesdeToken($user);
+        if (!$dniToken) {
+            return response()->json([
+                'status' => Response::HTTP_UNAUTHORIZED,
+                'message' => 'No se pudo obtener el DNI del usuario',
+            ], Response::HTTP_UNAUTHORIZED);
+        }
+
+        $asignado = DB::connection('sqlsrv')
+            ->table('RC_PDV_ASIGNACION_VISITA')
+            ->where('pdv_id', $clienteId)
+            ->where('dni_ejecutor', $dniToken)
+            ->exists();
+
+        if (!$asignado) {
+            return response()->json([
+                'status' => Response::HTTP_FORBIDDEN,
+                'message' => 'El punto no está asignado al usuario',
             ], Response::HTTP_FORBIDDEN);
         }
 
