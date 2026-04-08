@@ -52,7 +52,7 @@ BEGIN
                 @almacen IS NULL OR RTRIM(LTRIM(@almacen)) = ''
             )
             AND ( UPPER(LTRIM(RTRIM(w.ALMACEN))) IN (
-                'AREQUIPA', 'AYACUCHO', 'CUSCO', 'E-COMMERCE', 'HUANCAYO', 'HUANUCO', 'HUÁNUCO',
+                'AREQUIPA', 'AYACUCHO', 'CENTRAL', 'CUSCO', 'E-COMMERCE', 'HUANCAYO', 'HUANUCO', 'HUÁNUCO',
                 'ICA', 'LA MERCED', 'LIMA SUR', 'PUCALLPA', 'PUNO'
             ) OR UPPER(LTRIM(RTRIM(w.ALMACEN))) COLLATE Latin1_General_CI_AI = 'HUANUCO' )
             OR
