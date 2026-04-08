@@ -18,8 +18,8 @@ class RecopilacionMiddleware
         $user = $request->get('user');
         $idPerfil = $user ? (int) data_get($user, 'idPerfil', 0) : 0;
 
-        // 6 = ejecutor (DNI), 7 = supervisor zonal (login tipo ayacucho/cusco/...)
-        if (!$user || ! in_array($idPerfil, [6, 7], true)) {
+        // 6 = ejecutor (DNI), 7 = supervisor zonal, 8 = maestro
+        if (!$user || ! in_array($idPerfil, [6, 7, 8], true)) {
             return response()->json(
                 [
                     'status' => Response::HTTP_UNAUTHORIZED,
