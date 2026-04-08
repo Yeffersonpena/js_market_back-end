@@ -67,6 +67,7 @@ Route::middleware(['jwt.apiRest.jsMarket'])->group(function () {
 
 Route::middleware(['jwt.apiRest.jsMarket', 'jwt.user.recopilacion'])->prefix('api/v1/recopilacion')->group(function () {
     Route::get('/puntos-pendientes', [RecopilacionController::class, 'puntosPendientes'])->name('recopilacion.puntosPendientes.api');
+    Route::get('/reporte/avance-zonal', [RecopilacionController::class, 'reporteAvanceZonal'])->name('recopilacion.reporteAvanceZonal.api');
     Route::get('/formulario/{codigo}', [RecopilacionController::class, 'getFormulario'])->name('recopilacion.formulario.api');
     Route::post('/visita', [RecopilacionController::class, 'postVisita'])->name('recopilacion.visita.api');
     Route::post('/visita/{visitaId}/seccion/{seccionId}/asegurar-respuestas', [RecopilacionController::class, 'asegurarRespuestas'])->name('recopilacion.asegurarRespuestas.api');
