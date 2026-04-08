@@ -235,6 +235,149 @@ class RecopilacionController extends Controller
     }
 
     /**
+     * GET reporte/avance-zonal
+     * Resumen por zonal: programados, ejecutados (finalizados) y porcentaje de avance.
+     */
+    public function reporteAvanceZonal(Request $request)
+    {
+        $user = $this->getUsuarioRecopilacion();
+        if (!$user) {
+            return response()->json([
+                'status' => Response::HTTP_UNAUTHORIZED,
+                'message' => 'No se pudo obtener el usuario autenticado',
+            ], Response::HTTP_UNAUTHORIZED);
+        }
+
+        if (
+            ! $this->esPerfilRecopilacionEjecutor($user)
+            && ! $this->esPerfilRecopilacionZonal($user)
+            && ! $this->esPerfilRecopilacionMaestro($user)
+        ) {
+            return response()->json([
+                'status' => Response::HTTP_FORBIDDEN,
+                'message' => 'Perfil no autorizado para recopilacion',
+            ], Response::HTTP_FORBIDDEN);
+        }
+
+        $zonal = $this->getZonalUsuario();
+        if ($this->tokenRequiereZonalUsuario($user) && !$zonal) {
+            return response()->json([
+                'status' => Response::HTTP_UNAUTHORIZED,
+                'message' => 'No se pudo obtener la zonal del usuario',
+            ], Response::HTTP_UNAUTHORIZED);
+        }
+
+        $anio = (int) $request->get('anio', now()->year);
+        $mes = (int) $request->get('mes', now()->month);
+        $formularioCodigo = $request->get('formulario_codigo', 'DATOS_PDV_VENTAS');
+        $dniUsuario = $this->esPerfilRecopilacionEjecutor($user) ? $this->getDniUsuarioDesdeToken($user) : null;
+
+        if ($this->esPerfilRecopilacionEjecutor($user) && !$dniUsuario) {
+            return response()->json([
+                'status' => Response::HTTP_UNAUTHORIZED,
+                'message' => 'No se pudo obtener el DNI del usuario',
+            ], Response::HTTP_UNAUTHORIZED);
+        }
+
+        $formulario = RcFormulario::where('codigo', $formularioCodigo)
+            ->where('activo', 1)
+            ->orderByDesc('version')
+            ->first();
+
+        if (!$formulario) {
+            return response()->json([
+                'status' => Response::HTTP_UNPROCESSABLE_ENTITY,
+                'message' => "No existe formulario activo con codigo {$formularioCodigo}",
+            ], Response::HTTP_UNPROCESSABLE_ENTITY);
+        }
+
+        $programados = DB::connection('sqlsrv')
+            ->table('RC_PDV_ASIGNACION_VISITA as a')
+            ->join('RC_CLIENTE_PDV as c', 'c.id', '=', 'a.pdv_id')
+            ->whereNotNull('a.fecha_visita_tentativa')
+            ->whereRaw('YEAR(a.fecha_visita_tentativa) = ?', [$anio])
+            ->whereRaw('MONTH(a.fecha_visita_tentativa) = ?', [$mes]);
+
+        if ($this->esPerfilRecopilacionEjecutor($user)) {
+            $programados->where('a.dni_ejecutor', $dniUsuario);
+        } elseif ($this->esPerfilRecopilacionZonal($user)) {
+            $programados->where('c.zonal', $zonal);
+        }
+
+        $programados = $programados
+            ->groupBy('c.zonal')
+            ->selectRaw('c.zonal, COUNT(DISTINCT a.pdv_id) as programados');
+
+        $ejecutados = DB::connection('sqlsrv')
+            ->table('RC_PDV_ASIGNACION_VISITA as a')
+            ->join('RC_CLIENTE_PDV as c', 'c.id', '=', 'a.pdv_id')
+            ->join('RC_VISITA_FORMULARIO as v', function ($join) use ($formulario, $anio, $mes) {
+                $join->on('v.cliente_id', '=', 'a.pdv_id')
+                    ->where('v.formulario_id', $formulario->id)
+                    ->where('v.anio', $anio)
+                    ->where('v.mes', $mes)
+                    ->where('v.estado', 'finalizado');
+            })
+            ->whereNotNull('a.fecha_visita_tentativa')
+            ->whereRaw('YEAR(a.fecha_visita_tentativa) = ?', [$anio])
+            ->whereRaw('MONTH(a.fecha_visita_tentativa) = ?', [$mes]);
+
+        if ($this->esPerfilRecopilacionEjecutor($user)) {
+            $ejecutados->where('a.dni_ejecutor', $dniUsuario);
+        } elseif ($this->esPerfilRecopilacionZonal($user)) {
+            $ejecutados->where('c.zonal', $zonal);
+        }
+
+        $ejecutados = $ejecutados
+            ->groupBy('c.zonal')
+            ->selectRaw('c.zonal, COUNT(DISTINCT v.cliente_id) as ejecutados');
+
+        $filas = DB::connection('sqlsrv')
+            ->query()
+            ->fromSub($programados, 'p')
+            ->leftJoinSub($ejecutados, 'e', function ($join) {
+                $join->on('e.zonal', '=', 'p.zonal');
+            })
+            ->selectRaw('p.zonal, p.programados, ISNULL(e.ejecutados, 0) as ejecutados')
+            ->orderBy('p.zonal')
+            ->get();
+
+        $data = collect($filas)->map(function ($row) {
+            $programados = (int) ($row->programados ?? 0);
+            $ejecutados = (int) ($row->ejecutados ?? 0);
+            $avance = $programados > 0 ? round(($ejecutados * 100) / $programados, 1) : 0.0;
+
+            return [
+                'zonal' => $row->zonal,
+                'programados' => $programados,
+                'ejecutados' => $ejecutados,
+                'porcentaje_avance' => $avance,
+            ];
+        })->values();
+
+        $totalProgramados = $data->sum('programados');
+        $totalEjecutados = $data->sum('ejecutados');
+        $totalAvance = $totalProgramados > 0 ? round(($totalEjecutados * 100) / $totalProgramados, 1) : 0.0;
+
+        $data->push([
+            'zonal' => 'TOTAL',
+            'programados' => $totalProgramados,
+            'ejecutados' => $totalEjecutados,
+            'porcentaje_avance' => $totalAvance,
+        ]);
+
+        return response()->json([
+            'status' => Response::HTTP_OK,
+            'data' => $data,
+            'meta' => [
+                'anio' => $anio,
+                'mes' => $mes,
+                'formulario_codigo' => $formularioCodigo,
+            ],
+        ], Response::HTTP_OK);
+    }
+
+    /**
      * GET formulario/{codigo}
      * Estructura del formulario: secciones con preguntas y opciones (para pintar pasos en el front).
      */
