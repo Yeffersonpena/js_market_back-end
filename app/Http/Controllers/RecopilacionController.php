@@ -618,6 +618,134 @@ class RecopilacionController extends Controller
         ], Response::HTTP_OK);
     }
 
+    /**
+     * GET reporte/opciones/grupo-perfil-local
+     * Perfil del local: tres opciones por pregunta con etiquetas distintas (P08, P17, P19, P20).
+     * Cada elemento de data trae opciones con cantidad para mini-tablas en frontend.
+     */
+    public function reporteOpcionesGrupoPerfilLocal(Request $request)
+    {
+        $user = $this->getUsuarioRecopilacion();
+        if (!$user) {
+            return response()->json([
+                'status' => Response::HTTP_UNAUTHORIZED,
+                'message' => 'No se pudo obtener el usuario autenticado',
+            ], Response::HTTP_UNAUTHORIZED);
+        }
+
+        if (! $this->esPerfilRecopilacionMaestro($user)) {
+            return response()->json([
+                'status' => Response::HTTP_FORBIDDEN,
+                'message' => 'Solo perfil maestro puede consultar este reporte',
+            ], Response::HTTP_FORBIDDEN);
+        }
+
+        $formularioCodigo = $request->get('formulario_codigo', 'DATOS_PDV_VENTAS');
+        $formulario = $this->getFormularioActivoRecopilacion($formularioCodigo);
+        if (!$formulario) {
+            return response()->json([
+                'status' => Response::HTTP_UNPROCESSABLE_ENTITY,
+                'message' => "No existe formulario activo con codigo {$formularioCodigo}",
+            ], Response::HTTP_UNPROCESSABLE_ENTITY);
+        }
+
+        $preguntasObjetivo = ['P08', 'P17', 'P19', 'P20'];
+
+        $catalogo = DB::connection('sqlsrv')
+            ->table('RC_PREGUNTA as p')
+            ->join('RC_SECCION as s', 's.id', '=', 'p.seccion_id')
+            ->join('RC_PREGUNTA_OPCION as po', 'po.pregunta_id', '=', 'p.id')
+            ->where('s.formulario_id', $formulario->id)
+            ->where('p.activo', 1)
+            ->where('po.activo', 1)
+            ->whereIn('p.codigo', $preguntasObjetivo)
+            ->orderBy('p.codigo')
+            ->orderBy('po.orden')
+            ->select(
+                'p.codigo as pregunta_codigo',
+                'p.texto as pregunta_texto',
+                'po.id as opcion_id',
+                'po.codigo as opcion_codigo',
+                'po.etiqueta as opcion_etiqueta',
+                'po.orden as opcion_orden'
+            )
+            ->get();
+
+        $bloques = [];
+        foreach ($catalogo as $row) {
+            $cod = (string) $row->pregunta_codigo;
+            if (! isset($bloques[$cod])) {
+                $bloques[$cod] = [
+                    'pregunta_codigo' => $cod,
+                    'pregunta_texto' => $row->pregunta_texto,
+                    'opciones' => [],
+                    'total' => 0,
+                ];
+            }
+            $bloques[$cod]['opciones'][] = [
+                'opcion_id' => (int) $row->opcion_id,
+                'opcion_codigo' => $row->opcion_codigo,
+                'etiqueta' => $row->opcion_etiqueta,
+                'orden' => (int) $row->opcion_orden,
+                'cantidad' => 0,
+            ];
+        }
+
+        $dataOrdenada = [];
+        foreach ($preguntasObjetivo as $cod) {
+            if (isset($bloques[$cod])) {
+                $dataOrdenada[] = $bloques[$cod];
+            }
+        }
+
+        if (! empty($bloques)) {
+            $conteos = DB::connection('sqlsrv')
+                ->table('RC_RESPUESTA as r')
+                ->join('RC_VISITA_FORMULARIO as v', 'v.id', '=', 'r.visita_id')
+                ->join('RC_PREGUNTA as p', 'p.id', '=', 'r.pregunta_id')
+                ->join('RC_RESPUESTA_OPCION as ro', 'ro.respuesta_id', '=', 'r.id')
+                ->join('RC_PREGUNTA_OPCION as po', 'po.id', '=', 'ro.opcion_id')
+                ->where('v.formulario_id', $formulario->id)
+                ->where('v.estado', 'finalizado')
+                ->whereIn('p.codigo', $preguntasObjetivo)
+                ->groupBy('p.codigo', 'po.id')
+                ->selectRaw('p.codigo as pregunta_codigo, po.id as opcion_id, COUNT(*) as cantidad')
+                ->get();
+
+            $indexBloque = [];
+            foreach ($dataOrdenada as $bi => $bloque) {
+                $indexBloque[$bloque['pregunta_codigo']] = $bi;
+            }
+
+            foreach ($conteos as $c) {
+                $pc = (string) ($c->pregunta_codigo ?? '');
+                $oid = (int) ($c->opcion_id ?? 0);
+                $cnt = (int) ($c->cantidad ?? 0);
+                if (! isset($indexBloque[$pc])) {
+                    continue;
+                }
+                $bi = $indexBloque[$pc];
+                foreach ($dataOrdenada[$bi]['opciones'] as $oi => $op) {
+                    if ((int) ($op['opcion_id'] ?? 0) === $oid) {
+                        $dataOrdenada[$bi]['opciones'][$oi]['cantidad'] = $cnt;
+                        $dataOrdenada[$bi]['total'] += $cnt;
+                        break;
+                    }
+                }
+            }
+        }
+
+        return response()->json([
+            'status' => Response::HTTP_OK,
+            'data' => $dataOrdenada,
+            'meta' => [
+                'grupo' => 'perfil_local',
+                'formulario_codigo' => $formularioCodigo,
+                'preguntas' => $preguntasObjetivo,
+            ],
+        ], Response::HTTP_OK);
+    }
+
     public function reporteExcelFinalizadas(Request $request)
     {
         $user = $this->getUsuarioRecopilacion();

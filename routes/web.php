@@ -70,6 +70,7 @@ Route::middleware(['jwt.apiRest.jsMarket', 'jwt.user.recopilacion'])->prefix('ap
     Route::get('/reporte/avance-zonal', [RecopilacionController::class, 'reporteAvanceZonal'])->name('recopilacion.reporteAvanceZonal.api');
     Route::get('/reporte/opciones/grupo-si-no', [RecopilacionController::class, 'reporteOpcionesGrupoSiNo'])->name('recopilacion.reporteOpcionesGrupoSiNo.api');
     Route::get('/reporte/opciones/grupo-escala-5', [RecopilacionController::class, 'reporteOpcionesGrupoEscala5'])->name('recopilacion.reporteOpcionesGrupoEscala5.api');
+    Route::get('/reporte/opciones/grupo-perfil-local', [RecopilacionController::class, 'reporteOpcionesGrupoPerfilLocal'])->name('recopilacion.reporteOpcionesGrupoPerfilLocal.api');
     Route::get('/reporte/excel/finalizadas', [RecopilacionController::class, 'reporteExcelFinalizadas'])->name('recopilacion.reporteExcelFinalizadas.api');
     Route::get('/formulario/{codigo}', [RecopilacionController::class, 'getFormulario'])->name('recopilacion.formulario.api');
     Route::post('/visita', [RecopilacionController::class, 'postVisita'])->name('recopilacion.visita.api');
