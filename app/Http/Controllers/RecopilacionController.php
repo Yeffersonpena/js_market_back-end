@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Exports\RecopilacionFinalizadasExport;
 use App\Models\RcClientePdv;
 use App\Models\RcFormulario;
 use App\Models\RcPregunta;
@@ -14,6 +15,7 @@ use App\Services\RecopilacionMediaStorage;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Maatwebsite\Excel\Facades\Excel;
 use Symfony\Component\HttpFoundation\Response;
 use Tymon\JWTAuth\Facades\JWTAuth;
 
@@ -388,6 +390,261 @@ class RecopilacionController extends Controller
                 'formulario_codigo' => $formularioCodigo,
             ],
         ], Response::HTTP_OK);
+    }
+
+    public function reporteExcelFinalizadas(Request $request)
+    {
+        $user = $this->getUsuarioRecopilacion();
+        if (!$user) {
+            return response()->json([
+                'status' => Response::HTTP_UNAUTHORIZED,
+                'message' => 'No se pudo obtener el usuario autenticado',
+            ], Response::HTTP_UNAUTHORIZED);
+        }
+
+        if (! $this->esPerfilRecopilacionMaestro($user)) {
+            return response()->json([
+                'status' => Response::HTTP_FORBIDDEN,
+                'message' => 'Solo perfil maestro puede descargar este reporte',
+            ], Response::HTTP_FORBIDDEN);
+        }
+
+        $formularioCodigo = $request->get('formulario_codigo', 'DATOS_PDV_VENTAS');
+        $formulario = $this->getFormularioActivoRecopilacion($formularioCodigo);
+        if (!$formulario) {
+            return response()->json([
+                'status' => Response::HTTP_UNPROCESSABLE_ENTITY,
+                'message' => "No existe formulario activo con codigo {$formularioCodigo}",
+            ], Response::HTTP_UNPROCESSABLE_ENTITY);
+        }
+
+        $cabeceras = $this->getCabeceraVisitasFinalizadas($formulario->id);
+        $diccionario = $this->getDiccionarioPreguntasActivas($formulario->id);
+        $respuestasLegibles = $this->getRespuestasLegiblesPorVisitaPregunta($formulario->id);
+
+        $baseHeadings = [
+            'Fecha registro',
+            'Usuario registro',
+            'Zonal',
+            'Ejecutor',
+            'Nombre PDV',
+            'Documento PDV',
+            'Departamento',
+            'Provincia',
+            'Distrito',
+            'Dirección',
+            'Vendedor ruta',
+        ];
+
+        $questionHeadings = [];
+        $usedHeadings = [];
+        foreach ($diccionario as $q) {
+            $clean = preg_replace('/\s+/', ' ', trim((string) ($q['columna_excel'] ?? '')));
+            $heading = $clean === '' ? (string) $q['pregunta_codigo'] : $clean;
+            if (isset($usedHeadings[$heading])) {
+                $heading = "{$heading} ({$q['pregunta_codigo']})";
+            }
+            $usedHeadings[$heading] = true;
+            $questionHeadings[] = $heading;
+        }
+
+        $rows = [];
+        foreach ($cabeceras as $visita) {
+            $row = [
+                $visita['fecha_registro'] ?? '',
+                $visita['usuario_registro'] ?? '',
+                $visita['zonal'] ?? '',
+                $visita['ejecutor'] ?? '',
+                $visita['nombre_pdv'] ?? '',
+                $visita['documento_pdv'] ?? '',
+                $visita['departamento'] ?? '',
+                $visita['provincia'] ?? '',
+                $visita['distrito'] ?? '',
+                $visita['direccion'] ?? '',
+                $visita['vendedor_ruta'] ?? '',
+            ];
+
+            foreach ($diccionario as $q) {
+                $key = $visita['visita_id'] . '|' . $q['pregunta_id'];
+                $row[] = $respuestasLegibles[$key] ?? '';
+            }
+
+            $rows[] = $row;
+        }
+
+        $fileName = 'encuestas_finalizadas_' . now()->format('Ymd_His') . '.xlsx';
+        return Excel::download(
+            new RecopilacionFinalizadasExport(array_merge($baseHeadings, $questionHeadings), $rows),
+            $fileName
+        );
+    }
+
+    private function getFormularioActivoRecopilacion(string $formularioCodigo): ?RcFormulario
+    {
+        return RcFormulario::where('codigo', $formularioCodigo)
+            ->where('activo', 1)
+            ->orderByDesc('version')
+            ->first();
+    }
+
+    private function getCabeceraVisitasFinalizadas(int $formularioId): array
+    {
+        $rows = DB::connection('sqlsrv')
+            ->table('RC_VISITA_FORMULARIO as v')
+            ->join('RC_CLIENTE_PDV as c', 'c.id', '=', 'v.cliente_id')
+            ->leftJoin('users as u', function ($join) {
+                $join->on(DB::raw('CONVERT(VARCHAR(20), v.dni_usuario)'), '=', 'u.user');
+            })
+            ->where('v.formulario_id', $formularioId)
+            ->where('v.estado', 'finalizado')
+            ->select(
+                'v.id as visita_id',
+                'v.fecha_ultima_edicion as fecha_registro',
+                'v.usuario_actualizacion as usuario_registro',
+                'v.dni_usuario',
+                'c.zonal',
+                'c.nombre_pdv',
+                'c.nro_documento as documento_pdv',
+                'c.departamento',
+                'c.provincia',
+                'c.distrito',
+                'c.direccion',
+                'c.vendedor as vendedor_ruta',
+                'u.user as usuario_catalogo'
+            )
+            ->orderByDesc('v.fecha_ultima_edicion')
+            ->get();
+
+        return $rows->map(function ($r) {
+            $ejecutor = $r->usuario_catalogo ?: (string) ($r->dni_usuario ?? '');
+            return [
+                'visita_id' => (int) $r->visita_id,
+                'fecha_registro' => $r->fecha_registro,
+                'usuario_registro' => $r->usuario_registro ?: $ejecutor,
+                'ejecutor' => $ejecutor,
+                'zonal' => $r->zonal,
+                'nombre_pdv' => $r->nombre_pdv,
+                'documento_pdv' => $r->documento_pdv,
+                'departamento' => $r->departamento,
+                'provincia' => $r->provincia,
+                'distrito' => $r->distrito,
+                'direccion' => $r->direccion,
+                'vendedor_ruta' => $r->vendedor_ruta,
+            ];
+        })->values()->all();
+    }
+
+    private function getDiccionarioPreguntasActivas(int $formularioId): array
+    {
+        $preguntas = DB::connection('sqlsrv')
+            ->table('RC_PREGUNTA as p')
+            ->join('RC_SECCION as s', 's.id', '=', 'p.seccion_id')
+            ->where('s.formulario_id', $formularioId)
+            ->where('s.activo', 1)
+            ->where('p.activo', 1)
+            ->orderBy('s.orden')
+            ->orderBy('p.orden')
+            ->select(
+                'p.id as pregunta_id',
+                'p.codigo as pregunta_codigo',
+                'p.texto as pregunta_texto'
+            )
+            ->get();
+
+        return $preguntas->map(function ($row) {
+            return [
+                'pregunta_id' => (int) $row->pregunta_id,
+                'pregunta_codigo' => $row->pregunta_codigo,
+                'columna_excel' => preg_replace('/\s+/', ' ', trim((string) ($row->pregunta_texto ?? ''))),
+            ];
+        })->values()->all();
+    }
+
+    private function getRespuestasLegiblesPorVisitaPregunta(int $formularioId): array
+    {
+        $rows = DB::connection('sqlsrv')
+            ->table('RC_RESPUESTA as r')
+            ->join('RC_VISITA_FORMULARIO as v', 'v.id', '=', 'r.visita_id')
+            ->join('RC_PREGUNTA as p', 'p.id', '=', 'r.pregunta_id')
+            ->where('v.formulario_id', $formularioId)
+            ->where('v.estado', 'finalizado')
+            ->where('p.activo', 1)
+            ->select(
+                'v.id as visita_id',
+                'r.id as respuesta_id',
+                'r.pregunta_id',
+                'p.tipo_respuesta',
+                'r.valor_texto',
+                'r.valor_numero',
+                'r.valor_decimal',
+                'r.valor_booleano',
+                'r.valor_fecha',
+                'r.valor_hora',
+                'r.no_aplica'
+            )
+            ->get();
+
+        $respuestaIds = $rows->pluck('respuesta_id')->filter()->values()->all();
+        $opcionesPorRespuesta = collect();
+        if (!empty($respuestaIds)) {
+            $opcionesRows = DB::connection('sqlsrv')
+                ->table('RC_RESPUESTA_OPCION as ro')
+                ->join('RC_PREGUNTA_OPCION as po', 'po.id', '=', 'ro.opcion_id')
+                ->whereIn('ro.respuesta_id', $respuestaIds)
+                ->select(
+                    'ro.respuesta_id',
+                    'po.etiqueta as opcion_etiqueta',
+                    'po.orden as opcion_orden'
+                )
+                ->orderBy('po.orden')
+                ->get();
+
+            $opcionesPorRespuesta = $opcionesRows->groupBy('respuesta_id');
+        }
+
+        $result = [];
+        foreach ($rows as $row) {
+            $opciones = collect($opcionesPorRespuesta->get($row->respuesta_id, []))
+                ->pluck('opcion_etiqueta')
+                ->filter()
+                ->values();
+
+            $tipo = (string) ($row->tipo_respuesta ?? '');
+            $legible = '';
+
+            if ((bool) $row->no_aplica) {
+                $legible = 'No aplica';
+            } elseif (in_array($tipo, ['opcion_unica', 'opcion_multiple'], true) && $opciones->isNotEmpty()) {
+                $legible = $opciones->implode(' | ');
+            } elseif ($tipo === 'si_no' && $row->valor_booleano !== null) {
+                $legible = ((int) $row->valor_booleano) === 1 ? 'Sí' : 'No';
+            } elseif ($tipo === 'decimal' && $row->valor_decimal !== null) {
+                $legible = (string) $row->valor_decimal;
+            } elseif ($tipo === 'numero' && $row->valor_numero !== null) {
+                $legible = (string) $row->valor_numero;
+            } elseif ($tipo === 'fecha' && $row->valor_fecha !== null) {
+                $legible = (string) $row->valor_fecha;
+            } elseif ($tipo === 'hora' && $row->valor_hora !== null) {
+                $legible = (string) $row->valor_hora;
+            } elseif ($row->valor_texto !== null && trim((string) $row->valor_texto) !== '') {
+                $legible = trim((string) $row->valor_texto);
+            } elseif ($row->valor_booleano !== null) {
+                $legible = ((int) $row->valor_booleano) === 1 ? 'Sí' : 'No';
+            } elseif ($row->valor_decimal !== null) {
+                $legible = (string) $row->valor_decimal;
+            } elseif ($row->valor_numero !== null) {
+                $legible = (string) $row->valor_numero;
+            } elseif ($row->valor_fecha !== null) {
+                $legible = (string) $row->valor_fecha;
+            } elseif ($row->valor_hora !== null) {
+                $legible = (string) $row->valor_hora;
+            }
+
+            $key = ((int) $row->visita_id) . '|' . ((int) $row->pregunta_id);
+            $result[$key] = $legible;
+        }
+
+        return $result;
     }
 
     /**
