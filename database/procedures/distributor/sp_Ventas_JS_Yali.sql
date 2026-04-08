@@ -1,5 +1,6 @@
 -- Ventas WOLAP (JSMS) + YALI unificadas con MARCA y MODELO desde DCN_MAESTRO_PRODUCTO.
 -- Join a maestro por producto: una sola fila por CNOM_PROD para no duplicar ventas (evita que el total supere a sp_Ventas_Incentivo).
+-- FEC_COMPRA: JS desde DD_WOLAP; YALI desde YALI_COMPRAS.Fecha por Imei_Icc_Sn (primera compra por fecha).
 -- @ProdLinea: vacío/NULL = solo EQUIPOS (mismo criterio que sp_Ventas_Incentivo al filtrar por EQUIPOS). YALI solo tiene EQUIPOS.
 CREATE PROCEDURE SP_VENTAS_JS_YALI
     @FechaInicio DATE,
@@ -31,7 +32,8 @@ BEGIN
         v.PROD_CATEGORIA AS PROD_CATEGORIA,
         v.PROD_LINEA AS PROD_LINEA,
         'JS' AS EMPRESA,
-        UPPER(LTRIM(RTRIM(v.NOM_VENDEDOR))) AS NOM_VENDEDOR
+        UPPER(LTRIM(RTRIM(v.NOM_VENDEDOR))) AS NOM_VENDEDOR,
+        CAST(v.FEC_COMPRA AS DATE) AS FEC_COMPRA
     FROM DISTRIBUTOR_DATAMART.dbo.DD_WOLAP_VENTA_ANALISIS_DETALLADO v
     LEFT JOIN MaestroUnico p
         ON REPLACE(RTRIM(LTRIM(v.NOM_PRODUCTO)), '&quot;', '"') = p.CNOM_PROD_NORM
@@ -68,7 +70,8 @@ BEGIN
         'EQUIPOS' AS PROD_CATEGORIA,
         'EQUIPOS' AS PROD_LINEA,
         'AMAZONÍA' AS EMPRESA,
-        UPPER(LTRIM(RTRIM(y.x_vendedor))) AS NOM_VENDEDOR
+        UPPER(LTRIM(RTRIM(y.x_vendedor))) AS NOM_VENDEDOR,
+        CAST(yc.FechaPrimeraCompra AS DATE) AS FEC_COMPRA
     FROM DISTRIBUTOR_DATAMART.dbo.YALI_VENTAS y
     LEFT JOIN (
         SELECT CSERIE, ALMACEN
@@ -79,6 +82,24 @@ BEGIN
         ) t0
         WHERE t0.rn = 1
     ) t ON y.Imei_Icc_Sn = t.CSERIE
+    LEFT JOIN (
+        SELECT SerieNorm, FechaPrimeraCompra
+        FROM (
+            SELECT
+                LTRIM(RTRIM(ISNULL(c.Imei_Icc_Sn, N''))) AS SerieNorm,
+                c.Fecha AS FechaPrimeraCompra,
+                ROW_NUMBER() OVER (
+                    PARTITION BY LTRIM(RTRIM(ISNULL(c.Imei_Icc_Sn, N'')))
+                    ORDER BY
+                        CASE WHEN c.Fecha IS NULL THEN 1 ELSE 0 END,
+                        c.Fecha ASC,
+                        c.Fecha_Aux ASC
+                ) AS rn
+            FROM DISTRIBUTOR_DATAMART.dbo.YALI_COMPRAS c
+            WHERE LTRIM(RTRIM(ISNULL(c.Imei_Icc_Sn, N''))) <> N''
+        ) c1
+        WHERE c1.rn = 1
+    ) yc ON LTRIM(RTRIM(ISNULL(y.Imei_Icc_Sn, N''))) = yc.SerieNorm
     LEFT JOIN (
         SELECT CNOM_PROD_NORM, MARCA, MODELO
         FROM (
