@@ -25,6 +25,9 @@ class RecopilacionController extends Controller
     /** Recopilación: supervisor zonal (lista por users.zonal) */
     private const PERFIL_RECOPILACION_ZONAL = 7;
 
+    /** Recopilación: maestro (lista y visitas sin restricción por zonal/asignación) */
+    private const PERFIL_RECOPILACION_MAESTRO = 8;
+
     private function getZonalUsuario()
     {
         try {
@@ -69,6 +72,26 @@ class RecopilacionController extends Controller
         return (int) ($user->idPerfil ?? 0) === self::PERFIL_RECOPILACION_ZONAL;
     }
 
+    private function esPerfilRecopilacionMaestro(object $user): bool
+    {
+        return (int) ($user->idPerfil ?? 0) === self::PERFIL_RECOPILACION_MAESTRO;
+    }
+
+    /** Ejecutor y zonal requieren zonal en token; maestro puede no tenerla. */
+    private function tokenRequiereZonalUsuario(object $user): bool
+    {
+        return ! $this->esPerfilRecopilacionMaestro($user);
+    }
+
+    private function puedeGestionarVisitaRecopilacion(object $user, RcVisitaFormulario $visita, ?string $zonal): bool
+    {
+        if ($this->esPerfilRecopilacionMaestro($user)) {
+            return true;
+        }
+
+        return $this->visitaPerteneceAZonal($visita, $zonal);
+    }
+
     private function visitaPerteneceAZonal(RcVisitaFormulario $visita, ?string $zonal): bool
     {
         return $zonal !== null && $visita->zonal_usuario === $zonal;
@@ -88,7 +111,11 @@ class RecopilacionController extends Controller
             ], Response::HTTP_UNAUTHORIZED);
         }
 
-        if (!$this->esPerfilRecopilacionEjecutor($user) && !$this->esPerfilRecopilacionZonal($user)) {
+        if (
+            ! $this->esPerfilRecopilacionEjecutor($user)
+            && ! $this->esPerfilRecopilacionZonal($user)
+            && ! $this->esPerfilRecopilacionMaestro($user)
+        ) {
             return response()->json([
                 'status' => Response::HTTP_FORBIDDEN,
                 'message' => 'Perfil no autorizado para recopilacion',
@@ -106,7 +133,7 @@ class RecopilacionController extends Controller
                     'message' => 'No se pudo obtener el DNI del usuario',
                 ], Response::HTTP_UNAUTHORIZED);
             }
-        } elseif (!$zonal) {
+        } elseif ($this->esPerfilRecopilacionZonal($user) && !$zonal) {
             return response()->json([
                 'status' => Response::HTTP_UNAUTHORIZED,
                 'message' => 'No se pudo obtener la zonal del usuario',
@@ -147,9 +174,10 @@ class RecopilacionController extends Controller
             $query->joinSub($asignadosQuery, 'a', function ($join) {
                 $join->on('a.pdv_id', '=', 'c.id');
             });
-        } else {
+        } elseif ($this->esPerfilRecopilacionZonal($user)) {
             $query->where('c.zonal', $zonal);
         }
+        // maestro: sin filtro por asignación ni zonal
 
         $query->leftJoin('RC_VISITA_FORMULARIO as v', function ($join) use ($formulario, $anio, $mes) {
             $join->on('v.cliente_id', '=', 'c.id')
@@ -284,10 +312,17 @@ class RecopilacionController extends Controller
     {
         $zonal = $this->getZonalUsuario();
         $user = $this->getUsuarioRecopilacion();
-        if (!$zonal || !$user) {
+        if (!$user) {
             return response()->json([
                 'status' => Response::HTTP_UNAUTHORIZED,
-                'message' => 'No se pudo obtener la zonal o usuario',
+                'message' => 'No se pudo obtener el usuario autenticado',
+            ], Response::HTTP_UNAUTHORIZED);
+        }
+
+        if ($this->tokenRequiereZonalUsuario($user) && !$zonal) {
+            return response()->json([
+                'status' => Response::HTTP_UNAUTHORIZED,
+                'message' => 'No se pudo obtener la zonal del usuario',
             ], Response::HTTP_UNAUTHORIZED);
         }
 
@@ -310,7 +345,11 @@ class RecopilacionController extends Controller
             ], Response::HTTP_FORBIDDEN);
         }
 
-        if (!$this->esPerfilRecopilacionEjecutor($user) && !$this->esPerfilRecopilacionZonal($user)) {
+        if (
+            ! $this->esPerfilRecopilacionEjecutor($user)
+            && ! $this->esPerfilRecopilacionZonal($user)
+            && ! $this->esPerfilRecopilacionMaestro($user)
+        ) {
             return response()->json([
                 'status' => Response::HTTP_FORBIDDEN,
                 'message' => 'Perfil no autorizado para recopilacion',
@@ -344,6 +383,7 @@ class RecopilacionController extends Controller
                 'message' => 'Cliente no pertenece a su zonal',
             ], Response::HTTP_FORBIDDEN);
         }
+        // maestro: puede abrir visita de cualquier cliente
 
         $formulario = RcFormulario::where('codigo', $formularioCodigo)->where('activo', 1)->orderByDesc('version')->first();
         if (!$formulario) {
@@ -361,6 +401,7 @@ class RecopilacionController extends Controller
 
         if (!$visita) {
             $dniUsuario = $this->getDniUsuario($user);
+            $zonalUsuario = $zonal ?? ($cliente->zonal ?? '');
             $visita = RcVisitaFormulario::create([
                 'cliente_id' => $clienteId,
                 'programacion_id' => null,
@@ -368,7 +409,7 @@ class RecopilacionController extends Controller
                 'anio' => $anio,
                 'mes' => $mes,
                 'dni_usuario' => $dniUsuario,
-                'zonal_usuario' => $zonal,
+                'zonal_usuario' => $zonalUsuario,
                 'estado' => 'borrador',
                 'porcentaje_avance' => 0,
                 'cod_cliente' => $cliente->nro_documento,
@@ -399,8 +440,15 @@ class RecopilacionController extends Controller
      */
     public function asegurarRespuestas(int $visitaId, int $seccionId)
     {
+        $user = $this->getUsuarioRecopilacion();
         $zonal = $this->getZonalUsuario();
-        if (!$zonal) {
+        if (!$user) {
+            return response()->json([
+                'status' => Response::HTTP_UNAUTHORIZED,
+                'message' => 'No se pudo obtener el usuario autenticado',
+            ], Response::HTTP_UNAUTHORIZED);
+        }
+        if ($this->tokenRequiereZonalUsuario($user) && !$zonal) {
             return response()->json([
                 'status' => Response::HTTP_UNAUTHORIZED,
                 'message' => 'No se pudo obtener la zonal del usuario',
@@ -408,7 +456,7 @@ class RecopilacionController extends Controller
         }
 
         $visita = RcVisitaFormulario::find($visitaId);
-        if (!$visita || !$this->visitaPerteneceAZonal($visita, $zonal)) {
+        if (!$visita || !$this->puedeGestionarVisitaRecopilacion($user, $visita, $zonal)) {
             return response()->json([
                 'status' => Response::HTTP_FORBIDDEN,
                 'message' => 'Visita no encontrada o no pertenece a su zonal',
@@ -474,8 +522,15 @@ class RecopilacionController extends Controller
      */
     public function getRespuestas(Request $request, int $visitaId)
     {
+        $user = $this->getUsuarioRecopilacion();
         $zonal = $this->getZonalUsuario();
-        if (!$zonal) {
+        if (!$user) {
+            return response()->json([
+                'status' => Response::HTTP_UNAUTHORIZED,
+                'message' => 'No se pudo obtener el usuario autenticado',
+            ], Response::HTTP_UNAUTHORIZED);
+        }
+        if ($this->tokenRequiereZonalUsuario($user) && !$zonal) {
             return response()->json([
                 'status' => Response::HTTP_UNAUTHORIZED,
                 'message' => 'No se pudo obtener la zonal del usuario',
@@ -483,7 +538,7 @@ class RecopilacionController extends Controller
         }
 
         $visita = RcVisitaFormulario::find($visitaId);
-        if (!$visita || !$this->visitaPerteneceAZonal($visita, $zonal)) {
+        if (!$visita || !$this->puedeGestionarVisitaRecopilacion($user, $visita, $zonal)) {
             return response()->json([
                 'status' => Response::HTTP_FORBIDDEN,
                 'message' => 'Visita no encontrada o no pertenece a su zonal',
@@ -542,15 +597,21 @@ class RecopilacionController extends Controller
     {
         $zonal = $this->getZonalUsuario();
         $user = $this->getUsuarioRecopilacion();
-        if (!$zonal || !$user) {
+        if (!$user) {
             return response()->json([
                 'status' => Response::HTTP_UNAUTHORIZED,
-                'message' => 'No se pudo obtener la zonal o usuario',
+                'message' => 'No se pudo obtener el usuario autenticado',
+            ], Response::HTTP_UNAUTHORIZED);
+        }
+        if ($this->tokenRequiereZonalUsuario($user) && !$zonal) {
+            return response()->json([
+                'status' => Response::HTTP_UNAUTHORIZED,
+                'message' => 'No se pudo obtener la zonal del usuario',
             ], Response::HTTP_UNAUTHORIZED);
         }
 
         $visita = RcVisitaFormulario::find($visitaId);
-        if (!$visita || !$this->visitaPerteneceAZonal($visita, $zonal)) {
+        if (!$visita || !$this->puedeGestionarVisitaRecopilacion($user, $visita, $zonal)) {
             return response()->json([
                 'status' => Response::HTTP_FORBIDDEN,
                 'message' => 'Visita no encontrada o no pertenece a su zonal',
@@ -661,15 +722,21 @@ class RecopilacionController extends Controller
     {
         $zonal = $this->getZonalUsuario();
         $user = $this->getUsuarioRecopilacion();
-        if (!$zonal || !$user) {
+        if (!$user) {
             return response()->json([
                 'status' => Response::HTTP_UNAUTHORIZED,
-                'message' => 'No se pudo obtener la zonal o usuario',
+                'message' => 'No se pudo obtener el usuario autenticado',
+            ], Response::HTTP_UNAUTHORIZED);
+        }
+        if ($this->tokenRequiereZonalUsuario($user) && !$zonal) {
+            return response()->json([
+                'status' => Response::HTTP_UNAUTHORIZED,
+                'message' => 'No se pudo obtener la zonal del usuario',
             ], Response::HTTP_UNAUTHORIZED);
         }
 
         $visita = RcVisitaFormulario::find($visitaId);
-        if (!$visita || !$this->visitaPerteneceAZonal($visita, $zonal)) {
+        if (!$visita || !$this->puedeGestionarVisitaRecopilacion($user, $visita, $zonal)) {
             return response()->json([
                 'status' => Response::HTTP_FORBIDDEN,
                 'message' => 'Visita no encontrada o no pertenece a su zonal',
@@ -774,8 +841,15 @@ class RecopilacionController extends Controller
      */
     public function deleteMedia(int $id)
     {
+        $user = $this->getUsuarioRecopilacion();
         $zonal = $this->getZonalUsuario();
-        if (!$zonal) {
+        if (!$user) {
+            return response()->json([
+                'status' => Response::HTTP_UNAUTHORIZED,
+                'message' => 'No se pudo obtener el usuario autenticado',
+            ], Response::HTTP_UNAUTHORIZED);
+        }
+        if ($this->tokenRequiereZonalUsuario($user) && !$zonal) {
             return response()->json([
                 'status' => Response::HTTP_UNAUTHORIZED,
                 'message' => 'No se pudo obtener la zonal del usuario',
@@ -791,7 +865,7 @@ class RecopilacionController extends Controller
         }
 
         $visita = $media->respuesta->visita;
-        if (!$this->visitaPerteneceAZonal($visita, $zonal)) {
+        if (!$this->puedeGestionarVisitaRecopilacion($user, $visita, $zonal)) {
             return response()->json([
                 'status' => Response::HTTP_FORBIDDEN,
                 'message' => 'No puede eliminar archivos de esta visita',
