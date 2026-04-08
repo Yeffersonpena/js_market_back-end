@@ -392,6 +392,117 @@ class RecopilacionController extends Controller
         ], Response::HTTP_OK);
     }
 
+    /**
+     * GET reporte/opciones/grupo-si-no
+     * Reporte para tabla de preguntas con opciones SI/NO.
+     * Preguntas incluidas (fase 1): P03, P09, P11B.
+     */
+    public function reporteOpcionesGrupoSiNo(Request $request)
+    {
+        $user = $this->getUsuarioRecopilacion();
+        if (!$user) {
+            return response()->json([
+                'status' => Response::HTTP_UNAUTHORIZED,
+                'message' => 'No se pudo obtener el usuario autenticado',
+            ], Response::HTTP_UNAUTHORIZED);
+        }
+
+        if (! $this->esPerfilRecopilacionMaestro($user)) {
+            return response()->json([
+                'status' => Response::HTTP_FORBIDDEN,
+                'message' => 'Solo perfil maestro puede consultar este reporte',
+            ], Response::HTTP_FORBIDDEN);
+        }
+
+        $formularioCodigo = $request->get('formulario_codigo', 'DATOS_PDV_VENTAS');
+        $formulario = $this->getFormularioActivoRecopilacion($formularioCodigo);
+        if (!$formulario) {
+            return response()->json([
+                'status' => Response::HTTP_UNPROCESSABLE_ENTITY,
+                'message' => "No existe formulario activo con codigo {$formularioCodigo}",
+            ], Response::HTTP_UNPROCESSABLE_ENTITY);
+        }
+
+        $preguntasObjetivo = ['P03', 'P09', 'P11B'];
+
+        $preguntas = DB::connection('sqlsrv')
+            ->table('RC_PREGUNTA as p')
+            ->join('RC_SECCION as s', 's.id', '=', 'p.seccion_id')
+            ->where('s.formulario_id', $formulario->id)
+            ->where('p.activo', 1)
+            ->whereIn('p.codigo', $preguntasObjetivo)
+            ->select('p.id', 'p.codigo', 'p.texto')
+            ->get();
+
+        $orderMap = array_flip($preguntasObjetivo);
+        $preguntas = $preguntas->sortBy(fn ($p) => $orderMap[$p->codigo] ?? 999)->values();
+
+        $matriz = [];
+        foreach ($preguntas as $p) {
+            $matriz[$p->codigo] = [
+                'pregunta_codigo' => $p->codigo,
+                'pregunta_texto' => $p->texto,
+                'si' => 0,
+                'no' => 0,
+                'total' => 0,
+            ];
+        }
+
+        if (!empty($matriz)) {
+            $rows = DB::connection('sqlsrv')
+                ->table('RC_RESPUESTA as r')
+                ->join('RC_VISITA_FORMULARIO as v', 'v.id', '=', 'r.visita_id')
+                ->join('RC_PREGUNTA as p', 'p.id', '=', 'r.pregunta_id')
+                ->leftJoin('RC_RESPUESTA_OPCION as ro', 'ro.respuesta_id', '=', 'r.id')
+                ->leftJoin('RC_PREGUNTA_OPCION as po', 'po.id', '=', 'ro.opcion_id')
+                ->where('v.formulario_id', $formulario->id)
+                ->where('v.estado', 'finalizado')
+                ->whereIn('p.codigo', $preguntasObjetivo)
+                ->select(
+                    'p.codigo as pregunta_codigo',
+                    'r.valor_booleano',
+                    'po.codigo as opcion_codigo',
+                    'po.valor as opcion_valor',
+                    'po.etiqueta as opcion_etiqueta'
+                )
+                ->get();
+
+            foreach ($rows as $row) {
+                $codigoPregunta = (string) ($row->pregunta_codigo ?? '');
+                if (!isset($matriz[$codigoPregunta])) {
+                    continue;
+                }
+
+                $respuesta = $this->normalizarOpcionSiNo($row->opcion_codigo)
+                    ?? $this->normalizarOpcionSiNo($row->opcion_valor)
+                    ?? $this->normalizarOpcionSiNo($row->opcion_etiqueta);
+
+                if ($respuesta === null && $row->valor_booleano !== null) {
+                    $respuesta = ((int) $row->valor_booleano) === 1 ? 'SI' : 'NO';
+                }
+
+                if ($respuesta === 'SI') {
+                    $matriz[$codigoPregunta]['si']++;
+                    $matriz[$codigoPregunta]['total']++;
+                } elseif ($respuesta === 'NO') {
+                    $matriz[$codigoPregunta]['no']++;
+                    $matriz[$codigoPregunta]['total']++;
+                }
+            }
+        }
+
+        return response()->json([
+            'status' => Response::HTTP_OK,
+            'data' => array_values($matriz),
+            'meta' => [
+                'grupo' => 'si_no',
+                'formulario_codigo' => $formularioCodigo,
+                'preguntas' => $preguntasObjetivo,
+                'columnas' => ['SI', 'NO'],
+            ],
+        ], Response::HTTP_OK);
+    }
+
     public function reporteExcelFinalizadas(Request $request)
     {
         $user = $this->getUsuarioRecopilacion();
@@ -485,6 +596,28 @@ class RecopilacionController extends Controller
             ->where('activo', 1)
             ->orderByDesc('version')
             ->first();
+    }
+
+    private function normalizarOpcionSiNo($value): ?string
+    {
+        if ($value === null) {
+            return null;
+        }
+
+        $txt = strtoupper(trim((string) $value));
+        if ($txt === '') {
+            return null;
+        }
+
+        if (in_array($txt, ['SI', 'SÍ', 'TRUE', '1'], true)) {
+            return 'SI';
+        }
+
+        if (in_array($txt, ['NO', 'FALSE', '0'], true)) {
+            return 'NO';
+        }
+
+        return null;
     }
 
     private function getCabeceraVisitasFinalizadas(int $formularioId): array
