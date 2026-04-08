@@ -16,8 +16,10 @@ class RecopilacionMiddleware
     public function handle(Request $request, Closure $next): Response
     {
         $user = $request->get('user');
+        $idPerfil = $user ? (int) data_get($user, 'idPerfil', 0) : 0;
 
-        if (!$user || !isset($user['idPerfil']) || (int) $user['idPerfil'] !== 6) {
+        // 6 = ejecutor (DNI), 7 = supervisor zonal (login tipo ayacucho/cusco/...)
+        if (!$user || ! in_array($idPerfil, [6, 7], true)) {
             return response()->json(
                 [
                     'status' => Response::HTTP_UNAUTHORIZED,
