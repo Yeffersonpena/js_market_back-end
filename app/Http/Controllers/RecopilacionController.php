@@ -267,8 +267,9 @@ class RecopilacionController extends Controller
             ], Response::HTTP_UNAUTHORIZED);
         }
 
-        $anio = (int) $request->get('anio', now()->year);
-        $mes = (int) $request->get('mes', now()->month);
+        $anio = $request->filled('anio') ? (int) $request->get('anio') : null;
+        $mes = $request->filled('mes') ? (int) $request->get('mes') : null;
+        $filtrarPeriodo = $anio !== null && $mes !== null;
         $formularioCodigo = $request->get('formulario_codigo', 'DATOS_PDV_VENTAS');
         $dniUsuario = $this->esPerfilRecopilacionEjecutor($user) ? $this->getDniUsuarioDesdeToken($user) : null;
 
@@ -294,9 +295,13 @@ class RecopilacionController extends Controller
         $programados = DB::connection('sqlsrv')
             ->table('RC_PDV_ASIGNACION_VISITA as a')
             ->join('RC_CLIENTE_PDV as c', 'c.id', '=', 'a.pdv_id')
-            ->whereNotNull('a.fecha_visita_tentativa')
-            ->whereRaw('YEAR(a.fecha_visita_tentativa) = ?', [$anio])
-            ->whereRaw('MONTH(a.fecha_visita_tentativa) = ?', [$mes]);
+            ->whereNotNull('a.fecha_visita_tentativa');
+
+        if ($filtrarPeriodo) {
+            $programados
+                ->whereRaw('YEAR(a.fecha_visita_tentativa) = ?', [$anio])
+                ->whereRaw('MONTH(a.fecha_visita_tentativa) = ?', [$mes]);
+        }
 
         if ($this->esPerfilRecopilacionEjecutor($user)) {
             $programados->where('a.dni_ejecutor', $dniUsuario);
@@ -314,13 +319,20 @@ class RecopilacionController extends Controller
             ->join('RC_VISITA_FORMULARIO as v', function ($join) use ($formulario, $anio, $mes) {
                 $join->on('v.cliente_id', '=', 'a.pdv_id')
                     ->where('v.formulario_id', $formulario->id)
-                    ->where('v.anio', $anio)
-                    ->where('v.mes', $mes)
                     ->where('v.estado', 'finalizado');
+
+                if ($anio !== null && $mes !== null) {
+                    $join->where('v.anio', $anio)
+                        ->where('v.mes', $mes);
+                }
             })
-            ->whereNotNull('a.fecha_visita_tentativa')
-            ->whereRaw('YEAR(a.fecha_visita_tentativa) = ?', [$anio])
-            ->whereRaw('MONTH(a.fecha_visita_tentativa) = ?', [$mes]);
+            ->whereNotNull('a.fecha_visita_tentativa');
+
+        if ($filtrarPeriodo) {
+            $ejecutados
+                ->whereRaw('YEAR(a.fecha_visita_tentativa) = ?', [$anio])
+                ->whereRaw('MONTH(a.fecha_visita_tentativa) = ?', [$mes]);
+        }
 
         if ($this->esPerfilRecopilacionEjecutor($user)) {
             $ejecutados->where('a.dni_ejecutor', $dniUsuario);
@@ -372,6 +384,7 @@ class RecopilacionController extends Controller
             'meta' => [
                 'anio' => $anio,
                 'mes' => $mes,
+                'scope' => $filtrarPeriodo ? 'periodo' : 'global',
                 'formulario_codigo' => $formularioCodigo,
             ],
         ], Response::HTTP_OK);
