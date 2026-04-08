@@ -503,6 +503,121 @@ class RecopilacionController extends Controller
         ], Response::HTTP_OK);
     }
 
+    /**
+     * GET reporte/opciones/grupo-escala-5
+     * Reporte para tabla de preguntas con escala 1..5.
+     * Preguntas incluidas (fase 2): P23, P30.
+     */
+    public function reporteOpcionesGrupoEscala5(Request $request)
+    {
+        $user = $this->getUsuarioRecopilacion();
+        if (!$user) {
+            return response()->json([
+                'status' => Response::HTTP_UNAUTHORIZED,
+                'message' => 'No se pudo obtener el usuario autenticado',
+            ], Response::HTTP_UNAUTHORIZED);
+        }
+
+        if (! $this->esPerfilRecopilacionMaestro($user)) {
+            return response()->json([
+                'status' => Response::HTTP_FORBIDDEN,
+                'message' => 'Solo perfil maestro puede consultar este reporte',
+            ], Response::HTTP_FORBIDDEN);
+        }
+
+        $formularioCodigo = $request->get('formulario_codigo', 'DATOS_PDV_VENTAS');
+        $formulario = $this->getFormularioActivoRecopilacion($formularioCodigo);
+        if (!$formulario) {
+            return response()->json([
+                'status' => Response::HTTP_UNPROCESSABLE_ENTITY,
+                'message' => "No existe formulario activo con codigo {$formularioCodigo}",
+            ], Response::HTTP_UNPROCESSABLE_ENTITY);
+        }
+
+        $preguntasObjetivo = ['P23', 'P30'];
+
+        $preguntas = DB::connection('sqlsrv')
+            ->table('RC_PREGUNTA as p')
+            ->join('RC_SECCION as s', 's.id', '=', 'p.seccion_id')
+            ->where('s.formulario_id', $formulario->id)
+            ->where('p.activo', 1)
+            ->whereIn('p.codigo', $preguntasObjetivo)
+            ->select('p.id', 'p.codigo', 'p.texto')
+            ->get();
+
+        $orderMap = array_flip($preguntasObjetivo);
+        $preguntas = $preguntas->sortBy(fn ($p) => $orderMap[$p->codigo] ?? 999)->values();
+
+        $matriz = [];
+        foreach ($preguntas as $p) {
+            $matriz[$p->codigo] = [
+                'pregunta_codigo' => $p->codigo,
+                'pregunta_texto' => $p->texto,
+                'nivel_1' => 0,
+                'nivel_2' => 0,
+                'nivel_3' => 0,
+                'nivel_4' => 0,
+                'nivel_5' => 0,
+                'total' => 0,
+            ];
+        }
+
+        if (!empty($matriz)) {
+            $rows = DB::connection('sqlsrv')
+                ->table('RC_RESPUESTA as r')
+                ->join('RC_VISITA_FORMULARIO as v', 'v.id', '=', 'r.visita_id')
+                ->join('RC_PREGUNTA as p', 'p.id', '=', 'r.pregunta_id')
+                ->leftJoin('RC_RESPUESTA_OPCION as ro', 'ro.respuesta_id', '=', 'r.id')
+                ->leftJoin('RC_PREGUNTA_OPCION as po', 'po.id', '=', 'ro.opcion_id')
+                ->where('v.formulario_id', $formulario->id)
+                ->where('v.estado', 'finalizado')
+                ->whereIn('p.codigo', $preguntasObjetivo)
+                ->select(
+                    'p.codigo as pregunta_codigo',
+                    'r.valor_numero',
+                    'r.valor_decimal',
+                    'r.valor_texto',
+                    'po.codigo as opcion_codigo',
+                    'po.valor as opcion_valor',
+                    'po.etiqueta as opcion_etiqueta'
+                )
+                ->get();
+
+            foreach ($rows as $row) {
+                $codigoPregunta = (string) ($row->pregunta_codigo ?? '');
+                if (!isset($matriz[$codigoPregunta])) {
+                    continue;
+                }
+
+                $nivel = $this->normalizarEscalaUnoACinco($row->opcion_valor)
+                    ?? $this->normalizarEscalaUnoACinco($row->opcion_codigo)
+                    ?? $this->normalizarEscalaUnoACinco($row->opcion_etiqueta)
+                    ?? $this->normalizarEscalaUnoACinco($row->valor_numero)
+                    ?? $this->normalizarEscalaUnoACinco($row->valor_decimal)
+                    ?? $this->normalizarEscalaUnoACinco($row->valor_texto);
+
+                if ($nivel === null) {
+                    continue;
+                }
+
+                $key = "nivel_{$nivel}";
+                $matriz[$codigoPregunta][$key]++;
+                $matriz[$codigoPregunta]['total']++;
+            }
+        }
+
+        return response()->json([
+            'status' => Response::HTTP_OK,
+            'data' => array_values($matriz),
+            'meta' => [
+                'grupo' => 'escala_1_5',
+                'formulario_codigo' => $formularioCodigo,
+                'preguntas' => $preguntasObjetivo,
+                'columnas' => ['1', '2', '3', '4', '5'],
+            ],
+        ], Response::HTTP_OK);
+    }
+
     public function reporteExcelFinalizadas(Request $request)
     {
         $user = $this->getUsuarioRecopilacion();
@@ -615,6 +730,24 @@ class RecopilacionController extends Controller
 
         if (in_array($txt, ['NO', 'FALSE', '0'], true)) {
             return 'NO';
+        }
+
+        return null;
+    }
+
+    private function normalizarEscalaUnoACinco($value): ?int
+    {
+        if ($value === null) {
+            return null;
+        }
+
+        $txt = trim((string) $value);
+        if ($txt === '') {
+            return null;
+        }
+
+        if (preg_match('/([1-5])/', $txt, $m) === 1) {
+            return (int) $m[1];
         }
 
         return null;
