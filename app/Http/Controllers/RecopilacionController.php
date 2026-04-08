@@ -19,6 +19,12 @@ use Tymon\JWTAuth\Facades\JWTAuth;
 
 class RecopilacionController extends Controller
 {
+    /** Recopilación: ejecutor (lista por asignación + DNI en users.user) */
+    private const PERFIL_RECOPILACION_EJECUTOR = 6;
+
+    /** Recopilación: supervisor zonal (lista por users.zonal) */
+    private const PERFIL_RECOPILACION_ZONAL = 7;
+
     private function getZonalUsuario()
     {
         try {
@@ -53,6 +59,16 @@ class RecopilacionController extends Controller
         return $dni !== '' ? $dni : null;
     }
 
+    private function esPerfilRecopilacionEjecutor(object $user): bool
+    {
+        return (int) ($user->idPerfil ?? 0) === self::PERFIL_RECOPILACION_EJECUTOR;
+    }
+
+    private function esPerfilRecopilacionZonal(object $user): bool
+    {
+        return (int) ($user->idPerfil ?? 0) === self::PERFIL_RECOPILACION_ZONAL;
+    }
+
     private function visitaPerteneceAZonal(RcVisitaFormulario $visita, ?string $zonal): bool
     {
         return $zonal !== null && $visita->zonal_usuario === $zonal;
@@ -72,11 +88,28 @@ class RecopilacionController extends Controller
             ], Response::HTTP_UNAUTHORIZED);
         }
 
-        $dniUsuario = $this->getDniUsuarioDesdeToken($user);
-        if (!$dniUsuario) {
+        if (!$this->esPerfilRecopilacionEjecutor($user) && !$this->esPerfilRecopilacionZonal($user)) {
+            return response()->json([
+                'status' => Response::HTTP_FORBIDDEN,
+                'message' => 'Perfil no autorizado para recopilacion',
+            ], Response::HTTP_FORBIDDEN);
+        }
+
+        $zonal = $this->getZonalUsuario();
+        $esEjecutor = $this->esPerfilRecopilacionEjecutor($user);
+
+        if ($esEjecutor) {
+            $dniUsuario = $this->getDniUsuarioDesdeToken($user);
+            if (!$dniUsuario) {
+                return response()->json([
+                    'status' => Response::HTTP_UNAUTHORIZED,
+                    'message' => 'No se pudo obtener el DNI del usuario',
+                ], Response::HTTP_UNAUTHORIZED);
+            }
+        } elseif (!$zonal) {
             return response()->json([
                 'status' => Response::HTTP_UNAUTHORIZED,
-                'message' => 'No se pudo obtener el DNI del usuario',
+                'message' => 'No se pudo obtener la zonal del usuario',
             ], Response::HTTP_UNAUTHORIZED);
         }
 
@@ -100,24 +133,30 @@ class RecopilacionController extends Controller
             ], Response::HTTP_UNPROCESSABLE_ENTITY);
         }
 
-        $asignadosQuery = DB::connection('sqlsrv')
-            ->table('RC_PDV_ASIGNACION_VISITA')
-            ->select('pdv_id')
-            ->where('dni_ejecutor', $dniUsuario)
-            ->whereNotNull('fecha_visita_tentativa')
-            ->distinct();
-
         $query = DB::connection('sqlsrv')
-            ->table('RC_CLIENTE_PDV as c')
-            ->joinSub($asignadosQuery, 'a', function ($join) {
+            ->table('RC_CLIENTE_PDV as c');
+
+        if ($esEjecutor) {
+            $asignadosQuery = DB::connection('sqlsrv')
+                ->table('RC_PDV_ASIGNACION_VISITA')
+                ->select('pdv_id')
+                ->where('dni_ejecutor', $dniUsuario)
+                ->whereNotNull('fecha_visita_tentativa')
+                ->distinct();
+
+            $query->joinSub($asignadosQuery, 'a', function ($join) {
                 $join->on('a.pdv_id', '=', 'c.id');
-            })
-            ->leftJoin('RC_VISITA_FORMULARIO as v', function ($join) use ($formulario, $anio, $mes) {
-                $join->on('v.cliente_id', '=', 'c.id')
-                    ->where('v.formulario_id', $formulario->id)
-                    ->where('v.anio', $anio)
-                    ->where('v.mes', $mes);
-            })
+            });
+        } else {
+            $query->where('c.zonal', $zonal);
+        }
+
+        $query->leftJoin('RC_VISITA_FORMULARIO as v', function ($join) use ($formulario, $anio, $mes) {
+            $join->on('v.cliente_id', '=', 'c.id')
+                ->where('v.formulario_id', $formulario->id)
+                ->where('v.anio', $anio)
+                ->where('v.mes', $mes);
+        })
             ->where(function ($q) {
                 $q->whereNull('v.id')
                     ->orWhere('v.estado', '!=', 'finalizado');
@@ -271,24 +310,38 @@ class RecopilacionController extends Controller
             ], Response::HTTP_FORBIDDEN);
         }
 
-        $dniToken = $this->getDniUsuarioDesdeToken($user);
-        if (!$dniToken) {
-            return response()->json([
-                'status' => Response::HTTP_UNAUTHORIZED,
-                'message' => 'No se pudo obtener el DNI del usuario',
-            ], Response::HTTP_UNAUTHORIZED);
-        }
-
-        $asignado = DB::connection('sqlsrv')
-            ->table('RC_PDV_ASIGNACION_VISITA')
-            ->where('pdv_id', $clienteId)
-            ->where('dni_ejecutor', $dniToken)
-            ->exists();
-
-        if (!$asignado) {
+        if (!$this->esPerfilRecopilacionEjecutor($user) && !$this->esPerfilRecopilacionZonal($user)) {
             return response()->json([
                 'status' => Response::HTTP_FORBIDDEN,
-                'message' => 'El punto no está asignado al usuario',
+                'message' => 'Perfil no autorizado para recopilacion',
+            ], Response::HTTP_FORBIDDEN);
+        }
+
+        if ($this->esPerfilRecopilacionEjecutor($user)) {
+            $dniToken = $this->getDniUsuarioDesdeToken($user);
+            if (!$dniToken) {
+                return response()->json([
+                    'status' => Response::HTTP_UNAUTHORIZED,
+                    'message' => 'No se pudo obtener el DNI del usuario',
+                ], Response::HTTP_UNAUTHORIZED);
+            }
+
+            $asignado = DB::connection('sqlsrv')
+                ->table('RC_PDV_ASIGNACION_VISITA')
+                ->where('pdv_id', $clienteId)
+                ->where('dni_ejecutor', $dniToken)
+                ->exists();
+
+            if (!$asignado) {
+                return response()->json([
+                    'status' => Response::HTTP_FORBIDDEN,
+                    'message' => 'El punto no está asignado al usuario',
+                ], Response::HTTP_FORBIDDEN);
+            }
+        } elseif ($this->esPerfilRecopilacionZonal($user) && $cliente->zonal !== $zonal) {
+            return response()->json([
+                'status' => Response::HTTP_FORBIDDEN,
+                'message' => 'Cliente no pertenece a su zonal',
             ], Response::HTTP_FORBIDDEN);
         }
 
