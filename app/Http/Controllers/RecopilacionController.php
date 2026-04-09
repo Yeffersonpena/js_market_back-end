@@ -917,6 +917,198 @@ class RecopilacionController extends Controller
         ], Response::HTTP_OK);
     }
 
+    /**
+     * GET reporte/opciones/grupo-criterios-competencia
+     * Tab 5:
+     * - Bloques individuales: P16, P11, P12, P21 (cada una con sus propias opciones)
+     * - Tabla combinada: P25/P31 (Si, No, Variante)
+     */
+    public function reporteOpcionesGrupoCriteriosCompetencia(Request $request)
+    {
+        $user = $this->getUsuarioRecopilacion();
+        if (!$user) {
+            return response()->json([
+                'status' => Response::HTTP_UNAUTHORIZED,
+                'message' => 'No se pudo obtener el usuario autenticado',
+            ], Response::HTTP_UNAUTHORIZED);
+        }
+
+        if (! $this->esPerfilRecopilacionMaestro($user)) {
+            return response()->json([
+                'status' => Response::HTTP_FORBIDDEN,
+                'message' => 'Solo perfil maestro puede consultar este reporte',
+            ], Response::HTTP_FORBIDDEN);
+        }
+
+        $formularioCodigo = $request->get('formulario_codigo', 'DATOS_PDV_VENTAS');
+        $formulario = $this->getFormularioActivoRecopilacion($formularioCodigo);
+        if (!$formulario) {
+            return response()->json([
+                'status' => Response::HTTP_UNPROCESSABLE_ENTITY,
+                'message' => "No existe formulario activo con codigo {$formularioCodigo}",
+            ], Response::HTTP_UNPROCESSABLE_ENTITY);
+        }
+
+        $preguntasIndividuales = ['P16', 'P11', 'P12', 'P21'];
+        $preguntasCombinadas = ['P25', 'P31'];
+        $preguntasObjetivo = array_merge($preguntasIndividuales, $preguntasCombinadas);
+
+        $catalogo = DB::connection('sqlsrv')
+            ->table('RC_PREGUNTA as p')
+            ->join('RC_SECCION as s', 's.id', '=', 'p.seccion_id')
+            ->join('RC_PREGUNTA_OPCION as po', 'po.pregunta_id', '=', 'p.id')
+            ->where('s.formulario_id', $formulario->id)
+            ->where('p.activo', 1)
+            ->where('po.activo', 1)
+            ->whereIn('p.codigo', $preguntasObjetivo)
+            ->orderBy('p.codigo')
+            ->orderBy('po.orden')
+            ->select(
+                'p.codigo as pregunta_codigo',
+                'p.texto as pregunta_texto',
+                'po.id as opcion_id',
+                'po.codigo as opcion_codigo',
+                'po.etiqueta as opcion_etiqueta',
+                'po.valor as opcion_valor',
+                'po.orden as opcion_orden'
+            )
+            ->get();
+
+        $individualesMap = [];
+        $combinadasMap = [];
+        $combinadaTipoPorOpcionId = [];
+
+        foreach ($catalogo as $row) {
+            $preguntaCodigo = (string) ($row->pregunta_codigo ?? '');
+            $opcionId = (int) ($row->opcion_id ?? 0);
+            $opcionCodigo = (string) ($row->opcion_codigo ?? '');
+            $opcionEtiqueta = (string) ($row->opcion_etiqueta ?? $opcionCodigo);
+            $opcionOrden = (int) ($row->opcion_orden ?? 999);
+
+            if (in_array($preguntaCodigo, $preguntasIndividuales, true)) {
+                if (! isset($individualesMap[$preguntaCodigo])) {
+                    $individualesMap[$preguntaCodigo] = [
+                        'pregunta_codigo' => $preguntaCodigo,
+                        'pregunta_texto' => $row->pregunta_texto,
+                        'opciones' => [],
+                        'total' => 0,
+                    ];
+                }
+                $individualesMap[$preguntaCodigo]['opciones'][] = [
+                    'opcion_id' => $opcionId,
+                    'opcion_codigo' => $opcionCodigo,
+                    'etiqueta' => $opcionEtiqueta,
+                    'orden' => $opcionOrden,
+                    'cantidad' => 0,
+                ];
+                continue;
+            }
+
+            if (! in_array($preguntaCodigo, $preguntasCombinadas, true)) {
+                continue;
+            }
+
+            if (! isset($combinadasMap[$preguntaCodigo])) {
+                $combinadasMap[$preguntaCodigo] = [
+                    'pregunta_codigo' => $preguntaCodigo,
+                    'pregunta_texto' => $row->pregunta_texto,
+                    'si' => 0,
+                    'no' => 0,
+                    'variante' => 0,
+                    'variante_etiqueta' => 'Variante',
+                    'total' => 0,
+                ];
+            }
+
+            $tipo = $this->normalizarOpcionSiNo($opcionCodigo)
+                ?? $this->normalizarOpcionSiNo($row->opcion_valor)
+                ?? $this->normalizarOpcionSiNo($opcionEtiqueta);
+
+            if ($tipo === 'SI') {
+                $combinadaTipoPorOpcionId[$opcionId] = 'si';
+            } elseif ($tipo === 'NO') {
+                $combinadaTipoPorOpcionId[$opcionId] = 'no';
+            } else {
+                $combinadaTipoPorOpcionId[$opcionId] = 'variante';
+                $combinadasMap[$preguntaCodigo]['variante_etiqueta'] = $opcionEtiqueta;
+            }
+        }
+
+        $conteos = DB::connection('sqlsrv')
+            ->table('RC_RESPUESTA as r')
+            ->join('RC_VISITA_FORMULARIO as v', 'v.id', '=', 'r.visita_id')
+            ->join('RC_PREGUNTA as p', 'p.id', '=', 'r.pregunta_id')
+            ->join('RC_RESPUESTA_OPCION as ro', 'ro.respuesta_id', '=', 'r.id')
+            ->join('RC_PREGUNTA_OPCION as po', 'po.id', '=', 'ro.opcion_id')
+            ->where('v.formulario_id', $formulario->id)
+            ->where('v.estado', 'finalizado')
+            ->whereIn('p.codigo', $preguntasObjetivo)
+            ->groupBy('p.codigo', 'po.id')
+            ->selectRaw('p.codigo as pregunta_codigo, po.id as opcion_id, COUNT(*) as cantidad')
+            ->get();
+
+        foreach ($conteos as $c) {
+            $preguntaCodigo = (string) ($c->pregunta_codigo ?? '');
+            $opcionId = (int) ($c->opcion_id ?? 0);
+            $cantidad = (int) ($c->cantidad ?? 0);
+
+            if (isset($individualesMap[$preguntaCodigo])) {
+                foreach ($individualesMap[$preguntaCodigo]['opciones'] as $i => $op) {
+                    if ((int) ($op['opcion_id'] ?? 0) !== $opcionId) {
+                        continue;
+                    }
+                    $individualesMap[$preguntaCodigo]['opciones'][$i]['cantidad'] = $cantidad;
+                    $individualesMap[$preguntaCodigo]['total'] += $cantidad;
+                    break;
+                }
+                continue;
+            }
+
+            if (! isset($combinadasMap[$preguntaCodigo])) {
+                continue;
+            }
+
+            $slot = $combinadaTipoPorOpcionId[$opcionId] ?? 'variante';
+            if (! in_array($slot, ['si', 'no', 'variante'], true)) {
+                $slot = 'variante';
+            }
+            $combinadasMap[$preguntaCodigo][$slot] += $cantidad;
+            $combinadasMap[$preguntaCodigo]['total'] += $cantidad;
+        }
+
+        $individuales = [];
+        foreach ($preguntasIndividuales as $codigoPregunta) {
+            if (! isset($individualesMap[$codigoPregunta])) {
+                continue;
+            }
+            $bloque = $individualesMap[$codigoPregunta];
+            usort($bloque['opciones'], fn ($a, $b) => ((int) ($a['orden'] ?? 999)) <=> ((int) ($b['orden'] ?? 999)));
+            $individuales[] = $bloque;
+        }
+
+        $combinadaSiNoVariante = [];
+        foreach ($preguntasCombinadas as $codigoPregunta) {
+            if (isset($combinadasMap[$codigoPregunta])) {
+                $combinadaSiNoVariante[] = $combinadasMap[$codigoPregunta];
+            }
+        }
+
+        return response()->json([
+            'status' => Response::HTTP_OK,
+            'data' => [
+                'individuales' => $individuales,
+                'combinada_si_no_variante' => $combinadaSiNoVariante,
+            ],
+            'meta' => [
+                'grupo' => 'criterios_competencia',
+                'formulario_codigo' => $formularioCodigo,
+                'preguntas_individuales' => $preguntasIndividuales,
+                'preguntas_combinadas' => $preguntasCombinadas,
+                'columnas_combinadas' => ['SI', 'NO', 'VARIANTE'],
+            ],
+        ], Response::HTTP_OK);
+    }
+
     public function reporteExcelFinalizadas(Request $request)
     {
         $user = $this->getUsuarioRecopilacion();
