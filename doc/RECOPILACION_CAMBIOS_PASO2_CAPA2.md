@@ -80,40 +80,35 @@ Frontend:
 
 - **Tipo**: `texto_largo`.
 - **Convención de almacenamiento**:
-  - `RC_RESPUESTA.valor_texto` guarda un **JSON array** con hasta 5 proveedores, por ejemplo:
-    - `["Proveedor 1", "Proveedor 2", "Proveedor 3"]`
+  - `RC_RESPUESTA.valor_texto` es **un solo texto** con exactamente **5 posiciones** unidas por un separador fijo (comodín): el carácter **`|`** (pipe).
+  - Ejemplo: `Distribuidor A|Mayorista B|||` (proveedor 1, 2, 3 vacíos 4 y 5).
   - No se crean columnas ni tablas adicionales; toda la lista vive en `valor_texto`.
 
 Frontend:
-- Mostrar 5 inputs de texto independientes para esta pregunta.
-- Al cargar:
-  - Si `valor_texto` tiene contenido, hacer `JSON.parse(valor_texto)` y asignar cada elemento a un input.
-- Al guardar:
-  - Tomar los valores no vacíos de los 5 inputs → armar un array de strings.
-  - Serializar con `JSON.stringify(array)` y enviarlo en `valor_texto` de la respuesta de P14.
+- Mostrar **5 inputs** de texto independientes (Proveedor 1 … Proveedor 5).
+- Al guardar: unir los cinco textos con `|` (los `|` que el usuario escriba dentro de un nombre se sustituyen por espacio al persistir).
+- Al cargar: partir con `split('|')` y rellenar los 5 campos (compatibilidad con respuestas antiguas en JSON o texto libre según implementación del cliente).
 
-Backend:
-- Cuando se necesite consumir esta información como lista:
-  - Usar `json_decode($respuesta->valor_texto, true)` en PHP para obtener `array<string>`.
+Backend / reportes:
+- Para tabular: en PHP `explode('|', $valor_texto)` y tomar los primeros 5 elementos (rellenar vacíos si hay menos), o en Excel “Texto en columnas” con separador `|`.
+- Datos históricos en JSON (`["a","b"]` o `{ "principal", "secundarios" }`) pueden seguir existiendo; el frontend actual los migra al leer hacia los 5 slots.
 
-## 6) P15 – ¿Qué marcas maneja en mostradores? (lista de hasta 10 marcas + fotos)
+## 6) P15 – ¿Qué marcas maneja en mostradores? (orden ~12 en el cuestionario; código BD `P15`)
 
-- **Tipo**: `texto_largo`, con `requiere_foto = 1` y soporte de media en `RC_RESPUESTA_MEDIA`.
-- **Convención de almacenamiento para marcas**:
-  - Igual que proveedores, `RC_RESPUESTA.valor_texto` guardará un **JSON array** con hasta 10 marcas, por ejemplo:
-    - `["Marca 1", "Marca 2", "Marca 3"]`
+Texto de negocio: *«¿Qué marcas maneja en mostradores?»* — lo que está en la góndola es la competencia directa de Sync; anotar marcas y, si puede, fotografiar precios visibles.
+
+- **Tipo**: `texto_largo`, con `requiere_foto = 1`, **`min_fotos = 2`**, `max_fotos = 10` (ya en seeds `03_INSERT_RC_PREGUNTA_DATOS_PDV_VENTAS.sql`).
+- **Convención de almacenamiento para marcas** (alineada con **P14**):
+  - **No** es texto libre: son **10 campos fijos** de marca.
+  - `RC_RESPUESTA.valor_texto` = **un solo string** con **10 posiciones** separadas por **`|`** (pipe), p. ej. `Samsung|Xiaomi|||||||` (marcas 1–3 informadas, resto vacío).
+  - Legado: si existía JSON array o una sola línea, el frontend puede migrar al leer hacia los 10 slots.
 
 Frontend:
-- Mostrar 10 inputs de texto independientes para esta pregunta.
-- Al cargar:
-  - Parsear `valor_texto` como JSON para rellenar los 10 inputs.
-- Al guardar:
-  - Recoger hasta 10 valores no vacíos → array de strings → `JSON.stringify` → `valor_texto`.
-- Para fotos:
-  - Mantener la lógica actual de subida de media (`uploadMedia`), pero controlando al menos 2 fotos:
-    - Validar en UI que se hayan subido ≥ 2 imágenes antes de dar por completa la sección.
+- **10 inputs** independientes (Marca 1 … Marca 10).
+- Guardar / cargar con `split` / `join` por `|` (sustituir `|` dentro del nombre por espacio al persistir, igual que P14).
+- **Fotos**: subida vía `RC_RESPUESTA_MEDIA` (`uploadMedia`); la UI debe exigir **mínimo 2 fotos** antes de avanzar de sección (validación en cliente coherente con `min_fotos` en BD).
 
 Backend:
-- No requiere nuevas tablas; se sigue usando `RC_RESPUESTA_MEDIA` para las fotos.
-- Si en algún proceso se analiza la lista de marcas, se parsea `valor_texto` como JSON igual que en P14.
+- Sin tablas nuevas; fotos en `RC_RESPUESTA_MEDIA`.
+- Para tabular marcas: `explode('|', $valor_texto)` y tomar hasta 10 elementos.
 
