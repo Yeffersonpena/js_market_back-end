@@ -1158,6 +1158,7 @@ class RecopilacionController extends Controller
 
         $rows = [];
         foreach ($cabeceras as $visita) {
+            $valoresPaso1Precargados = $this->getValoresPrecargadosPaso1ParaExcel($visita);
             $row = [
                 $visita['fecha_registro'] ?? '',
                 $visita['usuario_registro'] ?? '',
@@ -1173,6 +1174,12 @@ class RecopilacionController extends Controller
             ];
 
             foreach ($diccionario as $q) {
+                $preguntaCodigo = (string) ($q['pregunta_codigo'] ?? '');
+                if (array_key_exists($preguntaCodigo, $valoresPaso1Precargados)) {
+                    $row[] = $valoresPaso1Precargados[$preguntaCodigo];
+                    continue;
+                }
+
                 $key = $visita['visita_id'] . '|' . $q['pregunta_id'];
                 $row[] = $respuestasLegibles[$key] ?? '';
             }
@@ -1257,6 +1264,9 @@ class RecopilacionController extends Controller
                 'c.distrito',
                 'c.direccion',
                 'c.vendedor as vendedor_ruta',
+                'c.promedio_equipo',
+                'c.total_s_venta_accesorio',
+                'c.vende_accesorios',
                 'u.user as usuario_catalogo'
             )
             ->orderByDesc('v.fecha_ultima_edicion')
@@ -1277,6 +1287,9 @@ class RecopilacionController extends Controller
                 'distrito' => $r->distrito,
                 'direccion' => $r->direccion,
                 'vendedor_ruta' => $r->vendedor_ruta,
+                'promedio_equipo' => $r->promedio_equipo,
+                'total_s_venta_accesorio' => $r->total_s_venta_accesorio,
+                'vende_accesorios' => $r->vende_accesorios,
             ];
         })->values()->all();
     }
@@ -1395,6 +1408,82 @@ class RecopilacionController extends Controller
         }
 
         return $result;
+    }
+
+    private function getValoresPrecargadosPaso1ParaExcel(array $visita): array
+    {
+        $promedioEquipo = $visita['promedio_equipo'] ?? null;
+        $totalVentaAccesorio = $visita['total_s_venta_accesorio'] ?? null;
+        $vendeAccesorios = $this->normalizarBooleanoDesdeCatalogo($visita['vende_accesorios'] ?? null);
+
+        $p01 = $this->formatearMontoSoles($promedioEquipo, true);
+        $p02 = $this->formatearMontoSoles(
+            is_numeric((string) $promedioEquipo) ? ((float) $promedioEquipo) * 0.1 : null,
+            true
+        );
+
+        if ($vendeAccesorios === true) {
+            $monto = $this->formatearMontoSoles($totalVentaAccesorio, false);
+            $p03 = $monto !== '' ? "Sí | {$monto}" : 'Sí';
+        } elseif ($vendeAccesorios === false) {
+            $p03 = 'No';
+        } else {
+            $p03 = '';
+        }
+
+        $zonal = trim((string) ($visita['zonal'] ?? ''));
+        $vendedor = trim((string) ($visita['vendedor_ruta'] ?? ''));
+        $p04 = "Zonal: " . ($zonal !== '' ? $zonal : '—') . "\nVendedor JS: " . ($vendedor !== '' ? $vendedor : '—');
+
+        return [
+            'P01' => $p01,
+            'P02' => $p02,
+            'P03' => $p03,
+            'P04' => $p04,
+            'P05' => 'Catálogo y fotos',
+        ];
+    }
+
+    private function normalizarBooleanoDesdeCatalogo($value): ?bool
+    {
+        if ($value === null) {
+            return null;
+        }
+
+        if (is_bool($value)) {
+            return $value;
+        }
+
+        if (is_numeric((string) $value)) {
+            return ((int) $value) === 1;
+        }
+
+        $txt = strtoupper(trim((string) $value));
+        if ($txt === '') {
+            return null;
+        }
+
+        if (in_array($txt, ['SI', 'SÍ', 'TRUE'], true)) {
+            return true;
+        }
+
+        if (in_array($txt, ['NO', 'FALSE'], true)) {
+            return false;
+        }
+
+        return null;
+    }
+
+    private function formatearMontoSoles($value, bool $conSufijoMes): string
+    {
+        if ($value === null || !is_numeric((string) $value)) {
+            return '';
+        }
+
+        $formatted = number_format((float) $value, 2, '.', ',');
+        $formatted = rtrim(rtrim($formatted, '0'), '.');
+
+        return $conSufijoMes ? "S/ {$formatted} /mes" : "S/ {$formatted}";
     }
 
     /**
