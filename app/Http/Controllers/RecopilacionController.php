@@ -101,7 +101,7 @@ class RecopilacionController extends Controller
 
     /**
      * Lista de puntos (RC_CLIENTE_PDV) de la zonal del usuario que aun no tienen
-     * la recopilacion finalizada para el formulario y periodo dados.
+     * instancia de visita (RC_VISITA_FORMULARIO) para el formulario y periodo dados.
      */
     public function puntosPendientes(Request $request)
     {
@@ -187,10 +187,7 @@ class RecopilacionController extends Controller
                 ->where('v.anio', $anio)
                 ->where('v.mes', $mes);
         })
-            ->where(function ($q) {
-                $q->whereNull('v.id')
-                    ->orWhere('v.estado', '!=', 'finalizado');
-            });
+            ->whereNull('v.id');
 
         if ($search !== '') {
             $term = '%' . $search . '%';
@@ -238,7 +235,7 @@ class RecopilacionController extends Controller
 
     /**
      * GET reporte/avance-zonal
-     * Resumen por zonal: programados, ejecutados (finalizados) y porcentaje de avance.
+     * Resumen por zonal: programados, ejecutados (visita con formulario en periodo) y porcentaje de avance.
      */
     public function reporteAvanceZonal(Request $request)
     {
@@ -320,8 +317,7 @@ class RecopilacionController extends Controller
             ->join('RC_CLIENTE_PDV as c', 'c.id', '=', 'a.pdv_id')
             ->join('RC_VISITA_FORMULARIO as v', function ($join) use ($formulario, $anio, $mes) {
                 $join->on('v.cliente_id', '=', 'a.pdv_id')
-                    ->where('v.formulario_id', $formulario->id)
-                    ->where('v.estado', 'finalizado');
+                    ->where('v.formulario_id', $formulario->id);
 
                 if ($anio !== null && $mes !== null) {
                     $join->where('v.anio', $anio)
@@ -456,7 +452,6 @@ class RecopilacionController extends Controller
                 ->leftJoin('RC_RESPUESTA_OPCION as ro', 'ro.respuesta_id', '=', 'r.id')
                 ->leftJoin('RC_PREGUNTA_OPCION as po', 'po.id', '=', 'ro.opcion_id')
                 ->where('v.formulario_id', $formulario->id)
-                ->where('v.estado', 'finalizado')
                 ->whereIn('p.codigo', $preguntasObjetivo)
                 ->select(
                     'p.codigo as pregunta_codigo',
@@ -570,7 +565,6 @@ class RecopilacionController extends Controller
                 ->leftJoin('RC_RESPUESTA_OPCION as ro', 'ro.respuesta_id', '=', 'r.id')
                 ->leftJoin('RC_PREGUNTA_OPCION as po', 'po.id', '=', 'ro.opcion_id')
                 ->where('v.formulario_id', $formulario->id)
-                ->where('v.estado', 'finalizado')
                 ->whereIn('p.codigo', $preguntasObjetivo)
                 ->select(
                     'p.codigo as pregunta_codigo',
@@ -706,7 +700,6 @@ class RecopilacionController extends Controller
                 ->join('RC_RESPUESTA_OPCION as ro', 'ro.respuesta_id', '=', 'r.id')
                 ->join('RC_PREGUNTA_OPCION as po', 'po.id', '=', 'ro.opcion_id')
                 ->where('v.formulario_id', $formulario->id)
-                ->where('v.estado', 'finalizado')
                 ->whereIn('p.codigo', $preguntasObjetivo)
                 ->groupBy('p.codigo', 'po.id')
                 ->selectRaw('p.codigo as pregunta_codigo, po.id as opcion_id, COUNT(*) as cantidad')
@@ -841,7 +834,6 @@ class RecopilacionController extends Controller
             ->join('RC_RESPUESTA_OPCION as ro', 'ro.respuesta_id', '=', 'r.id')
             ->join('RC_PREGUNTA_OPCION as po', 'po.id', '=', 'ro.opcion_id')
             ->where('v.formulario_id', $formulario->id)
-            ->where('v.estado', 'finalizado')
             ->whereIn('p.codigo', $preguntasObjetivo)
             ->groupBy('p.codigo', 'po.codigo')
             ->selectRaw('p.codigo as pregunta_codigo, po.codigo as opcion_codigo, COUNT(*) as cantidad')
@@ -1041,7 +1033,6 @@ class RecopilacionController extends Controller
             ->join('RC_RESPUESTA_OPCION as ro', 'ro.respuesta_id', '=', 'r.id')
             ->join('RC_PREGUNTA_OPCION as po', 'po.id', '=', 'ro.opcion_id')
             ->where('v.formulario_id', $formulario->id)
-            ->where('v.estado', 'finalizado')
             ->whereIn('p.codigo', $preguntasObjetivo)
             ->groupBy('p.codigo', 'po.id')
             ->selectRaw('p.codigo as pregunta_codigo, po.id as opcion_id, COUNT(*) as cantidad')
@@ -1253,7 +1244,6 @@ class RecopilacionController extends Controller
                 $join->on(DB::raw('CONVERT(VARCHAR(20), v.dni_usuario)'), '=', 'u.user');
             })
             ->where('v.formulario_id', $formularioId)
-            ->where('v.estado', 'finalizado')
             ->select(
                 'v.id as visita_id',
                 'v.fecha_ultima_edicion as fecha_registro',
@@ -1324,7 +1314,6 @@ class RecopilacionController extends Controller
             ->join('RC_VISITA_FORMULARIO as v', 'v.id', '=', 'r.visita_id')
             ->join('RC_PREGUNTA as p', 'p.id', '=', 'r.pregunta_id')
             ->where('v.formulario_id', $formularioId)
-            ->where('v.estado', 'finalizado')
             ->where('p.activo', 1)
             ->select(
                 'v.id as visita_id',
