@@ -234,6 +234,140 @@ class RecopilacionController extends Controller
     }
 
     /**
+     * Lista de puntos (RC_CLIENTE_PDV) que SI tienen instancia de visita
+     * (RC_VISITA_FORMULARIO) para el formulario y periodo dados.
+     * Pensado para módulo de "registrados/editar".
+     */
+    public function puntosRegistrados(Request $request)
+    {
+        $user = $this->getUsuarioRecopilacion();
+        if (!$user) {
+            return response()->json([
+                'status' => Response::HTTP_UNAUTHORIZED,
+                'message' => 'No se pudo obtener el usuario autenticado',
+            ], Response::HTTP_UNAUTHORIZED);
+        }
+
+        if (
+            ! $this->esPerfilRecopilacionEjecutor($user)
+            && ! $this->esPerfilRecopilacionZonal($user)
+            && ! $this->esPerfilRecopilacionMaestro($user)
+        ) {
+            return response()->json([
+                'status' => Response::HTTP_FORBIDDEN,
+                'message' => 'Perfil no autorizado para recopilacion',
+            ], Response::HTTP_FORBIDDEN);
+        }
+
+        $zonal = $this->getZonalUsuario();
+        $esEjecutor = $this->esPerfilRecopilacionEjecutor($user);
+
+        if ($esEjecutor) {
+            $dniUsuario = $this->getDniUsuarioDesdeToken($user);
+            if (!$dniUsuario) {
+                return response()->json([
+                    'status' => Response::HTTP_UNAUTHORIZED,
+                    'message' => 'No se pudo obtener el DNI del usuario',
+                ], Response::HTTP_UNAUTHORIZED);
+            }
+        } elseif ($this->esPerfilRecopilacionZonal($user) && !$zonal) {
+            return response()->json([
+                'status' => Response::HTTP_UNAUTHORIZED,
+                'message' => 'No se pudo obtener la zonal del usuario',
+            ], Response::HTTP_UNAUTHORIZED);
+        }
+
+        $anio = (int) $request->get('anio', now()->year);
+        $mes = (int) $request->get('mes', now()->month);
+        $formularioCodigo = $request->get('formulario_codigo', 'DATOS_PDV_VENTAS');
+        $page = max(1, (int) $request->get('page', 1));
+        $perPage = min(100, max(5, (int) $request->get('per_page', 15)));
+        $search = $request->get('search', '');
+        $search = is_string($search) ? trim($search) : '';
+
+        $formulario = RcFormulario::where('codigo', $formularioCodigo)
+            ->where('activo', 1)
+            ->orderByDesc('version')
+            ->first();
+
+        if (!$formulario) {
+            return response()->json([
+                'status' => Response::HTTP_UNPROCESSABLE_ENTITY,
+                'message' => "No existe formulario activo con codigo {$formularioCodigo}",
+            ], Response::HTTP_UNPROCESSABLE_ENTITY);
+        }
+
+        $query = DB::connection('sqlsrv')
+            ->table('RC_CLIENTE_PDV as c');
+
+        if ($esEjecutor) {
+            $asignadosQuery = DB::connection('sqlsrv')
+                ->table('RC_PDV_ASIGNACION_VISITA')
+                ->select('pdv_id')
+                ->where('dni_ejecutor', $dniUsuario)
+                ->whereNotNull('fecha_visita_tentativa')
+                ->distinct();
+
+            $query->joinSub($asignadosQuery, 'a', function ($join) {
+                $join->on('a.pdv_id', '=', 'c.id');
+            });
+        } elseif ($this->esPerfilRecopilacionZonal($user)) {
+            $query->where('c.zonal', $zonal);
+        }
+        // maestro: sin filtro por asignación ni zonal
+
+        $query->join('RC_VISITA_FORMULARIO as v', function ($join) use ($formulario, $anio, $mes) {
+            $join->on('v.cliente_id', '=', 'c.id')
+                ->where('v.formulario_id', $formulario->id)
+                ->where('v.anio', $anio)
+                ->where('v.mes', $mes);
+        });
+
+        if ($search !== '') {
+            $term = '%' . $search . '%';
+            $query->where(function ($q) use ($term) {
+                $q->where('c.nro_documento', 'like', $term)
+                    ->orWhere('c.nombre_pdv', 'like', $term);
+            });
+        }
+
+        $total = $query->count();
+
+        $lista = (clone $query)
+            ->select(
+                'c.id as cliente_id',
+                'c.nro_documento',
+                'c.nombre_pdv',
+                'c.zonal',
+                'c.vendedor',
+                'c.promedio_equipo',
+                'c.total_s_venta_accesorio',
+                'c.vende_accesorios',
+                'v.id as visita_id',
+                'v.estado as estado_visita',
+                'v.porcentaje_avance',
+                'v.fecha_ultima_edicion'
+            )
+            ->orderByDesc('v.fecha_ultima_edicion')
+            ->orderByDesc('v.porcentaje_avance')
+            ->orderBy('c.nombre_pdv')
+            ->offset(($page - 1) * $perPage)
+            ->limit($perPage)
+            ->get();
+
+        return response()->json([
+            'status' => Response::HTTP_OK,
+            'data' => $lista,
+            'meta' => [
+                'current_page' => $page,
+                'per_page' => $perPage,
+                'total' => $total,
+                'last_page' => (int) ceil($total / $perPage),
+            ],
+        ], Response::HTTP_OK);
+    }
+
+    /**
      * GET reporte/avance-zonal
      * Resumen por zonal: programados, ejecutados (visita con formulario en periodo) y porcentaje de avance.
      */
