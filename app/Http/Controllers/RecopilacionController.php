@@ -1289,6 +1289,8 @@ class RecopilacionController extends Controller
             ->where('s.formulario_id', $formularioId)
             ->where('s.activo', 1)
             ->where('p.activo', 1)
+            // TEMP: ocultar del Excel preguntas que requieren evidencia fotográfica.
+            ->where('p.requiere_foto', 0)
             ->orderBy('s.orden')
             ->orderBy('p.orden')
             ->select(
@@ -1315,6 +1317,8 @@ class RecopilacionController extends Controller
             ->join('RC_PREGUNTA as p', 'p.id', '=', 'r.pregunta_id')
             ->where('v.formulario_id', $formularioId)
             ->where('p.activo', 1)
+            // TEMP: no cargar respuestas de preguntas con foto para exportación.
+            ->where('p.requiere_foto', 0)
             ->select(
                 'v.id as visita_id',
                 'r.id as respuesta_id',
