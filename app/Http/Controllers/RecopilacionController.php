@@ -2036,6 +2036,91 @@ class RecopilacionController extends Controller
             ], Response::HTTP_UNPROCESSABLE_ENTITY);
         }
 
+        $preguntasSeccion = RcPregunta::where('seccion_id', $seccionId)
+            ->where('activo', 1)
+            ->orderBy('orden')
+            ->get()
+            ->keyBy('id');
+
+        $preguntaIdsSeccion = $preguntasSeccion->keys()->map(fn ($id) => (int) $id)->values()->all();
+        $respuestasActuales = RcRespuesta::where('visita_id', $visitaId)
+            ->whereIn('pregunta_id', $preguntaIdsSeccion)
+            ->get()
+            ->keyBy('pregunta_id');
+
+        $payloadPorPregunta = [];
+        foreach ($validated['respuestas'] as $item) {
+            $payloadPorPregunta[(int) $item['pregunta_id']] = $item;
+        }
+
+        $respuestaIdsActuales = $respuestasActuales
+            ->pluck('id')
+            ->filter()
+            ->map(fn ($id) => (int) $id)
+            ->values()
+            ->all();
+
+        $opcionesPorRespuesta = [];
+        $fotosPorRespuesta = [];
+        if (!empty($respuestaIdsActuales)) {
+            $opcionesPorRespuesta = RcRespuestaOpcion::whereIn('respuesta_id', $respuestaIdsActuales)
+                ->selectRaw('respuesta_id, COUNT(1) as total')
+                ->groupBy('respuesta_id')
+                ->pluck('total', 'respuesta_id')
+                ->map(fn ($v) => (int) $v)
+                ->all();
+
+            $fotosPorRespuesta = RcRespuestaMedia::whereIn('respuesta_id', $respuestaIdsActuales)
+                ->where('tipo_media', 'foto')
+                ->selectRaw('respuesta_id, COUNT(1) as total')
+                ->groupBy('respuesta_id')
+                ->pluck('total', 'respuesta_id')
+                ->map(fn ($v) => (int) $v)
+                ->all();
+        }
+
+        $faltantes = [];
+        foreach ($preguntasSeccion as $pregunta) {
+            if (!(bool) $pregunta->obligatoria) {
+                continue;
+            }
+
+            $preguntaId = (int) $pregunta->id;
+            $respuestaActual = $respuestasActuales->get($preguntaId);
+            $payload = $payloadPorPregunta[$preguntaId] ?? null;
+
+            $validacion = $this->validarCompletitudPreguntaObligatoria(
+                $pregunta,
+                $respuestaActual,
+                $payload,
+                $opcionesPorRespuesta,
+                $fotosPorRespuesta
+            );
+
+            if (!$validacion['completa']) {
+                $faltantes[] = [
+                    'pregunta_id' => $preguntaId,
+                    'pregunta_codigo' => $pregunta->codigo,
+                    'pregunta_texto' => $pregunta->texto,
+                    'tipo_respuesta' => $pregunta->tipo_respuesta,
+                    'motivo' => $validacion['motivo'],
+                ];
+            }
+        }
+
+        if (!empty($faltantes)) {
+            return response()->json([
+                'status' => Response::HTTP_OK,
+                'message' => 'Faltan preguntas obligatorias por completar en la sección',
+                'data' => [
+                    'guardado' => false,
+                    'bloquea_avance' => true,
+                    'seccion_id' => $seccionId,
+                    'faltantes' => $faltantes,
+                ],
+            ], Response::HTTP_OK);
+        }
+
         $usuarioGuardado = $user->user ?? (string) $this->getDniUsuario($user);
 
         DB::connection('sqlsrv')->beginTransaction();
@@ -2064,7 +2149,7 @@ class RecopilacionController extends Controller
                     }
                     $respuesta->observacion = ($obs === '' || $obs === null) ? null : $obs;
                 }
-                $respuesta->no_aplica = isset($item['no_aplica']) ? (bool) $item['no_aplica'] : $respuesta->no_aplica;
+                $respuesta->no_aplica = array_key_exists('no_aplica', $item) ? (bool) $item['no_aplica'] : $respuesta->no_aplica;
                 $respuesta->usuario_guardado = $usuarioGuardado;
                 $respuesta->save();
 
@@ -2104,6 +2189,135 @@ class RecopilacionController extends Controller
             'status' => Response::HTTP_OK,
             'message' => 'Respuestas guardadas correctamente',
         ], Response::HTTP_OK);
+    }
+
+    private function validarCompletitudPreguntaObligatoria(
+        RcPregunta $pregunta,
+        ?RcRespuesta $respuestaActual,
+        ?array $payload,
+        array $opcionesPorRespuesta,
+        array $fotosPorRespuesta
+    ): array {
+        if (!$respuestaActual && !$payload) {
+            return ['completa' => false, 'motivo' => 'sin_respuesta'];
+        }
+
+        $noAplica = $this->tomarValorProyectado($respuestaActual?->no_aplica, $payload, 'no_aplica');
+        if ($noAplica === true) {
+            if ((bool) $pregunta->permite_no_aplica) {
+                return ['completa' => true, 'motivo' => null];
+            }
+
+            return ['completa' => false, 'motivo' => 'no_aplica_no_permitido'];
+        }
+
+        $tipo = (string) ($pregunta->tipo_respuesta ?? '');
+
+        if (in_array($tipo, ['opcion_unica', 'opcion_multiple'], true)) {
+            $totalOpciones = $this->totalOpcionesProyectadas($pregunta, $respuestaActual, $payload, $opcionesPorRespuesta);
+            return $totalOpciones > 0
+                ? ['completa' => true, 'motivo' => null]
+                : ['completa' => false, 'motivo' => 'sin_opciones'];
+        }
+
+        if ((bool) $pregunta->requiere_foto) {
+            $respuestaId = (int) ($respuestaActual?->id ?? 0);
+            $fotosActuales = $respuestaId > 0 ? (int) ($fotosPorRespuesta[$respuestaId] ?? 0) : 0;
+            $minFotos = max((int) ($pregunta->min_fotos ?? 0), 1);
+            if ($fotosActuales < $minFotos) {
+                return ['completa' => false, 'motivo' => 'falta_evidencia_fotografica'];
+            }
+        }
+
+        $valorTexto = $this->tomarValorProyectado($respuestaActual?->valor_texto, $payload, 'valor_texto');
+        $valorNumero = $this->tomarValorProyectado($respuestaActual?->valor_numero, $payload, 'valor_numero');
+        $valorDecimal = $this->tomarValorProyectado($respuestaActual?->valor_decimal, $payload, 'valor_decimal');
+        $valorBooleano = $this->tomarValorProyectado($respuestaActual?->valor_booleano, $payload, 'valor_booleano');
+        $valorFecha = $this->tomarValorProyectado($respuestaActual?->valor_fecha, $payload, 'valor_fecha');
+        $valorHora = $this->tomarValorProyectado($respuestaActual?->valor_hora, $payload, 'valor_hora');
+
+        return match ($tipo) {
+            'texto_corto', 'texto_largo' => (is_string($valorTexto) && trim($valorTexto) !== '')
+                ? ['completa' => true, 'motivo' => null]
+                : ['completa' => false, 'motivo' => 'texto_vacio'],
+            'numero' => $valorNumero !== null
+                ? ['completa' => true, 'motivo' => null]
+                : ['completa' => false, 'motivo' => 'numero_vacio'],
+            'decimal' => $valorDecimal !== null
+                ? ['completa' => true, 'motivo' => null]
+                : ['completa' => false, 'motivo' => 'decimal_vacio'],
+            'si_no' => $valorBooleano !== null
+                ? ['completa' => true, 'motivo' => null]
+                : ['completa' => false, 'motivo' => 'si_no_vacio'],
+            'fecha' => $valorFecha !== null && (string) $valorFecha !== ''
+                ? ['completa' => true, 'motivo' => null]
+                : ['completa' => false, 'motivo' => 'fecha_vacia'],
+            'hora' => $valorHora !== null && trim((string) $valorHora) !== ''
+                ? ['completa' => true, 'motivo' => null]
+                : ['completa' => false, 'motivo' => 'hora_vacia'],
+            default => $this->validarCompletitudFallback(
+                $valorTexto,
+                $valorNumero,
+                $valorDecimal,
+                $valorBooleano,
+                $valorFecha,
+                $valorHora
+            ),
+        };
+    }
+
+    private function totalOpcionesProyectadas(
+        RcPregunta $pregunta,
+        ?RcRespuesta $respuestaActual,
+        ?array $payload,
+        array $opcionesPorRespuesta
+    ): int {
+        if (is_array($payload) && array_key_exists('opcion_ids', $payload) && is_array($payload['opcion_ids'])) {
+            $opcionIds = array_values(array_unique(array_map('intval', $payload['opcion_ids'])));
+            $opcionIds = array_values(array_filter($opcionIds, fn ($id) => $id > 0));
+            if ($pregunta->tipo_respuesta === 'opcion_unica' && count($opcionIds) > 1) {
+                $opcionIds = [reset($opcionIds)];
+            }
+            return count($opcionIds);
+        }
+
+        $respuestaId = (int) ($respuestaActual?->id ?? 0);
+        if ($respuestaId <= 0) {
+            return 0;
+        }
+
+        return (int) ($opcionesPorRespuesta[$respuestaId] ?? 0);
+    }
+
+    private function tomarValorProyectado($valorActual, ?array $payload, string $key)
+    {
+        if (is_array($payload) && array_key_exists($key, $payload)) {
+            return $payload[$key];
+        }
+
+        return $valorActual;
+    }
+
+    private function validarCompletitudFallback(
+        $valorTexto,
+        $valorNumero,
+        $valorDecimal,
+        $valorBooleano,
+        $valorFecha,
+        $valorHora
+    ): array {
+        $completa = (
+            ($valorTexto !== null && trim((string) $valorTexto) !== '')
+            || $valorNumero !== null
+            || $valorDecimal !== null
+            || $valorBooleano !== null
+            || ($valorFecha !== null && (string) $valorFecha !== '')
+            || ($valorHora !== null && trim((string) $valorHora) !== '')
+        );
+
+        return $completa
+            ? ['completa' => true, 'motivo' => null]
+            : ['completa' => false, 'motivo' => 'sin_valor'];
     }
 
     /**
