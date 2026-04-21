@@ -1481,23 +1481,30 @@ class RecopilacionController extends Controller
             )
             ->get();
 
-        $respuestaIds = $rows->pluck('respuesta_id')->filter()->values()->all();
-        $opcionesPorRespuesta = collect();
-        if (!empty($respuestaIds)) {
-            $opcionesRows = DB::connection('sqlsrv')
-                ->table('RC_RESPUESTA_OPCION as ro')
-                ->join('RC_PREGUNTA_OPCION as po', 'po.id', '=', 'ro.opcion_id')
-                ->whereIn('ro.respuesta_id', $respuestaIds)
-                ->select(
-                    'ro.respuesta_id',
-                    'po.etiqueta as opcion_etiqueta',
-                    'po.orden as opcion_orden'
-                )
-                ->orderBy('po.orden')
-                ->get();
+        $respuestasFiltradas = DB::connection('sqlsrv')
+            ->table('RC_RESPUESTA as r')
+            ->join('RC_VISITA_FORMULARIO as v', 'v.id', '=', 'r.visita_id')
+            ->join('RC_PREGUNTA as p', 'p.id', '=', 'r.pregunta_id')
+            ->where('v.formulario_id', $formularioId)
+            ->where('p.activo', 1)
+            ->where('p.requiere_foto', 0)
+            ->select('r.id as respuesta_id');
 
-            $opcionesPorRespuesta = $opcionesRows->groupBy('respuesta_id');
-        }
+        $opcionesRows = DB::connection('sqlsrv')
+            ->table('RC_RESPUESTA_OPCION as ro')
+            ->joinSub($respuestasFiltradas, 'rf', function ($join) {
+                $join->on('rf.respuesta_id', '=', 'ro.respuesta_id');
+            })
+            ->join('RC_PREGUNTA_OPCION as po', 'po.id', '=', 'ro.opcion_id')
+            ->select(
+                'ro.respuesta_id',
+                'po.etiqueta as opcion_etiqueta',
+                'po.orden as opcion_orden'
+            )
+            ->orderBy('po.orden')
+            ->get();
+
+        $opcionesPorRespuesta = $opcionesRows->groupBy('respuesta_id');
 
         $result = [];
         foreach ($rows as $row) {
