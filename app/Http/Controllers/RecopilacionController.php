@@ -2081,6 +2081,10 @@ class RecopilacionController extends Controller
 
         $faltantes = [];
         foreach ($preguntasSeccion as $pregunta) {
+            if ($this->esPreguntaEvidenciaOcultaEnFormulario((string) $pregunta->codigo)) {
+                continue;
+            }
+
             if (!(bool) $pregunta->obligatoria) {
                 continue;
             }
@@ -2318,6 +2322,11 @@ class RecopilacionController extends Controller
         return $completa
             ? ['completa' => true, 'motivo' => null]
             : ['completa' => false, 'motivo' => 'sin_valor'];
+    }
+
+    private function esPreguntaEvidenciaOcultaEnFormulario(string $codigo): bool
+    {
+        return preg_match('/^E\d+$/i', trim($codigo)) === 1;
     }
 
     /**
