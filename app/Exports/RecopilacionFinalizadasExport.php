@@ -14,6 +14,7 @@ use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 class RecopilacionFinalizadasExport implements FromArray, WithHeadings, WithStyles, WithEvents
 {
     private const WIDTH_PARAGRAPH_COLUMNS = 106.57;
+    private const WIDTH_PHOTO_COLUMNS = 69.00;
 
     public function __construct(
         private array $headings,
@@ -69,6 +70,18 @@ class RecopilacionFinalizadasExport implements FromArray, WithHeadings, WithStyl
                         ->setWrapText(true)
                         ->setVertical(Alignment::VERTICAL_TOP);
                 }
+
+                // Fijar ancho para todas las columnas de fotos.
+                for ($i = 1; $i <= $highestColumnIndex; $i++) {
+                    $letter = Coordinate::stringFromColumnIndex($i);
+                    $heading = (string) $sheet->getCell($letter . '1')->getValue();
+                    if (!$this->isPhotoHeading($heading)) {
+                        continue;
+                    }
+
+                    $sheet->getColumnDimension($letter)->setAutoSize(false);
+                    $sheet->getColumnDimension($letter)->setWidth(self::WIDTH_PHOTO_COLUMNS);
+                }
             },
         ];
     }
@@ -78,6 +91,7 @@ class RecopilacionFinalizadasExport implements FromArray, WithHeadings, WithStyl
         $h = $this->normalizeHeading($heading);
 
         return str_contains($h, 'observacion libre del jefe zonal intuicion sobre este canal')
+            || str_contains($h, 'observaciones libres del jefe zonal intuicion sobre este canal')
             || str_contains($h, 'mostrando el catalogo le parece atractivo el packaging y la presentacion de los productos zync')
             || str_contains($h, 'revisando el catalogo con precios por volumen este precio le parece competitivo frente a lo que compra hoy')
             || str_contains($h, 'hay algo del producto o empaque que cambiaria o mejoraria')
@@ -95,6 +109,11 @@ class RecopilacionFinalizadasExport implements FromArray, WithHeadings, WithStyl
         ]);
         $t = preg_replace('/[^a-z0-9\s]/', ' ', $t) ?? $t;
         return preg_replace('/\s+/', ' ', $t) ?? $t;
+    }
+
+    private function isPhotoHeading(string $heading): bool
+    {
+        return str_starts_with(trim($heading), 'Fotos -');
     }
 }
 
