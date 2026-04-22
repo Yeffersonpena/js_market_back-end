@@ -15,6 +15,7 @@ use App\Services\RecopilacionMediaStorage;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use Maatwebsite\Excel\Facades\Excel;
 use Symfony\Component\HttpFoundation\Response;
 use Tymon\JWTAuth\Facades\JWTAuth;
@@ -1263,6 +1264,7 @@ class RecopilacionController extends Controller
         $cabeceras = $this->getCabeceraVisitasFinalizadas($formulario->id);
         $diccionario = $this->getDiccionarioPreguntasActivas($formulario->id);
         $respuestasLegibles = $this->getRespuestasLegiblesPorVisitaPregunta($formulario->id);
+        $linksFotosPorVisitaPregunta = $this->getLinksFotosPorVisitaPregunta($formulario->id);
 
         $baseHeadings = [
             'Fecha registro',
@@ -1278,6 +1280,7 @@ class RecopilacionController extends Controller
             'Vendedor ruta',
         ];
 
+        $questionColumns = [];
         $questionHeadings = [];
         $usedHeadings = [];
         foreach ($diccionario as $q) {
@@ -1288,6 +1291,23 @@ class RecopilacionController extends Controller
             }
             $usedHeadings[$heading] = true;
             $questionHeadings[] = $heading;
+
+            $requiresFoto = (bool) ($q['requiere_foto'] ?? false);
+            $fotoHeading = null;
+            if ($requiresFoto) {
+                $fotoHeading = "Fotos - {$heading}";
+                if (isset($usedHeadings[$fotoHeading])) {
+                    $fotoHeading = "Fotos - {$heading} ({$q['pregunta_codigo']})";
+                }
+                $usedHeadings[$fotoHeading] = true;
+                $questionHeadings[] = $fotoHeading;
+            }
+
+            $questionColumns[] = [
+                'pregunta_id' => (int) ($q['pregunta_id'] ?? 0),
+                'pregunta_codigo' => (string) ($q['pregunta_codigo'] ?? ''),
+                'requiere_foto' => $requiresFoto,
+            ];
         }
 
         $rows = [];
@@ -1307,15 +1327,19 @@ class RecopilacionController extends Controller
                 $visita['vendedor_ruta'] ?? '',
             ];
 
-            foreach ($diccionario as $q) {
-                $preguntaCodigo = (string) ($q['pregunta_codigo'] ?? '');
+            foreach ($questionColumns as $col) {
+                $preguntaCodigo = (string) ($col['pregunta_codigo'] ?? '');
                 if (array_key_exists($preguntaCodigo, $valoresPaso1Precargados)) {
                     $row[] = $valoresPaso1Precargados[$preguntaCodigo];
-                    continue;
+                } else {
+                    $key = $visita['visita_id'] . '|' . ((int) ($col['pregunta_id'] ?? 0));
+                    $row[] = $respuestasLegibles[$key] ?? '';
                 }
 
-                $key = $visita['visita_id'] . '|' . $q['pregunta_id'];
-                $row[] = $respuestasLegibles[$key] ?? '';
+                if ((bool) ($col['requiere_foto'] ?? false)) {
+                    $fotoKey = $visita['visita_id'] . '|' . ((int) ($col['pregunta_id'] ?? 0));
+                    $row[] = $linksFotosPorVisitaPregunta[$fotoKey] ?? '';
+                }
             }
 
             $rows[] = $row;
@@ -1436,14 +1460,13 @@ class RecopilacionController extends Controller
             ->where('s.formulario_id', $formularioId)
             ->where('s.activo', 1)
             ->where('p.activo', 1)
-            // TEMP: ocultar del Excel preguntas que requieren evidencia fotográfica.
-            ->where('p.requiere_foto', 0)
             ->orderBy('s.orden')
             ->orderBy('p.orden')
             ->select(
                 'p.id as pregunta_id',
                 'p.codigo as pregunta_codigo',
-                'p.texto as pregunta_texto'
+                'p.texto as pregunta_texto',
+                'p.requiere_foto'
             )
             ->get();
 
@@ -1452,6 +1475,7 @@ class RecopilacionController extends Controller
                 'pregunta_id' => (int) $row->pregunta_id,
                 'pregunta_codigo' => $row->pregunta_codigo,
                 'columna_excel' => preg_replace('/\s+/', ' ', trim((string) ($row->pregunta_texto ?? ''))),
+                'requiere_foto' => (bool) ($row->requiere_foto ?? false),
             ];
         })->values()->all();
     }
@@ -1464,8 +1488,6 @@ class RecopilacionController extends Controller
             ->join('RC_PREGUNTA as p', 'p.id', '=', 'r.pregunta_id')
             ->where('v.formulario_id', $formularioId)
             ->where('p.activo', 1)
-            // TEMP: no cargar respuestas de preguntas con foto para exportación.
-            ->where('p.requiere_foto', 0)
             ->select(
                 'v.id as visita_id',
                 'r.id as respuesta_id',
@@ -1487,7 +1509,6 @@ class RecopilacionController extends Controller
             ->join('RC_PREGUNTA as p', 'p.id', '=', 'r.pregunta_id')
             ->where('v.formulario_id', $formularioId)
             ->where('p.activo', 1)
-            ->where('p.requiere_foto', 0)
             ->select('r.id as respuesta_id');
 
         $opcionesRows = DB::connection('sqlsrv')
@@ -1549,6 +1570,55 @@ class RecopilacionController extends Controller
         }
 
         return $result;
+    }
+
+    private function getLinksFotosPorVisitaPregunta(int $formularioId): array
+    {
+        $baseUrl = $this->getDominioPublicoRecopilacion();
+        $rows = DB::connection('sqlsrv')
+            ->table('RC_RESPUESTA_MEDIA as rm')
+            ->join('RC_RESPUESTA as r', 'r.id', '=', 'rm.respuesta_id')
+            ->join('RC_VISITA_FORMULARIO as v', 'v.id', '=', 'r.visita_id')
+            ->join('RC_PREGUNTA as p', 'p.id', '=', 'r.pregunta_id')
+            ->where('v.formulario_id', $formularioId)
+            ->where('p.activo', 1)
+            ->where('p.requiere_foto', 1)
+            ->where('rm.tipo_media', 'foto')
+            ->orderBy('v.id')
+            ->orderBy('r.pregunta_id')
+            ->orderBy('rm.orden')
+            ->orderBy('rm.id')
+            ->select(
+                'v.id as visita_id',
+                'r.pregunta_id',
+                'rm.id as media_id'
+            )
+            ->get();
+
+        $map = [];
+        foreach ($rows as $row) {
+            $key = ((int) $row->visita_id) . '|' . ((int) $row->pregunta_id);
+            $url = "{$baseUrl}/api/v1/recopilacion/media/" . ((int) $row->media_id) . '/foto';
+            $map[$key] ??= [];
+            $map[$key][] = $url;
+        }
+
+        $result = [];
+        foreach ($map as $key => $urls) {
+            $result[$key] = implode("\n", $urls);
+        }
+
+        return $result;
+    }
+
+    private function getDominioPublicoRecopilacion(): string
+    {
+        $domain = trim((string) env('APP_DOMAIN', ''));
+        if ($domain !== '') {
+            return rtrim($domain, '/');
+        }
+
+        return rtrim((string) config('app.url'), '/');
     }
 
     private function getValoresPrecargadosPaso1ParaExcel(array $visita): array
@@ -2495,5 +2565,42 @@ class RecopilacionController extends Controller
             'status' => Response::HTTP_OK,
             'message' => 'Archivo eliminado',
         ], Response::HTTP_OK);
+    }
+
+    public function verMediaFoto(int $id)
+    {
+        $media = RcRespuestaMedia::where('id', $id)
+            ->where('tipo_media', 'foto')
+            ->first();
+
+        if (!$media) {
+            return response()->json([
+                'status' => Response::HTTP_NOT_FOUND,
+                'message' => 'Foto no encontrada',
+            ], Response::HTTP_NOT_FOUND);
+        }
+
+        $ruta = trim((string) $media->ruta_archivo);
+        if ($ruta === '' || preg_match('/\.\./', $ruta) === 1) {
+            return response()->json([
+                'status' => Response::HTTP_NOT_FOUND,
+                'message' => 'Archivo no disponible',
+            ], Response::HTTP_NOT_FOUND);
+        }
+
+        $disk = Storage::disk(RecopilacionMediaStorage::DISK);
+        if (!$disk->exists($ruta)) {
+            return response()->json([
+                'status' => Response::HTTP_NOT_FOUND,
+                'message' => 'Archivo no encontrado',
+            ], Response::HTTP_NOT_FOUND);
+        }
+
+        $headers = [];
+        if (!empty($media->mime_type)) {
+            $headers['Content-Type'] = (string) $media->mime_type;
+        }
+
+        return response()->file($disk->path($ruta), $headers);
     }
 }
