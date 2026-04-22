@@ -1265,6 +1265,7 @@ class RecopilacionController extends Controller
         $diccionario = $this->getDiccionarioPreguntasActivas($formulario->id);
         $respuestasLegibles = $this->getRespuestasLegiblesPorVisitaPregunta($formulario->id);
         $linksFotosPorVisitaPregunta = $this->getLinksFotosPorVisitaPregunta($formulario->id);
+        $maxFotosPorPregunta = $this->getMaxFotosPorPregunta($linksFotosPorVisitaPregunta);
 
         $baseHeadings = [
             'Fecha registro',
@@ -1292,21 +1293,26 @@ class RecopilacionController extends Controller
             $usedHeadings[$heading] = true;
             $questionHeadings[] = $heading;
 
-            $requiresFoto = (bool) ($q['requiere_foto'] ?? false);
-            $fotoHeading = null;
+            $requiresFoto = $this->preguntaUsaFotosEnFrontend((string) ($q['pregunta_codigo'] ?? ''));
             if ($requiresFoto) {
-                $fotoHeading = "Fotos - {$heading}";
-                if (isset($usedHeadings[$fotoHeading])) {
-                    $fotoHeading = "Fotos - {$heading} ({$q['pregunta_codigo']})";
+                $cantidadColumnasFotos = max(1, (int) ($maxFotosPorPregunta[(int) ($q['pregunta_id'] ?? 0)] ?? 1));
+                for ($i = 1; $i <= $cantidadColumnasFotos; $i++) {
+                    $fotoHeading = "Fotos - {$heading} {$i}";
+                    if (isset($usedHeadings[$fotoHeading])) {
+                        $fotoHeading = "Fotos - {$heading} {$i} ({$q['pregunta_codigo']})";
+                    }
+                    $usedHeadings[$fotoHeading] = true;
+                    $questionHeadings[] = $fotoHeading;
                 }
-                $usedHeadings[$fotoHeading] = true;
-                $questionHeadings[] = $fotoHeading;
             }
 
             $questionColumns[] = [
                 'pregunta_id' => (int) ($q['pregunta_id'] ?? 0),
                 'pregunta_codigo' => (string) ($q['pregunta_codigo'] ?? ''),
                 'requiere_foto' => $requiresFoto,
+                'cantidad_columnas_fotos' => $requiresFoto
+                    ? max(1, (int) ($maxFotosPorPregunta[(int) ($q['pregunta_id'] ?? 0)] ?? 1))
+                    : 0,
             ];
         }
 
@@ -1338,7 +1344,14 @@ class RecopilacionController extends Controller
 
                 if ((bool) ($col['requiere_foto'] ?? false)) {
                     $fotoKey = $visita['visita_id'] . '|' . ((int) ($col['pregunta_id'] ?? 0));
-                    $row[] = $linksFotosPorVisitaPregunta[$fotoKey] ?? '';
+                    $fotoUrls = $linksFotosPorVisitaPregunta[$fotoKey] ?? [];
+                    $cantidadColumnasFotos = (int) ($col['cantidad_columnas_fotos'] ?? 0);
+                    for ($i = 0; $i < $cantidadColumnasFotos; $i++) {
+                        $url = $fotoUrls[$i] ?? '';
+                        $row[] = $url !== ''
+                            ? $this->buildExcelHyperlinkFormula($url, 'Ver foto ' . ($i + 1))
+                            : '';
+                    }
                 }
             }
 
@@ -1477,7 +1490,12 @@ class RecopilacionController extends Controller
                 'columna_excel' => preg_replace('/\s+/', ' ', trim((string) ($row->pregunta_texto ?? ''))),
                 'requiere_foto' => (bool) ($row->requiere_foto ?? false),
             ];
-        })->values()->all();
+        })
+            // Las preguntas E## son evidencia oculta en formulario; generan columnas vacías en Excel.
+            // Se excluyen para mostrar solo preguntas de negocio que el usuario realmente completa.
+            ->filter(fn ($q) => !$this->esPreguntaEvidenciaOcultaEnFormulario((string) ($q['pregunta_codigo'] ?? '')))
+            ->values()
+            ->all();
     }
 
     private function getRespuestasLegiblesPorVisitaPregunta(int $formularioId): array
@@ -1575,6 +1593,7 @@ class RecopilacionController extends Controller
     private function getLinksFotosPorVisitaPregunta(int $formularioId): array
     {
         $baseUrl = $this->getDominioPublicoRecopilacion();
+        $codigosConFotoFrontend = ['P15', 'P19', 'P21'];
         $rows = DB::connection('sqlsrv')
             ->table('RC_RESPUESTA_MEDIA as rm')
             ->join('RC_RESPUESTA as r', 'r.id', '=', 'rm.respuesta_id')
@@ -1583,7 +1602,8 @@ class RecopilacionController extends Controller
             ->where('v.formulario_id', $formularioId)
             ->where('p.activo', 1)
             ->where('p.requiere_foto', 1)
-            ->where('rm.tipo_media', 'foto')
+            ->whereIn('p.codigo', $codigosConFotoFrontend)
+            ->whereRaw("LOWER(LTRIM(RTRIM(rm.tipo_media))) = 'foto'")
             ->orderBy('v.id')
             ->orderBy('r.pregunta_id')
             ->orderBy('rm.orden')
@@ -1603,12 +1623,7 @@ class RecopilacionController extends Controller
             $map[$key][] = $url;
         }
 
-        $result = [];
-        foreach ($map as $key => $urls) {
-            $result[$key] = implode("\n", $urls);
-        }
-
-        return $result;
+        return $map;
     }
 
     private function getDominioPublicoRecopilacion(): string
@@ -1619,6 +1634,40 @@ class RecopilacionController extends Controller
         }
 
         return rtrim((string) config('app.url'), '/');
+    }
+
+    private function preguntaUsaFotosEnFrontend(string $preguntaCodigo): bool
+    {
+        return in_array(strtoupper(trim($preguntaCodigo)), ['P15', 'P19', 'P21'], true);
+    }
+
+    private function getMaxFotosPorPregunta(array $linksFotosPorVisitaPregunta): array
+    {
+        $max = [];
+        foreach ($linksFotosPorVisitaPregunta as $key => $urls) {
+            if (!is_array($urls)) {
+                continue;
+            }
+            $parts = explode('|', (string) $key);
+            if (count($parts) !== 2) {
+                continue;
+            }
+            $preguntaId = (int) ($parts[1] ?? 0);
+            if ($preguntaId <= 0) {
+                continue;
+            }
+            $count = count($urls);
+            $max[$preguntaId] = max((int) ($max[$preguntaId] ?? 0), $count);
+        }
+
+        return $max;
+    }
+
+    private function buildExcelHyperlinkFormula(string $url, string $label): string
+    {
+        $safeUrl = str_replace('"', '""', trim($url));
+        $safeLabel = str_replace('"', '""', trim($label));
+        return '=HYPERLINK("' . $safeUrl . '","' . $safeLabel . '")';
     }
 
     private function getValoresPrecargadosPaso1ParaExcel(array $visita): array
