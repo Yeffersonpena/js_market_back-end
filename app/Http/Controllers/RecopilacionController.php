@@ -1570,7 +1570,7 @@ class RecopilacionController extends Controller
             } elseif ($tipo === 'hora' && $row->valor_hora !== null) {
                 $legible = (string) $row->valor_hora;
             } elseif ($row->valor_texto !== null && trim((string) $row->valor_texto) !== '') {
-                $legible = trim((string) $row->valor_texto);
+                $legible = $this->normalizarTextoConSeparadoresParaExcel(trim((string) $row->valor_texto));
             } elseif ($row->valor_booleano !== null) {
                 $legible = ((int) $row->valor_booleano) === 1 ? 'Sí' : 'No';
             } elseif ($row->valor_decimal !== null) {
@@ -1744,6 +1744,25 @@ class RecopilacionController extends Controller
         $formatted = rtrim(rtrim($formatted, '0'), '.');
 
         return $conSufijoMes ? "S/ {$formatted} /mes" : "S/ {$formatted}";
+    }
+
+    private function normalizarTextoConSeparadoresParaExcel(string $texto): string
+    {
+        if (strpos($texto, '|') === false) {
+            return $texto;
+        }
+
+        $partes = array_map(
+            fn ($p) => trim((string) $p),
+            explode('|', $texto)
+        );
+        $partes = array_values(array_filter($partes, fn ($p) => $p !== ''));
+
+        if (empty($partes)) {
+            return '';
+        }
+
+        return implode(' | ', $partes);
     }
 
     /**
