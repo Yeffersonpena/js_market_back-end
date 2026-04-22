@@ -1349,7 +1349,7 @@ class RecopilacionController extends Controller
                     for ($i = 0; $i < $cantidadColumnasFotos; $i++) {
                         $url = $fotoUrls[$i] ?? '';
                         $row[] = $url !== ''
-                            ? $this->buildExcelHyperlinkFormula($url, 'Ver foto ' . ($i + 1))
+                            ? $this->buildExcelHyperlinkFormula($url, $url)
                             : '';
                     }
                 }
