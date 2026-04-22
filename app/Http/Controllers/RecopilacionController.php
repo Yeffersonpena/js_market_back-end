@@ -6,6 +6,7 @@ use App\Exports\RecopilacionFinalizadasExport;
 use App\Models\RcClientePdv;
 use App\Models\RcFormulario;
 use App\Models\RcPregunta;
+use App\Models\RcPreguntaOpcion;
 use App\Models\RcRespuesta;
 use App\Models\RcRespuestaMedia;
 use App\Models\RcRespuestaOpcion;
@@ -566,7 +567,7 @@ class RecopilacionController extends Controller
             ->get();
 
         $orderMap = array_flip($preguntasObjetivo);
-        $preguntas = $preguntas->sortBy(fn ($p) => $orderMap[$p->codigo] ?? 999)->values();
+        $preguntas = $preguntas->sortBy(fn($p) => $orderMap[$p->codigo] ?? 999)->values();
 
         $matriz = [];
         foreach ($preguntas as $p) {
@@ -676,7 +677,7 @@ class RecopilacionController extends Controller
             ->get();
 
         $orderMap = array_flip($preguntasObjetivo);
-        $preguntas = $preguntas->sortBy(fn ($p) => $orderMap[$p->codigo] ?? 999)->values();
+        $preguntas = $preguntas->sortBy(fn($p) => $orderMap[$p->codigo] ?? 999)->values();
 
         $matriz = [];
         foreach ($preguntas as $p) {
@@ -1208,7 +1209,7 @@ class RecopilacionController extends Controller
                 continue;
             }
             $bloque = $individualesMap[$codigoPregunta];
-            usort($bloque['opciones'], fn ($a, $b) => ((int) ($a['orden'] ?? 999)) <=> ((int) ($b['orden'] ?? 999)));
+            usort($bloque['opciones'], fn($a, $b) => ((int) ($a['orden'] ?? 999)) <=> ((int) ($b['orden'] ?? 999)));
             $individuales[] = $bloque;
         }
 
@@ -1493,7 +1494,7 @@ class RecopilacionController extends Controller
         })
             // Las preguntas E## son evidencia oculta en formulario; generan columnas vacías en Excel.
             // Se excluyen para mostrar solo preguntas de negocio que el usuario realmente completa.
-            ->filter(fn ($q) => !$this->esPreguntaEvidenciaOcultaEnFormulario((string) ($q['pregunta_codigo'] ?? '')))
+            ->filter(fn($q) => !$this->esPreguntaEvidenciaOcultaEnFormulario((string) ($q['pregunta_codigo'] ?? '')))
             ->values()
             ->all();
     }
@@ -1753,10 +1754,10 @@ class RecopilacionController extends Controller
         }
 
         $partes = array_map(
-            fn ($p) => trim((string) $p),
+            fn($p) => trim((string) $p),
             explode('|', $texto)
         );
-        $partes = array_values(array_filter($partes, fn ($p) => $p !== ''));
+        $partes = array_values(array_filter($partes, fn($p) => $p !== ''));
 
         if (empty($partes)) {
             return '';
@@ -1798,7 +1799,7 @@ class RecopilacionController extends Controller
                 'titulo' => $s->titulo,
                 'descripcion' => $s->descripcion,
                 'orden' => $s->orden,
-                'preguntas' => $preguntas->map(fn ($p) => [
+                'preguntas' => $preguntas->map(fn($p) => [
                     'id' => $p->id,
                     'codigo' => $p->codigo,
                     'texto' => $p->texto,
@@ -1812,7 +1813,7 @@ class RecopilacionController extends Controller
                     'max_longitud' => $p->max_longitud,
                     'valor_minimo' => $p->valor_minimo !== null ? (float) $p->valor_minimo : null,
                     'valor_maximo' => $p->valor_maximo !== null ? (float) $p->valor_maximo : null,
-                    'opciones' => $p->opciones->where('activo', 1)->map(fn ($o) => [
+                    'opciones' => $p->opciones->where('activo', 1)->map(fn($o) => [
                         'id' => $o->id,
                         'codigo' => $o->codigo,
                         'etiqueta' => $o->etiqueta,
@@ -2140,17 +2141,17 @@ class RecopilacionController extends Controller
         $query = RcRespuesta::where('visita_id', $visitaId)->with(['pregunta', 'opcionesSeleccionadas.opcion', 'media']);
         $seccionId = $request->integer('seccion_id');
         if ($seccionId > 0) {
-            $query->whereHas('pregunta', fn ($q) => $q->where('seccion_id', $seccionId));
+            $query->whereHas('pregunta', fn($q) => $q->where('seccion_id', $seccionId));
         }
         $respuestas = $query->get();
 
         $data = $respuestas->map(function (RcRespuesta $r) {
-            $opciones = $r->opcionesSeleccionadas->map(fn ($ro) => [
+            $opciones = $r->opcionesSeleccionadas->map(fn($ro) => [
                 'id' => $ro->opcion_id,
                 'codigo' => $ro->opcion?->codigo,
                 'etiqueta' => $ro->opcion?->etiqueta,
             ])->values();
-            $media = $r->media->map(fn ($m) => [
+            $media = $r->media->map(fn($m) => [
                 'id' => $m->id,
                 'tipo_media' => $m->tipo_media,
                 'nombre_archivo' => $m->nombre_archivo,
@@ -2241,7 +2242,7 @@ class RecopilacionController extends Controller
             ->get()
             ->keyBy('id');
 
-        $preguntaIdsSeccion = $preguntasSeccion->keys()->map(fn ($id) => (int) $id)->values()->all();
+        $preguntaIdsSeccion = $preguntasSeccion->keys()->map(fn($id) => (int) $id)->values()->all();
         $respuestasActuales = RcRespuesta::where('visita_id', $visitaId)
             ->whereIn('pregunta_id', $preguntaIdsSeccion)
             ->get()
@@ -2255,7 +2256,7 @@ class RecopilacionController extends Controller
         $respuestaIdsActuales = $respuestasActuales
             ->pluck('id')
             ->filter()
-            ->map(fn ($id) => (int) $id)
+            ->map(fn($id) => (int) $id)
             ->values()
             ->all();
 
@@ -2266,7 +2267,7 @@ class RecopilacionController extends Controller
                 ->selectRaw('respuesta_id, COUNT(1) as total')
                 ->groupBy('respuesta_id')
                 ->pluck('total', 'respuesta_id')
-                ->map(fn ($v) => (int) $v)
+                ->map(fn($v) => (int) $v)
                 ->all();
 
             $fotosPorRespuesta = RcRespuestaMedia::whereIn('respuesta_id', $respuestaIdsActuales)
@@ -2274,7 +2275,7 @@ class RecopilacionController extends Controller
                 ->selectRaw('respuesta_id, COUNT(1) as total')
                 ->groupBy('respuesta_id')
                 ->pluck('total', 'respuesta_id')
-                ->map(fn ($v) => (int) $v)
+                ->map(fn($v) => (int) $v)
                 ->all();
         }
 
@@ -2362,7 +2363,7 @@ class RecopilacionController extends Controller
 
                 if (array_key_exists('opcion_ids', $item) && is_array($item['opcion_ids'])) {
                     $opcionIds = array_values(array_unique(array_map('intval', $item['opcion_ids'])));
-                    $opcionIds = array_values(array_filter($opcionIds, fn ($id) => $id > 0));
+                    $opcionIds = array_values(array_filter($opcionIds, fn($id) => $id > 0));
 
                     // En opcion_unica (ej. P08) forzamos una sola opción.
                     if ($pregunta->tipo_respuesta === 'opcion_unica' && count($opcionIds) > 1) {
@@ -2427,9 +2428,24 @@ class RecopilacionController extends Controller
 
         if (in_array($tipo, ['opcion_unica', 'opcion_multiple'], true)) {
             $totalOpciones = $this->totalOpcionesProyectadas($pregunta, $respuestaActual, $payload, $opcionesPorRespuesta);
-            return $totalOpciones > 0
-                ? ['completa' => true, 'motivo' => null]
-                : ['completa' => false, 'motivo' => 'sin_opciones'];
+            if ($totalOpciones <= 0) {
+                return ['completa' => false, 'motivo' => 'sin_opciones'];
+            }
+            // Solo P19 (vitrina / display): con «Sí» hace falta al menos una foto; «No tiene» no.
+            if (
+                strtoupper(trim((string) $pregunta->codigo)) === 'P19'
+                && (bool) $pregunta->requiere_foto
+                && $this->p19VitrinaOpcionSiRequiereFoto($pregunta, $respuestaActual, $payload)
+            ) {
+                $respuestaId = (int) ($respuestaActual?->id ?? 0);
+                $fotosActuales = $respuestaId > 0 ? (int) ($fotosPorRespuesta[$respuestaId] ?? 0) : 0;
+                $minFotos = max((int) ($pregunta->min_fotos ?? 0), 1);
+                if ($fotosActuales < $minFotos) {
+                    return ['completa' => false, 'motivo' => 'falta_evidencia_fotografica'];
+                }
+            }
+
+            return ['completa' => true, 'motivo' => null];
         }
 
         if ((bool) $pregunta->requiere_foto) {
@@ -2478,6 +2494,53 @@ class RecopilacionController extends Controller
         };
     }
 
+    /**
+     * P19 — «¿Tiene vitrina o display activo de accesorios?»: true si eligió «Sí» (ordenado o desordenado).
+     */
+    private function p19VitrinaOpcionSiRequiereFoto(
+        RcPregunta $pregunta,
+        ?RcRespuesta $respuestaActual,
+        ?array $payload
+    ): bool {
+        $opcionIds = [];
+        if (is_array($payload) && array_key_exists('opcion_ids', $payload) && is_array($payload['opcion_ids'])) {
+            $opcionIds = array_values(array_unique(array_map('intval', $payload['opcion_ids'])));
+            $opcionIds = array_values(array_filter($opcionIds, fn ($id) => $id > 0));
+            if ($pregunta->tipo_respuesta === 'opcion_unica' && count($opcionIds) > 1) {
+                $opcionIds = [reset($opcionIds)];
+            }
+        } elseif ($respuestaActual) {
+            $rid = (int) $respuestaActual->id;
+            if ($rid > 0) {
+                $opcionIds = RcRespuestaOpcion::where('respuesta_id', $rid)
+                    ->pluck('opcion_id')
+                    ->map(fn ($id) => (int) $id)
+                    ->unique()
+                    ->values()
+                    ->all();
+            }
+        }
+
+        if ($opcionIds === []) {
+            return false;
+        }
+
+        $codigos = RcPreguntaOpcion::where('pregunta_id', (int) $pregunta->id)
+            ->whereIn('id', $opcionIds)
+            ->where('activo', 1)
+            ->pluck('codigo')
+            ->map(fn ($c) => strtoupper(trim((string) $c)))
+            ->all();
+
+        foreach ($codigos as $cod) {
+            if (in_array($cod, ['SI_ORDENADO', 'SI_DESORDENADO'], true)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     private function totalOpcionesProyectadas(
         RcPregunta $pregunta,
         ?RcRespuesta $respuestaActual,
@@ -2486,7 +2549,7 @@ class RecopilacionController extends Controller
     ): int {
         if (is_array($payload) && array_key_exists('opcion_ids', $payload) && is_array($payload['opcion_ids'])) {
             $opcionIds = array_values(array_unique(array_map('intval', $payload['opcion_ids'])));
-            $opcionIds = array_values(array_filter($opcionIds, fn ($id) => $id > 0));
+            $opcionIds = array_values(array_filter($opcionIds, fn($id) => $id > 0));
             if ($pregunta->tipo_respuesta === 'opcion_unica' && count($opcionIds) > 1) {
                 $opcionIds = [reset($opcionIds)];
             }
@@ -2576,7 +2639,7 @@ class RecopilacionController extends Controller
         }
 
         $pregunta = RcPregunta::where('id', $preguntaId)
-            ->whereHas('seccion', fn ($q) => $q->where('formulario_id', $visita->formulario_id))
+            ->whereHas('seccion', fn($q) => $q->where('formulario_id', $visita->formulario_id))
             ->first();
         if (!$pregunta) {
             return response()->json([
@@ -2593,7 +2656,7 @@ class RecopilacionController extends Controller
         $fotos = isset($archivos['fotos']) && is_array($archivos['fotos'])
             ? array_values($archivos['fotos'])
             : (isset($archivos['foto']) ? [$archivos['foto']] : []);
-        $fotos = array_filter($fotos, fn ($f) => $f instanceof \Illuminate\Http\UploadedFile);
+        $fotos = array_filter($fotos, fn($f) => $f instanceof \Illuminate\Http\UploadedFile);
 
         if (empty($fotos)) {
             return response()->json([
