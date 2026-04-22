@@ -78,6 +78,7 @@ Route::middleware(['jwt.apiRest.jsMarket', 'jwt.user.recopilacion'])->prefix('ap
     Route::get('/reporte/excel/finalizadas', [RecopilacionController::class, 'reporteExcelFinalizadas'])->name('recopilacion.reporteExcelFinalizadas.api');
     Route::get('/formulario/{codigo}', [RecopilacionController::class, 'getFormulario'])->name('recopilacion.formulario.api');
     Route::post('/visita', [RecopilacionController::class, 'postVisita'])->name('recopilacion.visita.api');
+    Route::post('/visita/{visitaId}/finalizar', [RecopilacionController::class, 'finalizarVisita'])->name('recopilacion.finalizarVisita.api');
     Route::post('/visita/{visitaId}/seccion/{seccionId}/asegurar-respuestas', [RecopilacionController::class, 'asegurarRespuestas'])->name('recopilacion.asegurarRespuestas.api');
     Route::get('/visita/{visitaId}/respuestas', [RecopilacionController::class, 'getRespuestas'])->name('recopilacion.getRespuestas.api');
     Route::put('/visita/{visitaId}/respuestas', [RecopilacionController::class, 'putRespuestas'])->name('recopilacion.putRespuestas.api');
