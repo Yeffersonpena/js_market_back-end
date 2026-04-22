@@ -1966,6 +1966,67 @@ class RecopilacionController extends Controller
     }
 
     /**
+     * POST visita/{visitaId}/finalizar
+     * Marca la instancia de encuesta como finalizada (después de guardar la última sección con éxito).
+     */
+    public function finalizarVisita(int $visitaId)
+    {
+        $zonal = $this->getZonalUsuario();
+        $user = $this->getUsuarioRecopilacion();
+        if (!$user) {
+            return response()->json([
+                'status' => Response::HTTP_UNAUTHORIZED,
+                'message' => 'No se pudo obtener el usuario autenticado',
+            ], Response::HTTP_UNAUTHORIZED);
+        }
+        if ($this->tokenRequiereZonalUsuario($user) && !$zonal) {
+            return response()->json([
+                'status' => Response::HTTP_UNAUTHORIZED,
+                'message' => 'No se pudo obtener la zonal del usuario',
+            ], Response::HTTP_UNAUTHORIZED);
+        }
+
+        $visita = RcVisitaFormulario::find($visitaId);
+        if (!$visita || !$this->puedeGestionarVisitaRecopilacion($user, $visita, $zonal)) {
+            return response()->json([
+                'status' => Response::HTTP_FORBIDDEN,
+                'message' => 'Visita no encontrada o no pertenece a su zonal',
+            ], Response::HTTP_FORBIDDEN);
+        }
+
+        $usuario = $user->user ?? (string) $this->getDniUsuario($user);
+
+        if ($visita->estado === 'finalizado') {
+            return response()->json([
+                'status' => Response::HTTP_OK,
+                'message' => 'La encuesta ya estaba finalizada',
+                'data' => [
+                    'visita_id' => (int) $visita->id,
+                    'estado' => $visita->estado,
+                    'porcentaje_avance' => (float) $visita->porcentaje_avance,
+                ],
+            ], Response::HTTP_OK);
+        }
+
+        $visita->estado = 'finalizado';
+        $visita->porcentaje_avance = 100;
+        $visita->fecha_finalizacion = now();
+        $visita->fecha_ultima_edicion = now();
+        $visita->usuario_actualizacion = $usuario;
+        $visita->save();
+
+        return response()->json([
+            'status' => Response::HTTP_OK,
+            'message' => 'Encuesta finalizada correctamente',
+            'data' => [
+                'visita_id' => (int) $visita->id,
+                'estado' => $visita->estado,
+                'porcentaje_avance' => (float) $visita->porcentaje_avance,
+            ],
+        ], Response::HTTP_OK);
+    }
+
+    /**
      * POST visita/{visitaId}/seccion/{seccionId}/asegurar-respuestas
      * Crea filas en RC_RESPUESTA para cada pregunta de la sección que aún no exista.
      */
@@ -2209,7 +2270,7 @@ class RecopilacionController extends Controller
                 ->all();
 
             $fotosPorRespuesta = RcRespuestaMedia::whereIn('respuesta_id', $respuestaIdsActuales)
-                ->where('tipo_media', 'foto')
+                ->whereRaw("LOWER(LTRIM(RTRIM(tipo_media))) = 'foto'")
                 ->selectRaw('respuesta_id, COUNT(1) as total')
                 ->groupBy('respuesta_id')
                 ->pluck('total', 'respuesta_id')
@@ -2220,6 +2281,10 @@ class RecopilacionController extends Controller
         $faltantes = [];
         foreach ($preguntasSeccion as $pregunta) {
             if ($this->esPreguntaEvidenciaOcultaEnFormulario((string) $pregunta->codigo)) {
+                continue;
+            }
+
+            if ($this->esPreguntaAutocompletadaFormulario((string) $pregunta->codigo)) {
                 continue;
             }
 
@@ -2330,6 +2395,11 @@ class RecopilacionController extends Controller
         return response()->json([
             'status' => Response::HTTP_OK,
             'message' => 'Respuestas guardadas correctamente',
+            'data' => [
+                'guardado' => true,
+                'bloquea_avance' => false,
+                'seccion_id' => $seccionId,
+            ],
         ], Response::HTTP_OK);
     }
 
@@ -2465,6 +2535,14 @@ class RecopilacionController extends Controller
     private function esPreguntaEvidenciaOcultaEnFormulario(string $codigo): bool
     {
         return preg_match('/^E\d+$/i', trim($codigo)) === 1;
+    }
+
+    /** P01–P05: precarga / pantalla informativa; no se validan como obligatorias en guardado por sección. */
+    private function esPreguntaAutocompletadaFormulario(string $codigo): bool
+    {
+        $c = strtoupper(trim($codigo));
+
+        return in_array($c, ['P01', 'P02', 'P03', 'P04', 'P05'], true);
     }
 
     /**
