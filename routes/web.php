@@ -54,6 +54,7 @@ Route::get('/api/v1/test/db', function () {
 });
 Route::post('/api/v1/users/login', [LoginController::class, 'loginLocalUser'])->name('login.user.api');
 Route::get('/api/v1/users/validation-user/{user}', [LoginController::class, 'validarUser'])->name('validation.user.api');
+Route::get('/api/v1/recopilacion/media/{id}/foto', [RecopilacionController::class, 'verMediaFoto'])->name('recopilacion.verMediaFoto.api');
 // Route::get('/api/v1/users/ingreso', [LoginController::class, 'ingreso'])->name('ingreso.user.api');
 
 // Route::get('/users/create-user', [Controller::class, 'createUser'])->name('create.user.api');
