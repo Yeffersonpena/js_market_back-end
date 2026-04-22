@@ -14,7 +14,7 @@ use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 class RecopilacionFinalizadasExport implements FromArray, WithHeadings, WithStyles, WithEvents
 {
     private const WIDTH_PARAGRAPH_COLUMNS = 106.57;
-    private const WIDTH_PHOTO_COLUMNS = 69.00;
+    private const WIDTH_PHOTO_COLUMNS = 50.00;
 
     public function __construct(
         private array $headings,
