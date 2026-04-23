@@ -1972,19 +1972,14 @@ class RecopilacionController extends Controller
         if (trim((string) ($visita->estado ?? '')) === 'finalizado') {
             return;
         }
-        // UPDATE vía Query Builder: en sqlsrv Eloquent a veces emite fechas/estado sin binding correcto y SQL Server falla (nvarchar→datetime).
-        $ts = now()->format('Y-m-d H:i:s');
-        $usuario = mb_substr(trim($usuarioActualizacion), 0, 100);
+        $usuario = mb_substr(trim((string) $usuarioActualizacion), 0, 100);
+        $table = $visita->getTable();
+        $key = $visita->getKeyName();
+        $id = (int) $visita->getKey();
 
-        DB::connection('sqlsrv')->table($visita->getTable())
-            ->where($visita->getKeyName(), (int) $visita->getKey())
-            ->update([
-                'estado' => 'finalizado',
-                'porcentaje_avance' => 100,
-                'fecha_finalizacion' => $ts,
-                'fecha_ultima_edicion' => $ts,
-                'usuario_actualizacion' => $usuario !== '' ? $usuario : null,
-            ]);
+        // Fechas con GETDATE(): evita nvarchar→datetime con DATEFORMAT/idioma español en sesión ODBC (error 22007).
+        $sql = "UPDATE [{$table}] SET [estado] = ?, [porcentaje_avance] = ?, [fecha_finalizacion] = GETDATE(), [fecha_ultima_edicion] = GETDATE(), [usuario_actualizacion] = ? WHERE [{$key}] = ?";
+        DB::connection('sqlsrv')->update($sql, ['finalizado', 100, $usuario !== '' ? $usuario : null, $id]);
 
         $visita->refresh();
     }
@@ -2018,7 +2013,7 @@ class RecopilacionController extends Controller
             ], Response::HTTP_FORBIDDEN);
         }
 
-        $usuario = $user->user ?? (string) $this->getDniUsuario($user);
+        $usuario = (string) ($user->user ?? $this->getDniUsuario($user));
 
         if ($visita->estado === 'finalizado') {
             return response()->json([
