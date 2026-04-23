@@ -1966,6 +1966,20 @@ class RecopilacionController extends Controller
         ], Response::HTTP_OK);
     }
 
+    /** Idempotente: deja RC_VISITA_FORMULARIO en estado finalizado. */
+    private function marcarVisitaFormularioComoFinalizada(RcVisitaFormulario $visita, string $usuarioActualizacion): void
+    {
+        if ($visita->estado === 'finalizado') {
+            return;
+        }
+        $visita->estado = 'finalizado';
+        $visita->porcentaje_avance = 100;
+        $visita->fecha_finalizacion = now();
+        $visita->fecha_ultima_edicion = now();
+        $visita->usuario_actualizacion = $usuarioActualizacion;
+        $visita->save();
+    }
+
     /**
      * POST visita/{visitaId}/finalizar
      * Marca la instancia de encuesta como finalizada (después de guardar la última sección con éxito).
@@ -2009,12 +2023,7 @@ class RecopilacionController extends Controller
             ], Response::HTTP_OK);
         }
 
-        $visita->estado = 'finalizado';
-        $visita->porcentaje_avance = 100;
-        $visita->fecha_finalizacion = now();
-        $visita->fecha_ultima_edicion = now();
-        $visita->usuario_actualizacion = $usuario;
-        $visita->save();
+        $this->marcarVisitaFormularioComoFinalizada($visita, $usuario);
 
         return response()->json([
             'status' => Response::HTTP_OK,
@@ -2505,7 +2514,7 @@ class RecopilacionController extends Controller
         $opcionIds = [];
         if (is_array($payload) && array_key_exists('opcion_ids', $payload) && is_array($payload['opcion_ids'])) {
             $opcionIds = array_values(array_unique(array_map('intval', $payload['opcion_ids'])));
-            $opcionIds = array_values(array_filter($opcionIds, fn ($id) => $id > 0));
+            $opcionIds = array_values(array_filter($opcionIds, fn($id) => $id > 0));
             if ($pregunta->tipo_respuesta === 'opcion_unica' && count($opcionIds) > 1) {
                 $opcionIds = [reset($opcionIds)];
             }
@@ -2514,7 +2523,7 @@ class RecopilacionController extends Controller
             if ($rid > 0) {
                 $opcionIds = RcRespuestaOpcion::where('respuesta_id', $rid)
                     ->pluck('opcion_id')
-                    ->map(fn ($id) => (int) $id)
+                    ->map(fn($id) => (int) $id)
                     ->unique()
                     ->values()
                     ->all();
@@ -2529,7 +2538,7 @@ class RecopilacionController extends Controller
             ->whereIn('id', $opcionIds)
             ->where('activo', 1)
             ->pluck('codigo')
-            ->map(fn ($c) => strtoupper(trim((string) $c)))
+            ->map(fn($c) => strtoupper(trim((string) $c)))
             ->all();
 
         foreach ($codigos as $cod) {
