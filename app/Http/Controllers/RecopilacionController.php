@@ -1969,15 +1969,24 @@ class RecopilacionController extends Controller
     /** Idempotente: deja RC_VISITA_FORMULARIO en estado finalizado. */
     private function marcarVisitaFormularioComoFinalizada(RcVisitaFormulario $visita, string $usuarioActualizacion): void
     {
-        if ($visita->estado === 'finalizado') {
+        if (trim((string) ($visita->estado ?? '')) === 'finalizado') {
             return;
         }
-        $visita->estado = 'finalizado';
-        $visita->porcentaje_avance = 100;
-        $visita->fecha_finalizacion = now();
-        $visita->fecha_ultima_edicion = now();
-        $visita->usuario_actualizacion = $usuarioActualizacion;
-        $visita->save();
+        // UPDATE vía Query Builder: en sqlsrv Eloquent a veces emite fechas/estado sin binding correcto y SQL Server falla (nvarchar→datetime).
+        $ts = now()->format('Y-m-d H:i:s');
+        $usuario = mb_substr(trim($usuarioActualizacion), 0, 100);
+
+        DB::connection('sqlsrv')->table($visita->getTable())
+            ->where($visita->getKeyName(), (int) $visita->getKey())
+            ->update([
+                'estado' => 'finalizado',
+                'porcentaje_avance' => 100,
+                'fecha_finalizacion' => $ts,
+                'fecha_ultima_edicion' => $ts,
+                'usuario_actualizacion' => $usuario !== '' ? $usuario : null,
+            ]);
+
+        $visita->refresh();
     }
 
     /**
