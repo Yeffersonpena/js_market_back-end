@@ -102,8 +102,32 @@ class RecopilacionController extends Controller
     }
 
     /**
+     * Subconsulta: una fila por cliente PDV con el id de su visita más reciente
+     * para el formulario (sin filtrar por año/mes).
+     */
+    private function subqueryUltimaVisitaClientePdv(int $formularioId)
+    {
+        $ranked = DB::connection('sqlsrv')
+            ->table('RC_VISITA_FORMULARIO as v')
+            ->selectRaw(
+                'v.id as visita_id, v.cliente_id, ROW_NUMBER() OVER (
+                    PARTITION BY v.cliente_id
+                    ORDER BY v.anio DESC, v.mes DESC, v.fecha_ultima_edicion DESC, v.id DESC
+                ) AS rn'
+            )
+            ->where('v.formulario_id', $formularioId)
+            ->whereNotNull('v.cliente_id');
+
+        return DB::connection('sqlsrv')
+            ->query()
+            ->fromSub($ranked, 'rv')
+            ->where('rn', 1)
+            ->select('visita_id', 'cliente_id');
+    }
+
+    /**
      * Lista de puntos (RC_CLIENTE_PDV) de la zonal del usuario que aun no tienen
-     * instancia de visita (RC_VISITA_FORMULARIO) para el formulario y periodo dados.
+     * instancia de visita (RC_VISITA_FORMULARIO) para el formulario activo (cualquier período).
      */
     public function puntosPendientes(Request $request)
     {
@@ -144,8 +168,6 @@ class RecopilacionController extends Controller
             ], Response::HTTP_UNAUTHORIZED);
         }
 
-        $anio = (int) $request->get('anio', now()->year);
-        $mes = (int) $request->get('mes', now()->month);
         $formularioCodigo = $request->get('formulario_codigo', 'DATOS_PDV_VENTAS');
         $page = max(1, (int) $request->get('page', 1));
         $perPage = min(100, max(5, (int) $request->get('per_page', 15)));
@@ -163,6 +185,8 @@ class RecopilacionController extends Controller
                 'message' => "No existe formulario activo con codigo {$formularioCodigo}",
             ], Response::HTTP_UNPROCESSABLE_ENTITY);
         }
+
+        $ultimasVisitas = $this->subqueryUltimaVisitaClientePdv($formulario->id);
 
         $query = DB::connection('sqlsrv')
             ->table('RC_CLIENTE_PDV as c');
@@ -183,12 +207,10 @@ class RecopilacionController extends Controller
         }
         // maestro: sin filtro por asignación ni zonal
 
-        $query->leftJoin('RC_VISITA_FORMULARIO as v', function ($join) use ($formulario, $anio, $mes) {
-            $join->on('v.cliente_id', '=', 'c.id')
-                ->where('v.formulario_id', $formulario->id)
-                ->where('v.anio', $anio)
-                ->where('v.mes', $mes);
+        $query->leftJoinSub($ultimasVisitas, 'ult', function ($join) {
+            $join->on('ult.cliente_id', '=', 'c.id');
         })
+            ->leftJoin('RC_VISITA_FORMULARIO as v', 'v.id', '=', 'ult.visita_id')
             ->whereNull('v.id');
 
         if ($search !== '') {
@@ -237,7 +259,7 @@ class RecopilacionController extends Controller
 
     /**
      * Lista de puntos (RC_CLIENTE_PDV) que SI tienen instancia de visita
-     * (RC_VISITA_FORMULARIO) para el formulario y periodo dados.
+     * (RC_VISITA_FORMULARIO) para el formulario activo; se muestra la visita más reciente (cualquier período).
      * Pensado para módulo de "registrados/editar".
      */
     public function puntosRegistrados(Request $request)
@@ -279,8 +301,6 @@ class RecopilacionController extends Controller
             ], Response::HTTP_UNAUTHORIZED);
         }
 
-        $anio = (int) $request->get('anio', now()->year);
-        $mes = (int) $request->get('mes', now()->month);
         $formularioCodigo = $request->get('formulario_codigo', 'DATOS_PDV_VENTAS');
         $page = max(1, (int) $request->get('page', 1));
         $perPage = min(100, max(5, (int) $request->get('per_page', 15)));
@@ -298,6 +318,8 @@ class RecopilacionController extends Controller
                 'message' => "No existe formulario activo con codigo {$formularioCodigo}",
             ], Response::HTTP_UNPROCESSABLE_ENTITY);
         }
+
+        $ultimasVisitas = $this->subqueryUltimaVisitaClientePdv($formulario->id);
 
         $query = DB::connection('sqlsrv')
             ->table('RC_CLIENTE_PDV as c');
@@ -318,12 +340,10 @@ class RecopilacionController extends Controller
         }
         // maestro: sin filtro por asignación ni zonal
 
-        $query->join('RC_VISITA_FORMULARIO as v', function ($join) use ($formulario, $anio, $mes) {
-            $join->on('v.cliente_id', '=', 'c.id')
-                ->where('v.formulario_id', $formulario->id)
-                ->where('v.anio', $anio)
-                ->where('v.mes', $mes);
-        });
+        $query->joinSub($ultimasVisitas, 'ult', function ($join) {
+            $join->on('ult.cliente_id', '=', 'c.id');
+        })
+            ->join('RC_VISITA_FORMULARIO as v', 'v.id', '=', 'ult.visita_id');
 
         if ($search !== '') {
             $term = '%' . $search . '%';
@@ -1927,8 +1947,10 @@ class RecopilacionController extends Controller
 
         $visita = RcVisitaFormulario::where('cliente_id', $clienteId)
             ->where('formulario_id', $formulario->id)
-            ->where('anio', $anio)
-            ->where('mes', $mes)
+            ->orderByDesc('anio')
+            ->orderByDesc('mes')
+            ->orderByDesc('fecha_ultima_edicion')
+            ->orderByDesc('id')
             ->first();
 
         if (!$visita) {
