@@ -1356,12 +1356,30 @@ class RecopilacionController extends Controller
                 }
             }
 
-            $rows[] = $row;
+            // LIMPIEZA DE FILA: Elimina caracteres rotos antes de armar el Excel
+            $rowLimpia = array_map(function($celda) {
+                if (is_string($celda) && $celda !== '') {
+                    return iconv('UTF-8', 'UTF-8//IGNORE', $celda);
+                }
+                return $celda;
+            }, $row);
+
+            $rows[] = $rowLimpia;
         }
 
+        // LIMPIEZA DE CABECERAS: Aseguramos que los títulos también vayan limpios
+        $cabecerasCombinadas = array_merge($baseHeadings, $questionHeadings);
+        $cabecerasLimpias = array_map(function($celda) {
+            if (is_string($celda) && $celda !== '') {
+                return iconv('UTF-8', 'UTF-8//IGNORE', $celda);
+            }
+            return $celda;
+        }, $cabecerasCombinadas);
+
         $fileName = 'encuestas_finalizadas_' . now()->format('Ymd_His') . '.xlsx';
+
         return Excel::download(
-            new RecopilacionFinalizadasExport(array_merge($baseHeadings, $questionHeadings), $rows),
+            new RecopilacionFinalizadasExport($cabecerasLimpias, $rows),
             $fileName
         );
     }
