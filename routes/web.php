@@ -108,6 +108,7 @@ Route::middleware(['jwt.apiRest.jsMarket', 'jwt.user.admin'])->group(function ()
     Route::post('/api/v1/imagenes/load', [ImagenController::class, 'load'])->name('load.imagen.api');
     Route::get('/api/v1/imagenes/campanas-flyers/{año}/{mes}', [ImagenController::class, 'getCampanasFlyers'])->name('getCampanasFlyers.imagen.api');
     Route::get('/api/v1/imagenes/cartas-contratos/{año}', [ImagenController::class, 'getCartasContratos'])->name('getCartasContratos.imagen.api');
+    Route::post('/api/v1/imagenes/carga-masiva', [ImagenController::class, 'cargaMasiva'])->name('cargaMasiva.imagen.api');
     Route::post('/api/v1/imagenes/eliminar-flyer', [ImagenController::class, 'eliminarFlyer'])->name('eliminarFlyer.imagen.api');
 
     // Rutas para comunicación de aceleradores

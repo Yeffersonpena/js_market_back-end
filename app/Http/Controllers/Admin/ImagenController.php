@@ -9,6 +9,7 @@ use Illuminate\Http\JsonResponse;
 use App\Models\PDVOutImagen;
 use App\Models\PDVOutCampanasFlyers;
 use App\Services\CampanaComunicacionService;
+use App\Services\CargaMasivaService;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -19,10 +20,49 @@ use Symfony\Component\HttpFoundation\Response;
 class ImagenController extends Controller
 {
     private CampanaComunicacionService $comunicacionService;
+    private CargaMasivaService $cargaMasivaService;
 
-    public function __construct(CampanaComunicacionService $comunicacionService)
+    public function __construct(
+        CampanaComunicacionService $comunicacionService,
+        CargaMasivaService $cargaMasivaService
+    )
     {
         $this->comunicacionService = $comunicacionService;
+        $this->cargaMasivaService = $cargaMasivaService;
+    }
+
+    public function cargaMasiva(Request $request): JsonResponse
+    {
+        $validator = Validator::make($request->all(), [
+            'archivos' => ['required', 'array', 'min:1', 'max:10'],
+            'archivos.*' => ['required', 'file', 'mimes:pdf', 'max:10240'],
+            'tipoImg' => ['required', 'in:Cartas,Contratos'],
+            'multi_tienda' => ['required', 'in:SI,NO'],
+        ], [
+            'archivos.max' => 'Cada lote puede contener como máximo 10 archivos.',
+            'archivos.*.max' => 'Cada PDF puede pesar como máximo 10 MB.',
+            'archivos.*.mimes' => 'Todos los archivos deben ser PDF.',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'status' => Response::HTTP_UNPROCESSABLE_ENTITY,
+                'message' => $validator->errors()->first(),
+                'errors' => $validator->errors(),
+            ], Response::HTTP_UNPROCESSABLE_ENTITY);
+        }
+
+        $resultados = $this->cargaMasivaService->procesarArchivos(
+            $request->file('archivos', []),
+            (string) $request->input('tipoImg'),
+            (string) $request->input('multi_tienda')
+        );
+
+        return response()->json([
+            'status' => Response::HTTP_OK,
+            'message' => 'Lote procesado.',
+            'resultados' => $resultados,
+        ]);
     }
     public function getPaginatedData(Request $request)
     {
