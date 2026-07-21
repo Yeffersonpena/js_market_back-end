@@ -336,7 +336,7 @@ class ImagenController extends Controller
                 'mes' => $mes
             ], [
                 'año' => 'required|integer|min:2020|max:2030',
-                'mes' => 'required|integer|min:0|max:12'
+                'mes' => 'required|integer|min:1|max:12'
             ]);
 
             if ($validator->fails()) {
@@ -347,7 +347,40 @@ class ImagenController extends Controller
                 ], Response::HTTP_BAD_REQUEST);
             }
 
-            $queryValidator = Validator::make($request->all(), [
+            $campanas = PDVOutCampanasFlyers::query()
+                ->whereYear('fecha_inicio', $año)
+                ->whereMonth('fecha_inicio', $mes)
+                ->orderBy('fecha_inicio', 'desc')
+                ->get();
+
+            // Formatear criterio_filtro para mostrar "R1,R2" en lugar de "RANGO 1,RANGO 2"
+            $campanasFormateadas = $campanas->map(function ($campana) {
+                if ($campana->criterio_filtro && $campana->criterio_filtro !== 'TODOS') {
+                    $campana->criterio_filtro = preg_replace('/RANGO\s+(\d+)/i', 'R$1', $campana->criterio_filtro);
+                }
+                return $campana;
+            });
+
+            return response()->json([
+                "status" => Response::HTTP_OK,
+                "data" => $campanasFormateadas,
+                "total" => $campanasFormateadas->count()
+            ], Response::HTTP_OK);
+        } catch (\Exception $ex) {
+            return response()->json([
+                "status" => Response::HTTP_BAD_REQUEST,
+                "message" => $ex->getMessage()
+            ], Response::HTTP_BAD_REQUEST);
+        }
+    }
+
+    public function getCartasContratos(Request $request, $año)
+    {
+        try {
+            $validator = Validator::make(array_merge($request->all(), [
+                'año' => $año,
+            ]), [
+                'año' => 'required|integer|min:2020|max:2030',
                 'page' => 'sometimes|integer|min:1',
                 'per_page' => 'sometimes|integer|in:10,20',
                 'search' => 'sometimes|nullable|string|max:100',
@@ -355,11 +388,11 @@ class ImagenController extends Controller
                 'multi_tienda' => 'sometimes|nullable|in:Todos,SI,NO',
             ]);
 
-            if ($queryValidator->fails()) {
+            if ($validator->fails()) {
                 return response()->json([
-                    "status" => Response::HTTP_BAD_REQUEST,
-                    "message" => "Filtros de paginación inválidos",
-                    "errors" => $queryValidator->errors()
+                    'status' => Response::HTTP_BAD_REQUEST,
+                    'message' => 'Filtros de paginación inválidos',
+                    'errors' => $validator->errors(),
                 ], Response::HTTP_BAD_REQUEST);
             }
 
@@ -370,55 +403,58 @@ class ImagenController extends Controller
 
             $query = PDVOutCampanasFlyers::query()
                 ->whereYear('fecha_inicio', $año)
-                // Este endpoint alimenta exclusivamente la pantalla Cartas y contratos.
                 ->whereIn('tipoImg', ['Cartas', 'Contratos']);
-
-            // mes=0 representa todo el año.
-            if ((int) $mes > 0) {
-                $query->whereMonth('fecha_inicio', $mes);
-            }
 
             if ($tipo !== 'Todos') {
                 $query->where('tipoImg', $tipo);
             }
 
-            if ($multiTienda !== 'Todos') {
-                $query->where('zonales', $multiTienda);
+            if ($multiTienda === 'SI') {
+                $query->where('zonales', 'SI');
+            } elseif ($multiTienda === 'NO') {
+                $query->where(function ($multiQuery) {
+                    $multiQuery->whereNull('zonales')
+                        ->orWhere('zonales', '<>', 'SI');
+                });
             }
 
             if ($search !== '') {
                 $query->where(function ($searchQuery) use ($search) {
                     $searchQuery->where('criterio_filtro', 'like', "%{$search}%")
+                        ->orWhere('nombre_campaña', 'like', "%{$search}%")
                         ->orWhere('foto_esquema', 'like', "%{$search}%")
                         ->orWhere('tipoImg', 'like', "%{$search}%");
                 });
             }
 
-            $campanas = $query
+            $columns = [
+                'id',
+                'nombre_campaña',
+                'foto_esquema',
+                'fecha_inicio',
+                'fecha_fin',
+                'tipoImg',
+                'criterio_filtro',
+                'zonales',
+            ];
+
+            $documentos = $query
                 ->orderBy('fecha_inicio', 'desc')
                 ->orderBy('id', 'desc')
-                ->paginate($perPage);
-
-            // Formatear criterio_filtro para mostrar "R1,R2" en lugar de "RANGO 1,RANGO 2"
-            $campanasFormateadas = $campanas->getCollection()->map(function ($campana) {
-                if ($campana->criterio_filtro && $campana->criterio_filtro !== 'TODOS') {
-                    $campana->criterio_filtro = preg_replace('/RANGO\s+(\d+)/i', 'R$1', $campana->criterio_filtro);
-                }
-                return $campana;
-            });
+                ->paginate($perPage, $columns);
 
             return response()->json([
-                "status" => Response::HTTP_OK,
-                "data" => $campanasFormateadas->values(),
-                "total" => $campanas->total(),
-                "current_page" => $campanas->currentPage(),
-                "per_page" => $campanas->perPage(),
-                "last_page" => $campanas->lastPage()
+                'status' => Response::HTTP_OK,
+                'data' => $documentos->items(),
+                'total' => $documentos->total(),
+                'current_page' => $documentos->currentPage(),
+                'per_page' => $documentos->perPage(),
+                'last_page' => $documentos->lastPage(),
             ], Response::HTTP_OK);
         } catch (\Exception $ex) {
             return response()->json([
-                "status" => Response::HTTP_BAD_REQUEST,
-                "message" => $ex->getMessage()
+                'status' => Response::HTTP_BAD_REQUEST,
+                'message' => $ex->getMessage(),
             ], Response::HTTP_BAD_REQUEST);
         }
     }

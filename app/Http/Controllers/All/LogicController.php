@@ -88,36 +88,15 @@ class LogicController extends Controller
         }
     }
 
-    public function getFlyers(Request $request, $dni, $anio, $mes)
+    public function getFlyers($dni, $anio, $mes)
     {
         try {
-            $perPage = (int) $request->input('per_page', 10);
-            if (!in_array($perPage, [10, 20], true)) {
-                return response()->json([
-                    "status" => Response::HTTP_BAD_REQUEST,
-                    "message" => "per_page solo admite 10 o 20"
-                ], Response::HTTP_BAD_REQUEST);
-            }
-
-            $tipo = $request->input('tipo', 'Todos');
-            $multiTienda = $request->input('multi_tienda', 'Todos');
-            if (!in_array($tipo, ['Todos', 'Cartas', 'Contratos'], true)
-                || !in_array($multiTienda, ['Todos', 'SI', 'NO'], true)) {
-                return response()->json([
-                    "status" => Response::HTTP_BAD_REQUEST,
-                    "message" => "Filtros inválidos"
-                ], Response::HTTP_BAD_REQUEST);
-            }
-
             $consultaDni = VI_FLYERS::where('DNI_Responsable', $dni)
                 ->where(function ($query) use ($anio) {
                     $query->whereYear('fecha_inicio', $anio)
                         ->orWhereYear('fecha_fin', $anio);
-                });
-
-            if ((int) $mes > 0) {
-                $consultaDni->whereRaw('? BETWEEN MONTH(fecha_inicio) AND MONTH(fecha_fin)', [$mes]);
-            }
+                })
+                ->whereRaw('? BETWEEN MONTH(fecha_inicio) AND MONTH(fecha_fin)', [$mes]);
 
             $existeAvance = $consultaDni->exists();
             if (!$existeAvance) {
@@ -137,31 +116,17 @@ class LogicController extends Controller
 
                 $dni = $getDniResp[0]->DNI_RESPONSABLE ?? 0;
             }
-            $query = VI_FLYERS::where('DNI_Responsable', $dni)
+            $avances = VI_FLYERS::where('DNI_Responsable', $dni)
                 ->where(function ($yearQuery) use ($anio) {
                     $yearQuery->whereYear('fecha_inicio', $anio)
                         ->orWhereYear('fecha_fin', $anio);
-                });
+                })
+                ->whereRaw('? BETWEEN MONTH(fecha_inicio) AND MONTH(fecha_fin)', [$mes])
+                ->orderBy('fecha_fin', 'asc')
+                ->get();
 
-            if ((int) $mes > 0) {
-                $query->whereRaw('? BETWEEN MONTH(fecha_inicio) AND MONTH(fecha_fin)', [$mes]);
-            }
-
-            if ($tipo !== 'Todos') {
-                $query->where('tipoImg', $tipo);
-            }
-
-            if ($multiTienda !== 'Todos') {
-                $query->where('zonales', $multiTienda);
-            }
-
-            $avances = $query
-                ->orderBy('fecha_fin', 'desc')
-                ->orderBy('id', 'desc')
-                ->paginate($perPage);
-
-            if ($avances->total() > 0) {
-                $agrupados = $avances->getCollection()->groupBy('tipoImg');
+            if (!$avances->isEmpty()) {
+                $agrupados = $avances->groupBy('tipoImg');
                 $agrupados->each(function ($items) {
                     foreach ($items as $item) {
                         $item->foto_esquema = env('APP_DOMAIN') . '/storage/img/' . $item->foto_esquema;
@@ -170,26 +135,138 @@ class LogicController extends Controller
                 return response()->json([
                     "status" => Response::HTTP_OK,
                     "message" => "Flyers",
-                    "data" => $agrupados,
-                    "total" => $avances->total(),
-                    "current_page" => $avances->currentPage(),
-                    "per_page" => $avances->perPage(),
-                    "last_page" => $avances->lastPage()
+                    "data" => $agrupados
                 ], Response::HTTP_OK);
             } else {
                 return response()->json([
                     "status" => Response::HTTP_OK,
                     "message" => "No hay flyers para el dni " . $dni,
-                    "data" => [],
-                    "total" => 0,
-                    "current_page" => 1,
-                    "per_page" => $perPage,
-                    "last_page" => 1
+                    "data" => []
                 ], Response::HTTP_OK);
             }
         } catch (\Exception $ex) {
             return response()->json(["status" => Response::HTTP_BAD_REQUEST, "message" => $ex->getMessage()], Response::HTTP_BAD_REQUEST);
         }
+    }
+
+    public function getCartasContratos(Request $request, $dni, $anio)
+    {
+        try {
+            $validator = validator(array_merge($request->all(), [
+                'anio' => $anio,
+            ]), [
+                'anio' => 'required|integer|min:2020|max:2030',
+                'page' => 'sometimes|integer|min:1',
+                'per_page' => 'sometimes|integer|in:10,20',
+                'search' => 'sometimes|nullable|string|max:100',
+                'tipo' => 'sometimes|nullable|in:Todos,Cartas,Contratos',
+                'multi_tienda' => 'sometimes|nullable|in:Todos,SI,NO',
+            ]);
+
+            if ($validator->fails()) {
+                return response()->json([
+                    'status' => Response::HTTP_BAD_REQUEST,
+                    'message' => 'Filtros de paginación inválidos',
+                    'errors' => $validator->errors(),
+                ], Response::HTTP_BAD_REQUEST);
+            }
+
+            $perPage = (int) $request->input('per_page', 10);
+            $tipo = $request->input('tipo', 'Todos');
+            $multiTienda = $request->input('multi_tienda', 'Todos');
+            $search = trim((string) $request->input('search', ''));
+
+            $dniResponsable = $this->resolveFlyersDni($dni, $anio);
+            $query = VI_FLYERS::query()
+                ->where('DNI_Responsable', $dniResponsable)
+                ->where(function ($yearQuery) use ($anio) {
+                    $yearQuery->whereYear('fecha_inicio', $anio)
+                        ->orWhereYear('fecha_fin', $anio);
+                })
+                ->whereIn('tipoImg', ['Cartas', 'Contratos']);
+
+            if ($tipo !== 'Todos') {
+                $query->where('tipoImg', $tipo);
+            }
+
+            // PDV_OUT_FLYERS no almacena el indicador Multi-Tienda. El portal
+            // ha tratado históricamente estos documentos como "NO".
+            if ($multiTienda === 'SI') {
+                $query->whereRaw('1 = 0');
+            }
+
+            if ($search !== '') {
+                $query->where(function ($searchQuery) use ($search) {
+                    $searchQuery->where('foto_esquema', 'like', "%{$search}%")
+                        ->orWhere('tipoImg', 'like', "%{$search}%");
+                });
+            }
+
+            $columns = [
+                'id',
+                'año',
+                'mes',
+                'dni_responsable',
+                'zonal',
+                'foto_esquema',
+                'fecha_inicio',
+                'fecha_fin',
+                'tipoImg',
+            ];
+
+            $documentos = $query
+                ->orderBy('fecha_fin', 'desc')
+                ->orderBy('id', 'desc')
+                ->paginate($perPage, $columns);
+
+            $items = collect($documentos->items())->map(function ($item) {
+                $item->foto_esquema = env('APP_DOMAIN') . '/storage/img/' . $item->foto_esquema;
+                return $item;
+            })->values();
+
+            return response()->json([
+                'status' => Response::HTTP_OK,
+                'data' => $items,
+                'total' => $documentos->total(),
+                'current_page' => $documentos->currentPage(),
+                'per_page' => $documentos->perPage(),
+                'last_page' => $documentos->lastPage(),
+            ], Response::HTTP_OK);
+        } catch (\Exception $ex) {
+            return response()->json([
+                'status' => Response::HTTP_BAD_REQUEST,
+                'message' => $ex->getMessage(),
+            ], Response::HTTP_BAD_REQUEST);
+        }
+    }
+
+    private function resolveFlyersDni($dni, $anio)
+    {
+        $tieneFlyers = VI_FLYERS::where('DNI_Responsable', $dni)
+            ->where(function ($query) use ($anio) {
+                $query->whereYear('fecha_inicio', $anio)
+                    ->orWhereYear('fecha_fin', $anio);
+            })
+            ->exists();
+
+        if ($tieneFlyers) {
+            return $dni;
+        }
+
+        $getDniResp = [];
+        $maxFecha = DB::select(
+            "SELECT MAX(fecha) as max_fecha FROM dbo.PDV_OUT_FUNNEL WHERE DNI_VENDEDOR = ? AND SOCIO = 'JS MARKET'",
+            [$dni]
+        );
+
+        if (!empty($maxFecha) && $maxFecha[0]->max_fecha) {
+            $getDniResp = DB::select(
+                "SELECT TOP 1 DNI_RESPONSABLE FROM dbo.PDV_OUT_FUNNEL WHERE DNI_VENDEDOR = ? AND SOCIO = 'JS MARKET' AND fecha = ?",
+                [$dni, $maxFecha[0]->max_fecha]
+            );
+        }
+
+        return $getDniResp[0]->DNI_RESPONSABLE ?? 0;
     }
 
     /**

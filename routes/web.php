@@ -107,6 +107,7 @@ Route::middleware(['jwt.apiRest.jsMarket', 'jwt.user.admin'])->group(function ()
     // Route::post('/api/v1/imagenes/allImg', [ImagenController::class, 'updateImg'])->name('updateImg.imagen.api');
     Route::post('/api/v1/imagenes/load', [ImagenController::class, 'load'])->name('load.imagen.api');
     Route::get('/api/v1/imagenes/campanas-flyers/{año}/{mes}', [ImagenController::class, 'getCampanasFlyers'])->name('getCampanasFlyers.imagen.api');
+    Route::get('/api/v1/imagenes/cartas-contratos/{año}', [ImagenController::class, 'getCartasContratos'])->name('getCartasContratos.imagen.api');
     Route::post('/api/v1/imagenes/eliminar-flyer', [ImagenController::class, 'eliminarFlyer'])->name('eliminarFlyer.imagen.api');
 
     // Rutas para comunicación de aceleradores
@@ -212,6 +213,7 @@ Route::middleware(['jwt.apiRest.jsMarket', 'jwt.user.pdv'])->group(function () {
     Route::get('/api/v1/pdv/getHistoryVenta/{dni}/{anio}/{mes}', [LogicController::class, 'getHistoryVenta'])->name('history.user.api');
     Route::get('/api/v1/pdv/getAllMonto/{dni}/{anio}/{mes}', [AvanceDiarioController::class, 'getAllMonto'])->name('getAllMonto.user.api');
     Route::get('/api/v1/pdv/getFlyers/{dni}/{anio}/{mes}', [LogicController::class, 'getFlyers'])->name('flyers.user.api');
+    Route::get('/api/v1/pdv/cartas-contratos/{dni}/{anio}', [LogicController::class, 'getCartasContratos'])->name('cartasContratos.pdv.api');
     Route::get('/api/v1/pdv/getPayment/{dni}/{anio}/{mes}', [LogicController::class, 'getPayment'])->name('payment.user.api');
     Route::get('/api/v1/pdv/getPaymentOptimized/{dni}/{anio}/{mes}', [LogicController::class, 'getPaymentOptimized'])->name('payment.optimized.user.api');
     Route::get('/api/v1/pdv/getIncidencia/{dni}/{anio}/{mes}', [LogicController::class, 'getIncidencia'])->name('incidencia.user.api');
@@ -221,6 +223,7 @@ Route::middleware(['jwt.apiRest.jsMarket', 'jwt.user.multimarca'])->group(functi
     Route::get('/api/v1/multimarca/getAvanceQuincenalDiario/{dni}/{anio}/{mes}/{typeQuincena}', [MultimarcaAvanceDiarioController::class, 'getAvanceQuinDiario'])->name('avanceQuinDiarioMM.user.api');
     Route::get('/api/v1/multimarca/getAvanceDiario/{dni}/{anio}/{mes}', [MultimarcaAvanceDiarioController::class, 'getAvanceDiario'])->name('avanceDiarioMM.user.api');
     Route::get('/api/v1/multimarca/getFlyers/{dni}/{anio}/{mes}', [LogicController::class, 'getFlyers'])->name('flyers.user.api');
+    Route::get('/api/v1/multimarca/cartas-contratos/{dni}/{anio}', [LogicController::class, 'getCartasContratos'])->name('cartasContratos.multimarca.api');
     Route::get('/api/v1/multimarca/getAbono/{dni}/{anio}/{mes}', [LogicController::class, 'getAbonoMm'])->name('flyers.user.api');
     Route::get('/api/v1/multimarca/getHistoryVenta/{dni}/{anio}/{mes}', [LogicController::class, 'getHistoryVenta'])->name('history.user.api');
     Route::get('/api/v1/multimarca/getPayment/{dni}/{anio}/{mes}/{typeQuincena}', [MultimarcaAvanceDiarioController::class, 'getPayment'])->name('paymentMM.user.api');
