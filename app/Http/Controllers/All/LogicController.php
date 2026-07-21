@@ -88,16 +88,38 @@ class LogicController extends Controller
         }
     }
 
-    public function getFlyers($dni, $anio, $mes)
+    public function getFlyers(Request $request, $dni, $anio, $mes)
     {
         try {
-            $existeAvance = VI_FLYERS::where('DNI_Responsable', $dni)
-                ->whereRaw('? BETWEEN MONTH(fecha_inicio) AND MONTH(fecha_fin)', [$mes])
+            $perPage = (int) $request->input('per_page', 10);
+            if (!in_array($perPage, [10, 20], true)) {
+                return response()->json([
+                    "status" => Response::HTTP_BAD_REQUEST,
+                    "message" => "per_page solo admite 10 o 20"
+                ], Response::HTTP_BAD_REQUEST);
+            }
+
+            $tipo = $request->input('tipo', 'Todos');
+            $multiTienda = $request->input('multi_tienda', 'Todos');
+            if (!in_array($tipo, ['Todos', 'Cartas', 'Contratos'], true)
+                || !in_array($multiTienda, ['Todos', 'SI', 'NO'], true)) {
+                return response()->json([
+                    "status" => Response::HTTP_BAD_REQUEST,
+                    "message" => "Filtros inválidos"
+                ], Response::HTTP_BAD_REQUEST);
+            }
+
+            $consultaDni = VI_FLYERS::where('DNI_Responsable', $dni)
                 ->where(function ($query) use ($anio) {
                     $query->whereYear('fecha_inicio', $anio)
                         ->orWhereYear('fecha_fin', $anio);
-                })
-                ->exists();
+                });
+
+            if ((int) $mes > 0) {
+                $consultaDni->whereRaw('? BETWEEN MONTH(fecha_inicio) AND MONTH(fecha_fin)', [$mes]);
+            }
+
+            $existeAvance = $consultaDni->exists();
             if (!$existeAvance) {
                 // Primero: buscar por año y mes específicos
                 $getDniResp = DB::select("SELECT TOP 1 DNI_RESPONSABLE FROM dbo.PDV_OUT_FUNNEL WHERE DNI_VENDEDOR = ? AND SOCIO = 'JS MARKET' AND year(fecha) = ? AND month(fecha) = ?", [$dni, $anio, $mes]);
@@ -115,24 +137,55 @@ class LogicController extends Controller
 
                 $dni = $getDniResp[0]->DNI_RESPONSABLE ?? 0;
             }
-        $avances = VI_FLYERS::where('DNI_Responsable', $dni)
-            ->whereRaw('? BETWEEN MONTH(fecha_inicio) AND MONTH(fecha_fin)', [$mes])
-            ->where(function ($query) use ($anio) {
-                $query->whereYear('fecha_inicio', $anio)
-                    ->orWhereYear('fecha_fin', $anio);
-            })
-            ->orderBy('fecha_fin', 'asc')
-            ->get();
-            if (!$avances->isEmpty()) {
-                $agrupados = $avances->groupBy('tipoImg');
+            $query = VI_FLYERS::where('DNI_Responsable', $dni)
+                ->where(function ($yearQuery) use ($anio) {
+                    $yearQuery->whereYear('fecha_inicio', $anio)
+                        ->orWhereYear('fecha_fin', $anio);
+                });
+
+            if ((int) $mes > 0) {
+                $query->whereRaw('? BETWEEN MONTH(fecha_inicio) AND MONTH(fecha_fin)', [$mes]);
+            }
+
+            if ($tipo !== 'Todos') {
+                $query->where('tipoImg', $tipo);
+            }
+
+            if ($multiTienda !== 'Todos') {
+                $query->where('zonales', $multiTienda);
+            }
+
+            $avances = $query
+                ->orderBy('fecha_fin', 'desc')
+                ->orderBy('id', 'desc')
+                ->paginate($perPage);
+
+            if ($avances->total() > 0) {
+                $agrupados = $avances->getCollection()->groupBy('tipoImg');
                 $agrupados->each(function ($items) {
                     foreach ($items as $item) {
                         $item->foto_esquema = env('APP_DOMAIN') . '/storage/img/' . $item->foto_esquema;
                     }
                 });
-                return response()->json(["status" => Response::HTTP_OK, "message" => "Fyers", "data" => $agrupados], Response::HTTP_OK);
+                return response()->json([
+                    "status" => Response::HTTP_OK,
+                    "message" => "Flyers",
+                    "data" => $agrupados,
+                    "total" => $avances->total(),
+                    "current_page" => $avances->currentPage(),
+                    "per_page" => $avances->perPage(),
+                    "last_page" => $avances->lastPage()
+                ], Response::HTTP_OK);
             } else {
-                return response()->json(["status" => Response::HTTP_OK, "message" => "No hay fyers para el dni " . $dni, "data" => []], Response::HTTP_OK);
+                return response()->json([
+                    "status" => Response::HTTP_OK,
+                    "message" => "No hay flyers para el dni " . $dni,
+                    "data" => [],
+                    "total" => 0,
+                    "current_page" => 1,
+                    "per_page" => $perPage,
+                    "last_page" => 1
+                ], Response::HTTP_OK);
             }
         } catch (\Exception $ex) {
             return response()->json(["status" => Response::HTTP_BAD_REQUEST, "message" => $ex->getMessage()], Response::HTTP_BAD_REQUEST);

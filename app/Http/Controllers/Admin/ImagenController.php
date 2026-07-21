@@ -336,7 +336,7 @@ class ImagenController extends Controller
                 'mes' => $mes
             ], [
                 'año' => 'required|integer|min:2020|max:2030',
-                'mes' => 'required|integer|min:1|max:12'
+                'mes' => 'required|integer|min:0|max:12'
             ]);
 
             if ($validator->fails()) {
@@ -347,13 +347,60 @@ class ImagenController extends Controller
                 ], Response::HTTP_BAD_REQUEST);
             }
 
-            $campanas = PDVOutCampanasFlyers::whereYear('fecha_inicio', $año)
-                ->whereMonth('fecha_inicio', $mes)
+            $queryValidator = Validator::make($request->all(), [
+                'page' => 'sometimes|integer|min:1',
+                'per_page' => 'sometimes|integer|in:10,20',
+                'search' => 'sometimes|nullable|string|max:100',
+                'tipo' => 'sometimes|nullable|in:Todos,Cartas,Contratos',
+                'multi_tienda' => 'sometimes|nullable|in:Todos,SI,NO',
+            ]);
+
+            if ($queryValidator->fails()) {
+                return response()->json([
+                    "status" => Response::HTTP_BAD_REQUEST,
+                    "message" => "Filtros de paginación inválidos",
+                    "errors" => $queryValidator->errors()
+                ], Response::HTTP_BAD_REQUEST);
+            }
+
+            $perPage = (int) $request->input('per_page', 10);
+            $search = trim((string) $request->input('search', ''));
+            $tipo = $request->input('tipo', 'Todos');
+            $multiTienda = $request->input('multi_tienda', 'Todos');
+
+            $query = PDVOutCampanasFlyers::query()
+                ->whereYear('fecha_inicio', $año)
+                // Este endpoint alimenta exclusivamente la pantalla Cartas y contratos.
+                ->whereIn('tipoImg', ['Cartas', 'Contratos']);
+
+            // mes=0 representa todo el año.
+            if ((int) $mes > 0) {
+                $query->whereMonth('fecha_inicio', $mes);
+            }
+
+            if ($tipo !== 'Todos') {
+                $query->where('tipoImg', $tipo);
+            }
+
+            if ($multiTienda !== 'Todos') {
+                $query->where('zonales', $multiTienda);
+            }
+
+            if ($search !== '') {
+                $query->where(function ($searchQuery) use ($search) {
+                    $searchQuery->where('criterio_filtro', 'like', "%{$search}%")
+                        ->orWhere('foto_esquema', 'like', "%{$search}%")
+                        ->orWhere('tipoImg', 'like', "%{$search}%");
+                });
+            }
+
+            $campanas = $query
                 ->orderBy('fecha_inicio', 'desc')
-                ->get();
+                ->orderBy('id', 'desc')
+                ->paginate($perPage);
 
             // Formatear criterio_filtro para mostrar "R1,R2" en lugar de "RANGO 1,RANGO 2"
-            $campanasFormateadas = $campanas->map(function ($campana) {
+            $campanasFormateadas = $campanas->getCollection()->map(function ($campana) {
                 if ($campana->criterio_filtro && $campana->criterio_filtro !== 'TODOS') {
                     $campana->criterio_filtro = preg_replace('/RANGO\s+(\d+)/i', 'R$1', $campana->criterio_filtro);
                 }
@@ -362,8 +409,11 @@ class ImagenController extends Controller
 
             return response()->json([
                 "status" => Response::HTTP_OK,
-                "data" => $campanasFormateadas,
-                "total" => $campanasFormateadas->count()
+                "data" => $campanasFormateadas->values(),
+                "total" => $campanas->total(),
+                "current_page" => $campanas->currentPage(),
+                "per_page" => $campanas->perPage(),
+                "last_page" => $campanas->lastPage()
             ], Response::HTTP_OK);
         } catch (\Exception $ex) {
             return response()->json([

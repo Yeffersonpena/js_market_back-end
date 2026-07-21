@@ -4,9 +4,9 @@ namespace App\Services;
 
 class PythonScriptService
 {
-    private string $venvPath;
-    private string $scriptsPath;
-    private string $outputPath;
+    private ?string $venvPath = null;
+    private ?string $scriptsPath = null;
+    private ?string $outputPath = null;
     private bool $isWindows;
 
     public function __construct()
