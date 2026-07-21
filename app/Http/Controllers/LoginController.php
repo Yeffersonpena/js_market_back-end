@@ -30,7 +30,10 @@ class LoginController extends Controller
             ]);
 
             $user = trim((string) $request->user);
-            $password = trim((string) $request->password);
+            // La contraseña debe compararse exactamente como fue registrada.
+            // Aplicar trim() aquí hace imposible iniciar sesión si la clave
+            // contiene un espacio al inicio o al final.
+            $password = (string) $request->password;
 
             $userData = DB::selectOne("EXEC sp_LoginUser ?, ?", [$user, $password]);
             if (!$userData) {

@@ -109,15 +109,45 @@ class GestorController extends Controller
     function actualizaClave(Request $request)
     {
         try {
-            $userData = DB::statement(
-                "EXEC paActualizarClave ?, ?",
-                [$request->usuario, $request->clave]
-            );
-            if ($userData) {
-                return response()->json(["status" => Response::HTTP_OK, "message" => "Clave actualizada"], Response::HTTP_OK);
-            } else {
-                return response()->json(["status" => Response::HTTP_OK, "message" => "No se pudo actualizar la clave"], Response::HTTP_OK);
+            $request->validate([
+                'usuario' => 'required|string|min:3|max:50',
+                'clave' => 'required|string|min:3|max:100',
+            ]);
+
+            $usuario = trim((string) $request->usuario);
+            $clave = (string) $request->clave;
+
+            if (!User::where('user', $usuario)->exists()) {
+                return response()->json([
+                    "status" => Response::HTTP_NOT_FOUND,
+                    "message" => "El usuario no existe",
+                ], Response::HTTP_NOT_FOUND);
             }
+
+            DB::statement(
+                "EXEC paActualizarClave ?, ?",
+                [$usuario, $clave]
+            );
+
+            // DB::statement solo confirma que el procedimiento se ejecutó; no
+            // garantiza que el UPDATE haya encontrado una fila. Validamos la
+            // nueva credencial antes de informar que la operación fue exitosa.
+            $credencialValida = DB::selectOne(
+                "EXEC sp_LoginUser ?, ?",
+                [$usuario, $clave]
+            );
+
+            if (!$credencialValida) {
+                return response()->json([
+                    "status" => Response::HTTP_INTERNAL_SERVER_ERROR,
+                    "message" => "La clave no pudo ser verificada después de actualizarla",
+                ], Response::HTTP_INTERNAL_SERVER_ERROR);
+            }
+
+            return response()->json([
+                "status" => Response::HTTP_OK,
+                "message" => "Clave actualizada y verificada",
+            ], Response::HTTP_OK);
         } catch (\Exception $ex) {
             return response()->json(["status" => Response::HTTP_BAD_REQUEST, "message" => $ex->getMessage()], Response::HTTP_BAD_REQUEST);
         }
