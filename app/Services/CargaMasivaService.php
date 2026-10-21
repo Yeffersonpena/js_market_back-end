@@ -19,14 +19,14 @@ class CargaMasivaService
 
         foreach ($archivos as $archivo) {
             $nombreOriginal = $archivo->getClientOriginalName();
-            preg_match('/(?<!\d)(\d{8,12})(?!\d)/', $nombreOriginal, $coincidencias);
+            preg_match('/(?<!\d)(\d{4,12})(?!\d)/', $nombreOriginal, $coincidencias);
 
             if (empty($coincidencias)) {
                 $resultados[] = $this->resultado(
                     $nombreOriginal,
                     '',
                     'error',
-                    'No se encontró un DNI válido (8 a 12 dígitos) en el nombre del archivo.'
+                    'No se encontró un DNI válido (4 a 12 dígitos) en el nombre del archivo.'
                 );
                 continue;
             }
@@ -44,7 +44,9 @@ class CargaMasivaService
 
         foreach ($archivosValidos as $item) {
             $dni = $item['dni'];
-            if (!isset($vendedores[$dni])) {
+            $vendedorFound = $vendedores[$dni] ?? $vendedores[ltrim($dni, '0')] ?? $vendedores[str_pad(ltrim($dni, '0'), 8, '0', STR_PAD_LEFT)] ?? null;
+
+            if (!$vendedorFound) {
                 $resultados[] = $this->resultado(
                     $item['nombre'],
                     $dni,
@@ -61,7 +63,7 @@ class CargaMasivaService
                     $dni,
                     $tipoImg,
                     $multiTienda,
-                    $vendedores,
+                    $vendedorFound,
                     &$nombreGuardado
                 ) {
                     $nombreGuardado = $this->guardarArchivo($item['archivo'], $dni, $tipoImg);
@@ -74,7 +76,7 @@ class CargaMasivaService
                         $dni,
                         $tipoImg,
                         $multiTienda,
-                        $vendedores[$dni],
+                        $vendedorFound,
                         $item['direccion']
                     );
                 });
@@ -107,19 +109,36 @@ class CargaMasivaService
             return [];
         }
 
+        $allVariants = [];
+        foreach ($dnis as $d) {
+            $d_clean = (string)$d;
+            $d_unpadded = ltrim($d_clean, '0');
+            $d_pad8 = str_pad($d_unpadded, 8, '0', STR_PAD_LEFT);
+            $allVariants[] = $d_clean;
+            $allVariants[] = $d_unpadded;
+            $allVariants[] = $d_pad8;
+        }
+        $allVariants = array_values(array_unique($allVariants));
+
         $vendedores = DB::table('PORTAL_COMERCIAL.dbo.PDV_VENDEDORES')
-            ->whereIn('dni_vendedor', $dnis)
+            ->whereIn('dni_vendedor', $allVariants)
             ->get(['dni_vendedor', 'zonal'])
             ->keyBy(fn ($item) => (string) $item->dni_vendedor)
             ->all();
 
         $usuarios = DB::table('users')
-            ->whereIn('user', $dnis)
+            ->whereIn('user', $allVariants)
             ->get(['user', 'zonal'])
             ->keyBy(fn ($item) => (string) $item->user)
             ->all();
 
-        return $vendedores + $usuarios;
+        $programacion = DB::table('PORTAL_COMERCIAL.dbo.PDV_VISITAS_AD_PROGRAMACION')
+            ->whereIn('DNI_RESPONSABLE', $allVariants)
+            ->get(['DNI_RESPONSABLE as user', 'ZONAL as zonal'])
+            ->keyBy(fn ($item) => (string) $item->user)
+            ->all();
+
+        return $vendedores + $usuarios + $programacion;
     }
 
     private function guardarArchivo(UploadedFile $archivo, string $dni, string $tipoImg): string

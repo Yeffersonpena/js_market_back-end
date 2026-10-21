@@ -344,10 +344,9 @@ class ReportesPostpagoController extends Controller
                 ->table('BASE_RECARGADORES')
                 ->max('created_at');
 
-            // 3. Máxima fecha en abonos_postpago_log
-            $maxFechaAbonos = DB::connection('sqlsrv')
-                ->table('abonos_postpago_log')
-                ->max('FECHA');
+            // 3. Maxima fecha en PDV_OUT_ABONOS
+            $row = DB::connection('sqlsrv')->selectOne("SELECT TOP 1 [FECHAS_ ABONO] as max_fecha FROM PDV_OUT_ABONOS ORDER BY TRY_CONVERT(datetime, [FECHAS_ ABONO], 103) DESC");
+            $maxFechaAbonos = $row && $row->max_fecha ? \Carbon\Carbon::createFromFormat('d/m/Y', $row->max_fecha)->format('Y-m-d') : null;
 
             return response()->json([
                 "status" => Response::HTTP_OK,
